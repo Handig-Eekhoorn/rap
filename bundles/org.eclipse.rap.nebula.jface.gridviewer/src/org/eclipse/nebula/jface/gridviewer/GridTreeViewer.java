@@ -26,7 +26,9 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.ViewerCell;
 import org.eclipse.jface.viewers.ViewerRow;
 import org.eclipse.nebula.widgets.grid.Grid;
+import org.eclipse.nebula.widgets.grid.GridColumn;
 import org.eclipse.nebula.widgets.grid.GridItem;
+import org.eclipse.nebula.widgets.grid.aggregator.IFooterAggregateProvider;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.TreeListener;
 import org.eclipse.swt.graphics.Point;
@@ -410,4 +412,100 @@ public class GridTreeViewer extends AbstractTreeViewer {
 			rowHeaderLabelProvider.update(cell);
 		}
 	}
+
+	/**
+	 * @param element 
+	 * 
+	 */
+	public void refresh(final Object element) {
+		if (this.grid.hasFooterAggregate()){
+			updateFooterAggregates();
+		}
+		super.refresh(element);
+	}
+	
+	private void updateFooterAggregates() {
+		final int colCount = doGetColumnCount();
+
+		/*
+		 * Minimize the number of calls to the content provider
+		 * and the items/rows itself, since their behaviour
+		 * is unknown and iterations of the column set are 
+		 * cheap.
+		 */
+		final Object[] rows = this.getFilteredChildren(getRoot());
+		final GridColumn[] cols = new GridColumn[colCount];
+
+		boolean anyRecursive = false;
+		for(int c=0; c<colCount; c++){
+			final GridColumn col = (GridColumn) getColumnViewerOwner(c);
+			final IFooterAggregateProvider agg = col.getFooterAggregate();
+			if (agg==null) continue;
+			
+			cols[c]=col;
+			agg.clear();
+
+			if (col.getFooterAggregateRecursionStyle()!=GridColumn.FOOTERAGGREGATE_ROOT_ONLY)
+				anyRecursive = true;
+		}
+		for(int r=0; r<rows.length; r++){
+			final Object row = rows[r];
+			updateFooterAggregatesRecursion(row, cols, 0, anyRecursive);
+		}
+		for(int c=0; c<colCount; c++){
+			final GridColumn col = cols[c];
+			if (col==null) continue;
+			final IFooterAggregateProvider agg = col.getFooterAggregate();
+			if (agg==null) continue;
+			
+			cols[c].setFooterText(agg.getResult());
+			cols[c].setFooterFont(agg.getFont());
+			cols[c].setFooterImage(agg.getImage());
+		}
+	}
+	
+	/**
+	 * Updates the rows recursivly
+	 * @param row Current item
+	 * @param cols All columns
+	 * @param level current depth
+	 * @param anyRecursive Does any aggregate require to walk the tree down?
+	 */
+	private void updateFooterAggregatesRecursion(
+			final Object row, final GridColumn[] cols, final int level,
+			final boolean anyRecursive
+			) {
+		final Object[] children;
+		final boolean isLeaf;
+		if (anyRecursive){
+			children = getFilteredChildren(row);
+			isLeaf = children==null || children.length==0;
+		}else{
+			children = null;
+			isLeaf = false;
+		}
+		for(int c=0; c<cols.length; c++){
+			final GridColumn col = cols[c];
+			if (col==null) continue;
+			final IFooterAggregateProvider agg = col.getFooterAggregate();
+			if (agg==null) continue;
+
+			if (
+					(level==0 && (GridColumn.FOOTERAGGREGATE_ROOT_ONLY & col.getFooterAggregateRecursionStyle())!=0)
+					|| (isLeaf && (GridColumn.FOOTERAGGREGATE_LEAVES_ONLY & col.getFooterAggregateRecursionStyle())!=0)
+
+					){
+				if (row==null){
+					agg.update(null);
+				}else{
+					agg.update(row);
+				}
+			}
+		}
+		if (anyRecursive && children!=null){
+			for(int r=0; r<children.length; r++)
+				updateFooterAggregatesRecursion(children[r], cols, level+1, anyRecursive);
+		}
+	}
+
 }

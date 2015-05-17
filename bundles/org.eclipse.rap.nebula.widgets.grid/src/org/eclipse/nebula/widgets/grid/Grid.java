@@ -104,6 +104,13 @@ public class Grid extends Composite {
   LayoutCache layoutCache;
 
   /**
+   * Cache value whether any column has an
+   * aggregating footer. Depending on this value,
+   * some optimizations can be used.
+   */
+  private boolean hasFooterAggregate = false;
+
+  /**
    * Constructs a new instance of this class given its parent and a style
    * value describing its behavior and appearance.
    * <p>
@@ -3312,4 +3319,40 @@ public class Grid extends Composite {
       invalidateIndentationWidth();
     }
   }
+
+  /**
+   * Does any column have an aggregating footer ?
+   * @return .
+   */
+  public boolean hasFooterAggregate() {
+      checkWidget();
+      return this.hasFooterAggregate;
+  }
+
+  /**
+   * MUST ONLY BE CALLED BY GridColumn#setFooterAggregate
+   * @param hasFooterAggregate
+   */
+  void setHasFooterAggregate(boolean hasFooterAggregate) {
+      checkWidget();
+      this.hasFooterAggregate = hasFooterAggregate;
+  }
+
+  /**
+   * MUST ONLY BE CALLED BY GridColumn#setFooterAggregate
+   * @param hasFooterAggregate
+   */
+  void updateHasFooterAggregate(){
+      checkWidget();
+      final int columnCount = getColumnCount();
+      for(int i=0; i<columnCount; i++){
+          final GridColumn col = getColumn(i);
+          if (col.getFooterAggregate()!=null){
+              this.hasFooterAggregate = true;
+              return ;
+          }
+      }
+      this.hasFooterAggregate = false;
+  }
+
 }
