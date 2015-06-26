@@ -16,7 +16,7 @@
 
   <groupId>org.eclipse.rap</groupId>
   <artifactId>org.eclipse.rap.runtime-parent</artifactId>
-  <version>3.0.0-SNAPSHOT</version>
+  <version>3.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <properties>
@@ -26,7 +26,7 @@
     <surefire-version>2.17</surefire-version>
     <!-- junit version used by maven-surefire, must correspond with junit in the target platform -->
     <junit-version>4.11</junit-version>
-    <base-platform-mars>4.5milestones/S-4.5RC1-201505141000/</base-platform-mars>
+    <base-platform-mars>4.5/R-4.5-201506032000/</base-platform-mars>
     <base-platform-mars-repository>http://download.eclipse.org/eclipse/updates/${base-platform-mars}</base-platform-mars-repository>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- disabled due to bug 393977
@@ -47,12 +47,12 @@
         TODO [rst]: Because of bug 348045, we cannot add the entire platform repository to the
                     target platform, try target definitions instead.
         -->
-      <url>http://build.eclipse.org/rt/rap/base-platforms/3.0/RC1/runtime-base</url>
+      <url>http://build.eclipse.org/rt/rap/base-platforms/3.1/M0/runtime-base</url>
     </repository>
     <repository>
       <id>extra-dependencies-repository</id>
       <layout>p2</layout>
-      <url>http://build.eclipse.org/rt/rap/base-platforms/3.0/extra-dependencies</url>
+      <url>http://build.eclipse.org/rt/rap/base-platforms/3.1/extra-dependencies</url>
     </repository>
     <repository>
       <id>license-feature</id>
@@ -150,7 +150,7 @@
         </executions>
       </plugin>
 
-      <!-- ensure Java 1.5 class library compatibility -->
+      <!-- ensure Java 1.7 class library compatibility -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
@@ -158,13 +158,13 @@
         <configuration>
           <signature>
             <groupId>org.codehaus.mojo.signature</groupId>
-            <artifactId>java15</artifactId>
+            <artifactId>java17</artifactId>
             <version>1.0</version>
           </signature>
         </configuration>
         <executions>
           <execution>
-            <id>ensure-java-1.5-class-library</id>
+            <id>ensure-java-1.7-class-library</id>
             <phase>test</phase>
             <goals>
               <goal>check</goal>

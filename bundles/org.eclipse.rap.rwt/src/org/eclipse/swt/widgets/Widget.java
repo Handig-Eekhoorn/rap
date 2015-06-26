@@ -75,6 +75,8 @@ import org.eclipse.swt.internal.widgets.WidgetGraphicsAdapter;
 @SuppressWarnings( "deprecation" )
 public abstract class Widget implements Adaptable, SerializableCompatibility {
 
+  private static final Listener[] EMPTY_LISTENERS = new Listener[ 0 ];
+
   /* Default size for widgets */
   static final int DEFAULT_WIDTH = 64;
   static final int DEFAULT_HEIGHT = 64;
@@ -342,6 +344,9 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
     checkWidget();
     if( key == null ) {
       error( SWT.ERROR_NULL_ARGUMENT );
+    }
+    if( RWT.CUSTOM_VARIANT.equals( key ) && value != null ) {
+      checkCustomVariant( value );
     }
     int index = 1;
     Object[] table = null;
@@ -652,13 +657,7 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
    */
   public Listener[] getListeners( int eventType ) {
     checkWidget();
-    Listener[] result;
-    if( eventTable == null ) {
-      result = new Listener[ 0 ];
-    } else {
-      result = eventTable.getListeners( eventType );
-    }
-    return result;
+    return eventTable == null ? EMPTY_LISTENERS : eventTable.getListeners( eventType );
   }
 
   /**
@@ -760,6 +759,7 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
     }
   }
 
+  @SuppressWarnings( "unused" )
   void reskinChildren( int flags ) {
   }
 
@@ -1033,6 +1033,48 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
 
   void error( int code ) {
     SWT.error( code );
+  }
+
+  private static void checkCustomVariant( Object value ) {
+    if( !( value instanceof String ) ) {
+      throw new IllegalArgumentException( "Custom variant is not a string" );
+    }
+    if( !validateVariantString( ( String )value ) ) {
+      throw new IllegalArgumentException( "Invalid custom variant: " + value );
+    }
+  }
+
+  private static boolean validateVariantString( String variant ) {
+    int start = 0;
+    int length = variant.length();
+    if( variant.startsWith( "-" ) ) {
+      start++ ;
+    }
+    if( length == 0 ) {
+      return false;
+    }
+    if( !isValidStart( variant.charAt( start ) ) ) {
+      return false;
+    }
+    for( int i = start + 1; i < length; i++ ) {
+      if( !isValidPart( variant.charAt( i ) ) ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static boolean isValidStart( char ch ) {
+    return ch == '_'
+      || ( ch >= 'a' && ch <= 'z' )
+      || ( ch >= 'A' && ch <= 'Z' )
+      || ( ch >= 128 && ch <= 255 );
+  }
+
+  private static boolean isValidPart( char ch ) {
+    return isValidStart( ch )
+      || ( ch >= '0' && ch <= '9' )
+      || ch == '-';
   }
 
 }

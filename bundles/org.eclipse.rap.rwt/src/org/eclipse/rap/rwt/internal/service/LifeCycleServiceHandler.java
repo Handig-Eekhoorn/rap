@@ -15,9 +15,6 @@ import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
 import static javax.servlet.http.HttpServletResponse.SC_PRECONDITION_FAILED;
 import static org.eclipse.rap.rwt.internal.protocol.ClientMessageConst.REQUEST_COUNTER;
 import static org.eclipse.rap.rwt.internal.protocol.ClientMessageConst.SHUTDOWN;
-import static org.eclipse.rap.rwt.internal.protocol.ProtocolUtil.isInitialRequest;
-import static org.eclipse.rap.rwt.internal.service.ContextProvider.getContext;
-import static org.eclipse.rap.rwt.internal.service.ContextProvider.getServiceStore;
 import static org.eclipse.rap.rwt.internal.service.ContextProvider.getUISession;
 import static org.eclipse.rap.rwt.internal.util.HTTP.CHARSET_UTF_8;
 import static org.eclipse.rap.rwt.internal.util.HTTP.CONTENT_TYPE_JSON;
@@ -35,7 +32,6 @@ import org.eclipse.rap.json.JsonValue;
 import org.eclipse.rap.rwt.internal.lifecycle.RequestCounter;
 import org.eclipse.rap.rwt.internal.protocol.ClientMessage;
 import org.eclipse.rap.rwt.internal.protocol.ProtocolMessageWriter;
-import org.eclipse.rap.rwt.internal.protocol.ProtocolUtil;
 import org.eclipse.rap.rwt.internal.protocol.RequestMessage;
 import org.eclipse.rap.rwt.internal.protocol.ResponseMessage;
 import org.eclipse.rap.rwt.internal.remote.MessageChainReference;
@@ -48,8 +44,6 @@ public class LifeCycleServiceHandler implements ServiceHandler {
   private static final String PROP_ERROR = "error";
   private static final String ATTR_LAST_RESPONSE_MESSAGE
     = LifeCycleServiceHandler.class.getName() + "#lastResponseMessage";
-  private static final String ATTR_SESSION_STARTED
-    = LifeCycleServiceHandler.class.getName() + "#isSessionStarted";
 
   private final MessageChainReference messageChainReference;
 
@@ -57,14 +51,20 @@ public class LifeCycleServiceHandler implements ServiceHandler {
     this.messageChainReference = messageChainReference;
   }
 
+  @Override
   public void service( HttpServletRequest request, HttpServletResponse response )
     throws IOException
   {
-    // Do not use session store itself as a lock
-    // see bug https://bugs.eclipse.org/bugs/show_bug.cgi?id=372946
     UISessionImpl uiSession = ( UISessionImpl )getUISession();
-    synchronized( uiSession.getRequestLock() ) {
-      synchronizedService( request, response );
+    if( uiSession == null ) {
+      setJsonResponseHeaders( response );
+      writeSessionTimeoutError( response );
+    } else {
+      // Do not use uiSession itself as a lock
+      // see bug https://bugs.eclipse.org/bugs/show_bug.cgi?id=372946
+      synchronized( uiSession.getRequestLock() ) {
+        synchronizedService( request, response );
+      }
     }
   }
 
@@ -90,8 +90,6 @@ public class LifeCycleServiceHandler implements ServiceHandler {
     if( isSessionShutdown( requestMessage ) ) {
       shutdownUISession();
       writeEmptyMessage( response );
-    } else if( isSessionTimeout( requestMessage ) ) {
-      writeSessionTimeoutError( response );
     } else if( !isRequestCounterValid( requestMessage ) ) {
       if( isDuplicateRequest( requestMessage ) ) {
         writeBufferedResponse( response );
@@ -99,18 +97,13 @@ public class LifeCycleServiceHandler implements ServiceHandler {
         writeInvalidRequestCounterError( response );
       }
     } else {
-      if( isSessionRestart( requestMessage ) ) {
-        reinitializeUISession( request );
-        reinitializeServiceStore();
-      }
       ResponseMessage responseMessage = processMessage( requestMessage );
       writeResponseMessage( responseMessage, response );
       RequestCounter.getInstance().nextRequestId();
-      markSessionStarted();
     }
   }
 
-  private RequestMessage readRequestMessage( HttpServletRequest request ) {
+  private static RequestMessage readRequestMessage( HttpServletRequest request ) {
     try {
       return new ClientMessage( JsonObject.readFrom( getReader( request ) ) );
     } catch( IOException ioe ) {
@@ -141,7 +134,7 @@ public class LifeCycleServiceHandler implements ServiceHandler {
     if( sentRequestId == null ) {
       return false;
     }
-    return sentRequestId.asInt() == 0 || sentRequestId.asInt() == expectedRequestId;
+    return sentRequestId.asInt() == expectedRequestId;
   }
 
   private static boolean isDuplicateRequest( RequestMessage requestMessage ) {
@@ -173,41 +166,6 @@ public class LifeCycleServiceHandler implements ServiceHandler {
     ProtocolMessageWriter writer = new ProtocolMessageWriter();
     writer.appendHead( PROP_ERROR, JsonValue.valueOf( errorType ) );
     writer.createMessage().toJson().writeTo( response.getWriter() );
-  }
-
-  private static void reinitializeUISession( HttpServletRequest request ) {
-    ServiceContext serviceContext = getContext();
-    UISessionImpl uiSession = ( UISessionImpl )getUISession();
-    uiSession.shutdown();
-    UISessionBuilder builder = new UISessionBuilder( serviceContext );
-    uiSession = builder.buildUISession();
-    serviceContext.setUISession( uiSession );
-  }
-
-  private static void reinitializeServiceStore() {
-    ClientMessage clientMessage = ProtocolUtil.getClientMessage();
-    getServiceStore().clear();
-    ProtocolUtil.setClientMessage( clientMessage );
-  }
-
-  /*
-   * Session restart: we're in the same HttpSession and start over (e.g. by pressing F5)
-   */
-  private static boolean isSessionRestart( RequestMessage requestMessage ) {
-    return isSessionStarted() && isInitialRequest( requestMessage );
-  }
-
-  private static boolean isSessionTimeout( RequestMessage requestMessage ) {
-    // Session is not initialized because we got a new HTTPSession
-    return !isSessionStarted() && !isInitialRequest( requestMessage );
-  }
-
-  static void markSessionStarted() {
-    getUISession().setAttribute( ATTR_SESSION_STARTED, Boolean.TRUE );
-  }
-
-  private static boolean isSessionStarted() {
-    return Boolean.TRUE.equals( getUISession().getAttribute( ATTR_SESSION_STARTED ) );
   }
 
   private static boolean isSessionShutdown( RequestMessage requestMessage ) {

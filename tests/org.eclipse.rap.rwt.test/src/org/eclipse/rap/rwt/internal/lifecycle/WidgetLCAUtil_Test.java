@@ -34,15 +34,14 @@ import org.eclipse.rap.rwt.scripting.ClientListener;
 import org.eclipse.rap.rwt.testfixture.internal.Fixture;
 import org.eclipse.rap.rwt.testfixture.internal.TestMessage;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.HelpListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.internal.widgets.IWidgetGraphicsAdapter;
 import org.eclipse.swt.internal.widgets.Props;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.List;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
@@ -286,34 +285,55 @@ public class WidgetLCAUtil_Test {
   }
 
   @Test
-  public void testRenderInitialCustomVariant() {
+  public void testRenderCustomVariant_initial() {
     WidgetLCAUtil.renderCustomVariant( widget );
 
-    TestMessage message = getProtocolMessage();
-    assertNull( message.findSetOperation( widget, "customVariant" ) );
+    assertNull( getProtocolMessage().findSetOperation( widget, "customVariant" ) );
   }
 
   @Test
-  public void testRenderCustomVariant() {
-    widget.setData( RWT.CUSTOM_VARIANT, "my_variant" );
+  public void testRenderCustomVariant_initiallySet() {
+    widget.setData( RWT.CUSTOM_VARIANT, "foo" );
+
     WidgetLCAUtil.renderCustomVariant( widget );
 
-    TestMessage message = getProtocolMessage();
-    assertEquals( "variant_my_variant",
-                  message.findSetProperty( widget, "customVariant" ).asString() );
+    assertEquals( "variant_foo",
+                  getProtocolMessage().findSetProperty( widget, "customVariant" ).asString() );
   }
 
   @Test
-  public void testRenderCustomVariantUnchanged() {
-    Fixture.markInitialized( display );
+  public void testRenderCustomVariant_changed() {
     Fixture.markInitialized( widget );
-    widget.setData( RWT.CUSTOM_VARIANT, "my_variant" );
 
-    Fixture.preserveWidgets();
+    WidgetLCAUtil.preserveCustomVariant( widget );
+    widget.setData( RWT.CUSTOM_VARIANT, "foo" );
     WidgetLCAUtil.renderCustomVariant( widget );
 
-    TestMessage message = getProtocolMessage();
-    assertNull( message.findSetOperation( widget, "customVariant" ) );
+    assertEquals( "variant_foo",
+                  getProtocolMessage().findSetProperty( widget, "customVariant" ).asString() );
+  }
+
+  @Test
+  public void testRenderCustomVariant_reset() {
+    Fixture.markInitialized( widget );
+    widget.setData( RWT.CUSTOM_VARIANT, "foo" );
+
+    WidgetLCAUtil.preserveCustomVariant( widget );
+    widget.setData( RWT.CUSTOM_VARIANT, null );
+    WidgetLCAUtil.renderCustomVariant( widget );
+
+    assertEquals( JsonValue.NULL, getProtocolMessage().findSetProperty( widget, "customVariant" ) );
+  }
+
+  @Test
+  public void testRenderCustomVariant_unchanged() {
+    Fixture.markInitialized( widget );
+    widget.setData( RWT.CUSTOM_VARIANT, "foo" );
+
+    WidgetLCAUtil.preserveCustomVariant( widget );
+    WidgetLCAUtil.renderCustomVariant( widget );
+
+    assertNull( getProtocolMessage().findSetOperation( widget, "customVariant" ) );
   }
 
   @Test
@@ -325,43 +345,45 @@ public class WidgetLCAUtil_Test {
   }
 
   @Test
-  public void testRenderListenHelp() {
-    Control widget = new Button( shell, SWT.PUSH );
-    widget.addHelpListener( mock( HelpListener.class ) );
+  public void testRenderListenHelp_initial() {
     WidgetLCAUtil.renderListenHelp( widget );
 
-    TestMessage message = getProtocolMessage();
-    assertEquals( JsonValue.TRUE, message.findListenProperty( widget, "Help" ) );
+    assertNull( getProtocolMessage().findListenOperation( widget, "Help" ) );
   }
 
   @Test
-  public void testRenderListenHelpUnchanged() {
-    Control widget = new Button( shell, SWT.PUSH );
-    Fixture.markInitialized( display );
+  public void testRenderListenHelp_added() {
     Fixture.markInitialized( widget );
-    widget.addHelpListener( mock( HelpListener.class ) );
 
-    Fixture.preserveWidgets();
+    WidgetLCAUtil.preserveListenHelp( widget );
+    widget.addListener( SWT.Help, mock( Listener.class ) );
     WidgetLCAUtil.renderListenHelp( widget );
 
-    TestMessage message = getProtocolMessage();
-    assertNull( message.findListenOperation( widget, "Help" ) );
+    assertEquals( JsonValue.TRUE, getProtocolMessage().findListenProperty( widget, "Help" ) );
   }
 
   @Test
-  public void testRenderListenHelpRemoved() {
-    Control widget = new Button( shell, SWT.PUSH );
-    HelpListener listener = mock( HelpListener.class );
-    Fixture.markInitialized( display );
+  public void testRenderListenHelp_unchanged() {
     Fixture.markInitialized( widget );
-    widget.addHelpListener( listener );
-    Fixture.preserveWidgets();
+    widget.addListener( SWT.Help, mock( Listener.class ) );
 
-    widget.removeHelpListener( listener );
+    WidgetLCAUtil.preserveListenHelp( widget );
     WidgetLCAUtil.renderListenHelp( widget );
 
-    TestMessage message = getProtocolMessage();
-    assertEquals( JsonValue.FALSE, message.findListenProperty( widget, "Help" ) );
+    assertNull( getProtocolMessage().findListenOperation( widget, "Help" ) );
+  }
+
+  @Test
+  public void testRenderListenHelp_removed() {
+    Fixture.markInitialized( widget );
+    Listener listener = mock( Listener.class );
+    widget.addListener( SWT.Help, listener );
+
+    WidgetLCAUtil.preserveListenHelp( widget );
+    widget.removeListener( SWT.Help, listener );
+    WidgetLCAUtil.renderListenHelp( widget );
+
+    assertEquals( JsonValue.FALSE, getProtocolMessage().findListenProperty( widget, "Help" ) );
   }
 
   @Test
@@ -539,69 +561,88 @@ public class WidgetLCAUtil_Test {
   }
 
   @Test
-  public void testRenderInitialData() {
+  public void testRenderData_initial() {
     WidgetLCAUtil.renderData( widget );
 
-    TestMessage message = getProtocolMessage();
-    assertEquals( 0, message.getOperationCount() );
+    assertNull( getProtocolMessage().findSetOperation( widget, "data" ) );
   }
 
   @Test
-  public void testRenderData() {
-    registerDataKeys( new String[]{ "foo", "bar" } );
+  public void testRenderData_set() {
+    registerDataKeys( "foo", "bar" );
     widget.setData( "foo", "string" );
     widget.setData( "bar", Integer.valueOf( 1 ) );
 
     WidgetLCAUtil.renderData( widget );
 
-    TestMessage message = getProtocolMessage();
-    JsonObject data = ( JsonObject )message.findSetProperty( widget, "data" );
-    assertEquals( "string", data.get( "foo" ).asString() );
-    assertEquals( 1, data.get( "bar" ).asInt() );
+    JsonObject expected = new JsonObject().add( "foo", "string" ).add( "bar", 1 );
+    assertEquals( expected, getProtocolMessage().findSetProperty( widget, "data" ) );
   }
 
   @Test
-  public void testRenderDataWithoutDataWhiteListService() {
+  public void testRenderData_setWithoutDataWhiteListService() {
     widget.setData( "foo", "string" );
 
     WidgetLCAUtil.renderData( widget );
 
-    TestMessage message = getProtocolMessage();
-    assertEquals( 0, message.getOperationCount() );
+    assertNull( getProtocolMessage().findSetOperation( widget, "data" ) );
   }
 
   @Test
-  public void testRenderData_MissingData() {
-    registerDataKeys( new String[]{ "missing" } );
+  public void testRenderData_missingData() {
+    registerDataKeys( "missing" );
 
     WidgetLCAUtil.renderData( widget );
 
-    TestMessage message = getProtocolMessage();
-    assertEquals( 0, message.getOperationCount() );
+    assertNull( getProtocolMessage().findSetOperation( widget, "data" ) );
   }
 
   @Test
-  public void testRenderData_NullKey() {
-    registerDataKeys( new String[]{ null } );
+  public void testRenderData_withNullKey() {
+    registerDataKeys( ( String )null );
 
     WidgetLCAUtil.renderData( widget );
 
-    TestMessage message = getProtocolMessage();
-    assertEquals( 0, message.getOperationCount() );
+    assertNull( getProtocolMessage().findSetOperation( widget, "data" ) );
   }
 
   @Test
-  public void testRenderDataUnchanged() {
-    registerDataKeys( new String[]{ "foo" } );
+  public void testRenderData_changed() {
+    registerDataKeys( "foo" );
     widget.setData( "foo", "string" );
-    Fixture.markInitialized( display );
     Fixture.markInitialized( widget );
 
-    Fixture.preserveWidgets();
+    WidgetLCAUtil.preserveData( widget );
+    widget.setData( "foo", "another string" );
     WidgetLCAUtil.renderData( widget );
 
-    TestMessage message = getProtocolMessage();
-    assertEquals( 0, message.getOperationCount() );
+    JsonObject expected = new JsonObject().add( "foo", "another string" );
+    assertEquals( expected, getProtocolMessage().findSetProperty( widget, "data" ) );
+  }
+
+  @Test
+  public void testRenderData_unchanged() {
+    registerDataKeys( "foo" );
+    widget.setData( "foo", "string" );
+    Fixture.markInitialized( widget );
+
+    WidgetLCAUtil.preserveData( widget );
+    WidgetLCAUtil.renderData( widget );
+
+    assertNull( getProtocolMessage().findSetOperation( widget, "data" ) );
+  }
+
+  @Test
+  public void testRenderData_reset() {
+    registerDataKeys( "foo" );
+    widget.setData( "foo", "string" );
+    Fixture.markInitialized( widget );
+
+    WidgetLCAUtil.preserveData( widget );
+    widget.setData( "foo", null );
+    WidgetLCAUtil.renderData( widget );
+
+    assertEquals( new JsonObject(), getProtocolMessage().findSetProperty( widget, "data" ) );
   }
 
   @Test
