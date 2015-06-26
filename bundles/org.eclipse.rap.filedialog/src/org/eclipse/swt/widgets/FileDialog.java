@@ -207,7 +207,6 @@ public class FileDialog extends Dialog {
       handleFileDrop( clientFiles );
     }
 
-
     runEventLoop( shell );
     return returnCode == SWT.OK ? getFileName() : null;
   }
