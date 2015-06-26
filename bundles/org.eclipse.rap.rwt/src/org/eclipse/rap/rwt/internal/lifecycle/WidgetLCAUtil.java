@@ -13,6 +13,7 @@ package org.eclipse.rap.rwt.internal.lifecycle;
 
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getAdapter;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
+import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getVariant;
 import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
 import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonValue;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
@@ -65,9 +66,11 @@ public final class WidgetLCAUtil {
   private static final String PROP_ROUNDED_BORDER_COLOR = "roundedBorderColor";
   private static final String PROP_ROUNDED_BORDER_RADIUS = "roundedBorderRadius";
   private static final String PROP_ENABLED = "enabled";
-  private static final String PROP_VARIANT = "variant";
   private static final String PROP_DATA = "data";
+  private static final String PROP_VARIANT = "customVariant";
   private static final String PROP_HELP_LISTENER = "Help";
+  private static final String PROP_SELECTION_LISTENER = "Selection";
+  private static final String PROP_DEFAULT_SELECTION_LISTENER = "DefaultSelection";
 
   private static final Rectangle DEF_ROUNDED_BORDER_RADIUS = new Rectangle( 0, 0, 0, 0 );
 
@@ -135,17 +138,28 @@ public final class WidgetLCAUtil {
     }
   }
 
-  public static void preserveCustomVariant( Widget widget ) {
-    String variant = WidgetUtil.getVariant( widget );
-    getAdapter( widget ).preserve( PROP_VARIANT, variant );
-  }
-
   public static void preserveData( Widget widget ) {
-    preserveProperty( widget, PROP_DATA, getDataAsArray( widget ) );
+    getRemoteAdapter( widget ).preserveData( getData( widget ) );
   }
 
-  public static void preserveHelpListener( Widget widget ) {
-    preserveListener( widget, PROP_HELP_LISTENER, isListening( widget, SWT.Help ) );
+  public static void renderData( Widget widget ) {
+    Object[] actual = getData( widget );
+    Object[] preserved = getRemoteAdapter( widget ).getPreservedData();
+    if( changed( widget, actual, preserved, null ) ) {
+      getRemoteObject( widget ).set( PROP_DATA, getJsonForData( actual ) );
+    }
+  }
+
+  public static void preserveCustomVariant( Widget widget ) {
+    getRemoteAdapter( widget ).preserveVariant( getVariant( widget ) );
+  }
+
+  public static void renderCustomVariant( Widget widget ) {
+    String actual = getVariant( widget );
+    String preserved = getRemoteAdapter( widget ).getPreservedVariant();
+    if( changed( widget, actual, preserved, null ) ) {
+      getRemoteObject( widget ).set( PROP_VARIANT, actual == null ? null : "variant_" + actual );
+    }
   }
 
   public static void renderBounds( Widget widget, Rectangle bounds ) {
@@ -154,45 +168,6 @@ public final class WidgetLCAUtil {
 
   public static void renderEnabled( Widget widget, boolean enabled ) {
     renderProperty( widget, Props.ENABLED, enabled, true );
-  }
-
-  public static void renderCustomVariant( Widget widget ) {
-    String newValue = WidgetUtil.getVariant( widget );
-    if( hasChanged( widget, PROP_VARIANT, newValue, null ) ) {
-      String value = null;
-      if( newValue != null ) {
-        value = "variant_" + newValue;
-      }
-      getRemoteObject( widget ).set( "customVariant", value );
-    }
-  }
-
-  @SuppressWarnings( "deprecation" )
-  public static void renderData( Widget widget ) {
-    Object[] newValue = getDataAsArray( widget );
-    if( hasChanged( widget, PROP_DATA, newValue, new Object[ 0 ] ) ) {
-      JsonObject data = new JsonObject();
-      for( int i = 0; i < newValue.length; i++ ) {
-        data.add( (String)newValue[ i ], createJsonValue( newValue[ ++i ] ) );
-      }
-      getRemoteObject( widget ).set( PROP_DATA, data );
-    }
-  }
-
-  private static Object[] getDataAsArray( Widget widget ) {
-    List<Object> result = new ArrayList<>();
-    for( String key : WidgetDataUtil.getDataKeys() ) {
-      Object value = widget.getData( key );
-      if( value != null ) {
-        result.add( key );
-        result.add( value );
-      }
-    }
-    return result.toArray();
-  }
-
-  public static void renderListenHelp( Widget widget ) {
-    renderListener( widget, PROP_HELP_LISTENER, isListening( widget, SWT.Help ), false );
   }
 
   public static void renderMenu( Widget widget, Menu menu ) {
@@ -345,10 +320,6 @@ public final class WidgetLCAUtil {
 
   public static void preserveProperty( Widget widget, String property, boolean value ) {
     preserveProperty( widget, property, Boolean.valueOf( value ) );
-  }
-
-  public static void preserveListener( Widget widget, String listener, boolean value ) {
-    getAdapter( widget ).preserve( listener, Boolean.valueOf( value ) );
   }
 
   public static void renderProperty( Widget widget,
@@ -522,6 +493,34 @@ public final class WidgetLCAUtil {
     }
   }
 
+  public static void preserveListenHelp( Widget widget ) {
+    preserveListener( widget, SWT.Help );
+  }
+
+  public static void renderListenHelp( Widget widget ) {
+    renderListener( widget, SWT.Help, PROP_HELP_LISTENER );
+  }
+
+  public static void preserveListenSelection( Widget widget ) {
+    preserveListener( widget, SWT.Selection );
+  }
+
+  public static void renderListenSelection( Widget widget ) {
+    renderListener( widget, SWT.Selection, PROP_SELECTION_LISTENER );
+  }
+
+  public static void preserveListenDefaultSelection( Widget widget ) {
+    preserveListener( widget, SWT.DefaultSelection );
+  }
+
+  public static void renderListenDefaultSelection( Widget widget ) {
+    renderListener( widget, SWT.DefaultSelection, PROP_DEFAULT_SELECTION_LISTENER );
+  }
+
+  public static void preserveListener( Widget widget, String listener, boolean value ) {
+    getAdapter( widget ).preserve( listener, Boolean.valueOf( value ) );
+  }
+
   public static void renderListener( Widget widget,
                                      String listener,
                                      boolean newValue,
@@ -535,16 +534,28 @@ public final class WidgetLCAUtil {
   }
 
   public static void preserveListener( Widget widget, int eventType ) {
+    boolean listening = isListening( widget, eventType );
+    preserveListener( widget, eventType, listening );
+  }
+
+  public static void preserveListener( Widget widget, int eventType, boolean isListening ) {
     WidgetRemoteAdapter adapter = ( WidgetRemoteAdapter )getAdapter( widget );
-    adapter.preserveListener( eventType, isListening( widget, eventType ) );
+    adapter.preserveListener( eventType, isListening );
   }
 
   public static void renderListener( Widget widget, int eventType, String eventName ) {
+    renderListener( widget, eventType, eventName, isListening( widget, eventType ) );
+  }
+
+  public static void renderListener( Widget widget,
+                                     int eventType,
+                                     String eventName,
+                                     boolean isListening )
+  {
     WidgetRemoteAdapter adapter = ( WidgetRemoteAdapter )getAdapter( widget );
-    boolean actualValue = isListening( widget, eventType );
-    boolean preservedValue = adapter.getPreservedListener( eventType );
-    if( changed( widget, actualValue, preservedValue, false ) ) {
-      getRemoteObject( widget ).listen( eventName, actualValue );
+    boolean preserved = adapter.getPreservedListener( eventType );
+    if( changed( widget, isListening, preserved, false ) ) {
+      getRemoteObject( widget ).listen( eventName, isListening );
     }
   }
 
@@ -637,6 +648,36 @@ public final class WidgetLCAUtil {
       result = object1.equals( object2 );
     }
     return result;
+  }
+
+  private static Object[] getData( Widget widget ) {
+    List<Object> result = null;
+    for( String key : WidgetDataUtil.getDataKeys() ) {
+      Object value = widget.getData( key );
+      if( value != null ) {
+        if( result == null ) {
+          result = new ArrayList<>();
+        }
+        result.add( key );
+        result.add( value );
+      }
+    }
+    return result == null ? null : result.toArray();
+  }
+
+  @SuppressWarnings( "deprecation" )
+  private static JsonObject getJsonForData( Object[] data ) {
+    JsonObject jsonObject = new JsonObject();
+    if( data != null ) {
+      for( int i = 0; i < data.length; i++ ) {
+        jsonObject.add( (String)data[ i ], createJsonValue( data[ ++i ] ) );
+      }
+    }
+    return jsonObject;
+  }
+
+  private static WidgetRemoteAdapter getRemoteAdapter( Widget widget ) {
+    return ( WidgetRemoteAdapter )widget.getAdapter( RemoteAdapter.class );
   }
 
 }

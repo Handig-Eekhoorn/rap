@@ -30,7 +30,8 @@ public class WidgetRemoteAdapter implements RemoteAdapter, SerializableCompatibi
   private transient Map<String, Object> preservedValues;
   private transient long preservedListeners;
   private transient Runnable[] renderRunnables;
-  private transient String cachedVariant;
+  private transient Object[] data;
+  private transient String variant;
 
   public WidgetRemoteAdapter( String id ) {
     this.id = id;
@@ -87,9 +88,27 @@ public class WidgetRemoteAdapter implements RemoteAdapter, SerializableCompatibi
     return ( preservedListeners & getEventMask( eventType ) ) != 0;
   }
 
+  public void preserveData( Object[] data ) {
+    this.data = data;
+  }
+
+  public Object[] getPreservedData() {
+    return data;
+  }
+
+  public void preserveVariant( String variant ) {
+    this.variant = variant;
+  }
+
+  public String getPreservedVariant() {
+    return variant;
+  }
+
   public void clearPreserved() {
     preservedValues.clear();
     preservedListeners = 0;
+    data = null;
+    variant = null;
   }
 
   public void addRenderRunnable( Runnable renderRunnable ) {
@@ -109,14 +128,6 @@ public class WidgetRemoteAdapter implements RemoteAdapter, SerializableCompatibi
 
   public void clearRenderRunnables() {
     renderRunnables = null;
-  }
-
-  public String getCachedVariant() {
-    return cachedVariant;
-  }
-
-  public void setCachedVariant( String cachedVariant ) {
-    this.cachedVariant = cachedVariant;
   }
 
   @Override

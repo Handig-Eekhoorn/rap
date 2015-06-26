@@ -60,8 +60,7 @@ public class Text extends Scrollable {
 
   private static final Size ZERO = new Size( 0, 0 );
 
-  // This factor must be kept in sync with TextUtil.js#_updateLineHeight
-  private static final double LINE_HEIGHT_FACTOR = 1.2;
+  static final double LINE_HEIGHT_FACTOR = 1.4;
 
   /**
    * The maximum number of characters that can be entered
@@ -837,11 +836,6 @@ public class Text extends Scrollable {
     if( hHint != SWT.DEFAULT ) {
       height = hHint;
     }
-    // TODO [rst] Workaround for two missing pixels (Ö, p are cut off), revise
-    // TODO [if] Move to fragment. These two pixels are hard-coded in qooxdoo
-    // TextField.js to emulate IE hard-coded margin.
-    // See also: https://bugzilla.mozilla.org/show_bug.cgi?id=73817
-    height += 2;
     // [rh] Fix for bug 306354: take into account that there is now 1px
     // right padding on the client side (see Text.js#_applyElement)
     width += 1;

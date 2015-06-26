@@ -98,7 +98,7 @@ public final class RWT {
   @SuppressWarnings("javadoc")
   public static final class NLS {
 
-    private final static Map<ResourceBundle,Object> map = new HashMap<ResourceBundle, Object>();
+    private final static Map<ResourceBundle,Object> map = new HashMap<>();
 
     /**
      * Returns a NLS object for the given resource bundle and type. See
@@ -377,6 +377,7 @@ public final class RWT {
    * <ul>
    * <li><code>Table</code></li>
    * <li><code>Tree</code></li>
+   * <li><code>Grid</code></li>
    * <li><code>List</code></li>
    * <li><code>Label</code></li>
    * <li><code>CLabel</code></li>
@@ -417,6 +418,7 @@ public final class RWT {
    * <b>Used By:</b>
    * <ul>
    * <li><code>Table</code></li>
+   * <li><code>Tree</code></li>
    * </ul>
    * </p>
    *

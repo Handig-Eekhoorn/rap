@@ -637,23 +637,6 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.TextTest", {
       assertEquals( 0, logger.getLog().length );
     },
 
-    testSetFontLineHeight : function() {
-      createText();
-
-      text.setFont( new Font( 10 ) );
-
-      assertEquals( 12, parseInt( text.getInputElement().style.lineHeight, 10 ) );
-    },
-
-    testSetFontBeforeCreateLineHeight : function() {
-      createText( true );
-
-      text.setFont( new Font( 10 ) );
-      TestUtil.flush();
-
-      assertEquals( 12, parseInt( text.getInputElement().style.lineHeight, 10 ) );
-    },
-
     testLiveUpdate : function() {
       createText();
       var log = [];
@@ -967,16 +950,15 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.TextTest", {
       } );
       TestUtil.flush();
 
-      var style = text._getTargetNode().firstChild.style;
-      assertEquals( "10px", style.fontSize );
-      assertEquals( "red", style.color );
+      var label = text._getTargetNode().firstChild;
+      assertEquals( "10px", label.style.fontSize );
+      assertEquals( "red", label.style.color );
       if( !Client.isTrident() ) {
-        assertTrue( style.textShadow.indexOf( "3px" ) != -1 );
+        assertTrue( label.style.textShadow.indexOf( "3px" ) != -1 );
       }
-      assertEquals( "3px", style.left );
-      assertEquals( "93px", style.width );
-      assertEquals( "9px", style.top );
-      assertEquals( "12px", style.height );
+      assertEquals( 3, label.offsetLeft );
+      assertEquals( 93, label.offsetWidth );
+      assertEquals( 9, label.offsetTop );
     },
 
     testMessageLabelResize : function() {
@@ -1413,9 +1395,9 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.TextTest", {
       text.setHeight( 100 );
       TestUtil.flush();
 
-      var textHeight= text.getInputElement().offsetHeight;
-      var expected = Math.floor( 100 / 2 - textHeight / 2 - 1 );
-      assertEquals( expected, parseInt( text.getElement().style.paddingTop, 10 ) );
+      var textHeight = text.getInputElement().offsetHeight;
+      var expected = Math.floor( 100 / 2 - textHeight / 2 );
+      assertEquals( expected, parseInt( text.getInputElement().style.top, 10 ) );
       if( Client.isTrident() ) {
         assertEquals( "top", text._inputElement.style.verticalAlign );
       } else {
