@@ -142,13 +142,14 @@ public class FileDialog extends Dialog {
   }
 
   /**
-   * Constructs a new instance of this class given only its parent.
+   * Constructs a new instance of this class given its parent and a ClientFile[] array of file
+   * uploads to perform.
    *
    * @param parent a shell which will be the parent of the new instance
-   * @param clientFiles an array of ClientFile object. When {@link #open()}ing the dialog,
+   * @param clientFiles an array of ClientFile objects. When {@link #open()}ing the dialog,
    *  the upload of these files will immediately begin.
    *  Usage example: the user drops files on any composite widget. The registered drop listener
-   *  detectes a {@link ClientFileTransfer} and hands off the files to the file dialog to
+   *  detects a {@link ClientFileTransfer} and hands off the files to the file dialog to
    *  actually perform the requested upload.
    * @exception IllegalArgumentException <ul>
    *              <li>ERROR_NULL_ARGUMENT - if the parent is null</li>
@@ -209,7 +210,6 @@ public class FileDialog extends Dialog {
 
     runEventLoop( shell );
     return returnCode == SWT.OK ? getFileName() : null;
-
   }
 
   @Override
