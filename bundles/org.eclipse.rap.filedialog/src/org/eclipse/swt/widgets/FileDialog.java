@@ -90,6 +90,7 @@ public class FileDialog extends Dialog {
   private Label spacer;
   private UploadPanel placeHolder;
   private ProgressCollector progressCollector;
+  private ClientFile[] clientFiles;
 
   /**
    * Constructs a new instance of this class given only its parent.
@@ -141,6 +142,30 @@ public class FileDialog extends Dialog {
   }
 
   /**
+   * Constructs a new instance of this class given only its parent.
+   *
+   * @param parent a shell which will be the parent of the new instance
+   * @param clientFiles an array of ClientFile object. When {@link #open()}ing the dialog,
+   *  the upload of these files will immediately begin.
+   *  Usage example: the user drops files on any composite widget. The registered drop listener
+   *  detectes a {@link ClientFileTransfer} and hands off the files to the file dialog to
+   *  actually perform the requested upload.
+   * @exception IllegalArgumentException <ul>
+   *              <li>ERROR_NULL_ARGUMENT - if the parent is null</li>
+   *              </ul>
+   * @exception SWTException <ul>
+   *              <li>ERROR_THREAD_INVALID_ACCESS - if not called from the
+   *              thread that created the parent</li>
+   *              <li>ERROR_INVALID_SUBCLASS - if this class is not an allowed
+   *              subclass</li>
+   *              </ul>
+   */
+  public FileDialog( Shell parent, ClientFile[] clientFiles ) {
+    this(parent, SWT.MULTI);
+    this.clientFiles = clientFiles;
+  }
+
+  /**
    * Returns the path of the first file that was selected in the dialog relative
    * to the filter path, or an empty string if no such file has been selected.
    *
@@ -176,8 +201,15 @@ public class FileDialog extends Dialog {
   public String open() {
     checkOperationMode();
     prepareOpen();
+
+    if (this.clientFiles!=null){
+      handleFileDrop( clientFiles );
+    }
+
+
     runEventLoop( shell );
     return returnCode == SWT.OK ? getFileName() : null;
+
   }
 
   @Override
