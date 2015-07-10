@@ -190,9 +190,10 @@ public class ControlLCAUtil {
       // tabIndex must be a positive value
       computeTabIndices( ( Shell )control, 1 );
     }
+    ControlRemoteAdapter remoteAdapter = getRemoteAdapter( control );
     int actual = getTabIndex( control );
-    int preserved = getRemoteAdapter( control ).getPreservedTabIndex();
-    if( changed( control, actual, preserved, -1 ) ) {
+    int preserved = remoteAdapter.getPreservedTabIndex();
+    if( !remoteAdapter.isInitialized() || actual != preserved ) {
       getRemoteObject( control ).set( PROP_TAB_INDEX, actual );
     }
   }
@@ -476,14 +477,12 @@ public class ControlLCAUtil {
   }
 
   private static String getQxCursor( Cursor newValue ) {
-    String result = null;
     if( newValue != null ) {
       // TODO [rst] Find a better way of obtaining the Cursor value
       // TODO [tb] adjust strings to match name of constants
       int value = 0;
       try {
-        Class cursorClass = Cursor.class;
-        Field field = cursorClass.getDeclaredField( "value" );
+        Field field = Cursor.class.getDeclaredField( "value" );
         field.setAccessible( true );
         value = field.getInt( newValue );
       } catch( Exception e ) {
@@ -491,70 +490,52 @@ public class ControlLCAUtil {
       }
       switch( value ) {
         case SWT.CURSOR_ARROW:
-          result = "default";
-        break;
+          return "default";
         case SWT.CURSOR_WAIT:
-          result = "wait";
-        break;
+          return "wait";
         case SWT.CURSOR_APPSTARTING:
-          result = "progress";
-          break;
+          return "progress";
         case SWT.CURSOR_CROSS:
-          result = "crosshair";
-        break;
+          return "crosshair";
         case SWT.CURSOR_HELP:
-          result = "help";
-        break;
+          return "help";
         case SWT.CURSOR_SIZEALL:
-          result = "move";
-        break;
+          return "move";
         case SWT.CURSOR_SIZENS:
-          result = "row-resize";
-        break;
+          return "row-resize";
         case SWT.CURSOR_SIZEWE:
-          result = "col-resize";
-        break;
+          return "col-resize";
         case SWT.CURSOR_SIZEN:
-          result = "n-resize";
-        break;
+          return "n-resize";
         case SWT.CURSOR_SIZES:
-          result = "s-resize";
-        break;
+          return "s-resize";
         case SWT.CURSOR_SIZEE:
-          result = "e-resize";
-        break;
+          return "e-resize";
         case SWT.CURSOR_SIZEW:
-          result = "w-resize";
-        break;
+          return "w-resize";
         case SWT.CURSOR_SIZENE:
         case SWT.CURSOR_SIZENESW:
-          result = "ne-resize";
-        break;
+          return "ne-resize";
         case SWT.CURSOR_SIZESE:
-          result = "se-resize";
-        break;
+          return "se-resize";
         case SWT.CURSOR_SIZESW:
-          result = "sw-resize";
-        break;
+          return "sw-resize";
         case SWT.CURSOR_SIZENW:
         case SWT.CURSOR_SIZENWSE:
-          result = "nw-resize";
-        break;
+          return "nw-resize";
         case SWT.CURSOR_IBEAM:
-          result = "text";
-        break;
+          return "text";
         case SWT.CURSOR_HAND:
-          result = "pointer";
-        break;
+          return "pointer";
         case SWT.CURSOR_NO:
-          result = "not-allowed";
-        break;
+          return "not-allowed";
         case SWT.CURSOR_UPARROW:
-          result = CURSOR_UPARROW;
-        break;
+          return CURSOR_UPARROW;
+        default:
+          break;
       }
     }
-    return result;
+    return null;
   }
 
   private static boolean hasKeyListener( Control control ) {
