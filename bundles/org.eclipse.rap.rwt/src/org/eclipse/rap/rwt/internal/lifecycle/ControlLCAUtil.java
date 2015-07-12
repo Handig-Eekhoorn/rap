@@ -80,9 +80,7 @@ public class ControlLCAUtil {
   }
 
   public static void preserveValues( Control control ) {
-    preserveParent( control );
     preserveChildren( control );
-    preserveBounds( control );
     preserveTabIndex( control );
     preserveToolTipText( control );
     preserveMenu( control );
@@ -131,17 +129,17 @@ public class ControlLCAUtil {
     renderListenHelp( control );
   }
 
-  private static void preserveParent( Control control ) {
-    Composite parent = control.getParent();
-    if( parent != null ) {
-      getRemoteAdapter( control ).preserveParent( parent );
+  public static void preserveParent( Control control, Composite parent ) {
+    ControlRemoteAdapter adapter = getRemoteAdapter( control );
+    if( !adapter.hasPreservedParent() ) {
+      adapter.preserveParent( parent );
     }
   }
 
   private static void renderParent( Control control ) {
     ControlRemoteAdapter remoteAdapter = getRemoteAdapter( control );
-    Composite actual = control.getParent();
-    if( remoteAdapter.isInitialized() && actual != null ) {
+    if( remoteAdapter.isInitialized() && remoteAdapter.hasPreservedParent() ) {
+      Composite actual = control.getParent();
       Composite preserved = remoteAdapter.getPreservedParent();
       if( changed( control, actual, preserved, null ) ) {
         getRemoteObject( control ).set( PROP_PARENT, getId( actual ) );
@@ -167,16 +165,21 @@ public class ControlLCAUtil {
     }
   }
 
-  private static void preserveBounds( Control control ) {
-    Rectangle bounds = ControlUtil.getControlAdapter( control ).getBounds();
-    getRemoteAdapter( control ).preserveBounds( bounds );
+  public static void preserveBounds( Control control, Rectangle bounds ) {
+    ControlRemoteAdapter adapter = getRemoteAdapter( control );
+    if( !adapter.hasPreservedBounds() ) {
+      adapter.preserveBounds( bounds );
+    }
   }
 
   private static void renderBounds( Control control ) {
-    Rectangle actual = ControlUtil.getControlAdapter( control ).getBounds();
-    Rectangle preserved = getRemoteAdapter( control ).getPreservedBounds();
-    if( changed( control, actual, preserved, null ) ) {
-      getRemoteObject( control ).set( PROP_BOUNDS, toJson( actual ) );
+    ControlRemoteAdapter remoteAdapter = getRemoteAdapter( control );
+    if( !remoteAdapter.isInitialized() || remoteAdapter.hasPreservedBounds() ) {
+      Rectangle actual = ControlUtil.getControlAdapter( control ).getBounds();
+      Rectangle preserved = remoteAdapter.getPreservedBounds();
+      if( changed( control, actual, preserved, null ) ) {
+        getRemoteObject( control ).set( PROP_BOUNDS, toJson( actual ) );
+      }
     }
   }
 

@@ -15,6 +15,7 @@ import static org.eclipse.swt.internal.widgets.MarkupUtil.isToolTipMarkupEnabled
 import static org.eclipse.swt.internal.widgets.MarkupValidator.isValidationDisabledFor;
 
 import org.eclipse.rap.rwt.RWT;
+import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.RemoteAdapter;
 import org.eclipse.rap.rwt.internal.theme.ThemeAdapter;
 import org.eclipse.rap.rwt.theme.BoxDimensions;
@@ -126,7 +127,7 @@ public abstract class Control extends Widget implements Drawable {
   }
 
   private transient IControlAdapter controlAdapter;
-  Composite parent;
+  private Composite parent;
   private int tabIndex;
   private Rectangle bounds;
   private Object layoutData;
@@ -215,6 +216,10 @@ public abstract class Control extends Widget implements Drawable {
    */
   public Composite getParent() {
     checkWidget();
+    return parent;
+  }
+
+  Composite _getParent() {
     return parent;
   }
 
@@ -619,7 +624,7 @@ public abstract class Control extends Widget implements Drawable {
       if (composite == shell) {
         break;
       }
-      composite = composite.parent;
+      composite = composite._getParent();
     } while (true);
   }
 
@@ -2153,6 +2158,7 @@ public abstract class Control extends Widget implements Drawable {
       if( oldShell != newShell || oldDecorations != newDecorations ) {
         fixChildren( newShell, oldShell, newDecorations, oldDecorations );
       }
+      ControlLCAUtil.preserveParent( this, this.parent );
       this.parent = parent;
       ControlHolder.addControl( parent, this );
     }
@@ -2468,6 +2474,7 @@ public abstract class Control extends Widget implements Drawable {
   }
 
   void _setBounds( Rectangle rectangle ) {
+    ControlLCAUtil.preserveBounds( this, bounds );
     bounds = rectangle;
     bounds.width = Math.max( 0, bounds.width );
     bounds.height = Math.max( 0, bounds.height );
