@@ -13,14 +13,7 @@ package org.eclipse.swt.widgets;
 
 import static org.eclipse.rap.rwt.internal.scripting.ClientListenerUtil.getClientListenerOperations;
 import static org.eclipse.rap.rwt.testfixture.internal.ConcurrencyTestUtil.runInThread;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.inOrder;
@@ -48,7 +41,10 @@ import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.HelpListener;
+import org.eclipse.swt.internal.SWTEventListener;
+import org.eclipse.swt.internal.events.EventLCAUtil;
 import org.eclipse.swt.internal.events.EventList;
+import org.eclipse.swt.internal.widgets.WidgetRemoteAdapter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -121,6 +117,7 @@ public class Widget_Test {
   @Test
   public void testCheckWidget() throws Throwable {
     Runnable target = new Runnable() {
+      @Override
       public void run() {
         widget.checkWidget();
       }
@@ -240,71 +237,79 @@ public class Widget_Test {
 
   @Test
   public void testSetData_forVariant() {
-    shell.setData( RWT.CUSTOM_VARIANT, "foo" );
+    widget.setData( RWT.CUSTOM_VARIANT, "foo" );
 
-    assertEquals( "foo", shell.getData( RWT.CUSTOM_VARIANT ) );
+    assertEquals( "foo", widget.getData( RWT.CUSTOM_VARIANT ) );
   }
 
   @Test
   public void testSetData_forVariant_canBeReset() {
-    shell.setData( RWT.CUSTOM_VARIANT, "foo" );
+    widget.setData( RWT.CUSTOM_VARIANT, "foo" );
 
-    shell.setData( RWT.CUSTOM_VARIANT, null );
+    widget.setData( RWT.CUSTOM_VARIANT, null );
 
-    assertNull( shell.getData( RWT.CUSTOM_VARIANT ) );
+    assertNull( widget.getData( RWT.CUSTOM_VARIANT ) );
   }
 
   @Test
   public void testSetData_forVariant_acceptsUnderscore() {
-    shell.setData( RWT.CUSTOM_VARIANT, "Foo_Bar_23_42" );
+    widget.setData( RWT.CUSTOM_VARIANT, "Foo_Bar_23_42" );
 
-    assertNotNull( shell.getData( RWT.CUSTOM_VARIANT ) );
+    assertNotNull( widget.getData( RWT.CUSTOM_VARIANT ) );
   }
 
   @Test
   public void testSetData_forVariant_acceptsDash() {
-    shell.setData( RWT.CUSTOM_VARIANT, "Foo-Bar-23-42" );
+    widget.setData( RWT.CUSTOM_VARIANT, "Foo-Bar-23-42" );
 
-    assertNotNull( shell.getData( RWT.CUSTOM_VARIANT ) );
+    assertNotNull( widget.getData( RWT.CUSTOM_VARIANT ) );
   }
 
   @Test
   public void testSetData_forVariant_acceptsLeadingDash() {
-    shell.setData( RWT.CUSTOM_VARIANT, "-Foo-Bar-23-42" );
+    widget.setData( RWT.CUSTOM_VARIANT, "-Foo-Bar-23-42" );
 
-    assertNotNull( shell.getData( RWT.CUSTOM_VARIANT ) );
+    assertNotNull( widget.getData( RWT.CUSTOM_VARIANT ) );
   }
 
   @Test
   public void testSetData_forVariant_acceptsNonAscii() {
-    shell.setData( RWT.CUSTOM_VARIANT, "Foo-üäöæ-23-42" );
+    widget.setData( RWT.CUSTOM_VARIANT, "Foo-üäöæ-23-42" );
 
-    assertNotNull( shell.getData( RWT.CUSTOM_VARIANT ) );
+    assertNotNull( widget.getData( RWT.CUSTOM_VARIANT ) );
   }
 
   @Test( expected = IllegalArgumentException.class )
   public void testSetData_forVariant_rejectsNonStringValue() {
-    shell.setData( RWT.CUSTOM_VARIANT, new Object() );
+    widget.setData( RWT.CUSTOM_VARIANT, new Object() );
   }
 
   @Test( expected = IllegalArgumentException.class )
   public void testSetData_forVariant_rejectsEmptyString() {
-    shell.setData( RWT.CUSTOM_VARIANT, "" );
+    widget.setData( RWT.CUSTOM_VARIANT, "" );
   }
 
   @Test( expected = IllegalArgumentException.class )
   public void testSetData_forVariant_rejectsSpaces() {
-    shell.setData( RWT.CUSTOM_VARIANT, "Foo Bar 23 42 " );
+    widget.setData( RWT.CUSTOM_VARIANT, "Foo Bar 23 42 " );
   }
 
   @Test( expected = IllegalArgumentException.class )
   public void testSetData_forVariant_rejectsColon() {
-    shell.setData( RWT.CUSTOM_VARIANT, "Foo:Bar" );
+    widget.setData( RWT.CUSTOM_VARIANT, "Foo:Bar" );
   }
 
   @Test( expected = IllegalArgumentException.class )
   public void testSetData_forVariant_rejectsLeadingNumber() {
-    shell.setData( RWT.CUSTOM_VARIANT, "1-Foo-Bar" );
+    widget.setData( RWT.CUSTOM_VARIANT, "1-Foo-Bar" );
+  }
+
+  @Test
+  public void testSetData_forVariant_preservesVariant() {
+    widget.setData( RWT.CUSTOM_VARIANT, "foo" );
+
+    WidgetRemoteAdapter adapter = ( WidgetRemoteAdapter )widget.getAdapter( RemoteAdapter.class );
+    assertTrue( adapter.hasPreservedVariant() );
   }
 
   @Test
@@ -330,6 +335,7 @@ public class Widget_Test {
   @Test( expected = SWTException.class )
   public void testDispose_failsOnIllegalThread() throws Throwable {
     runInThread( new Runnable() {
+      @Override
       public void run() {
         widget.dispose();
       }
@@ -339,6 +345,7 @@ public class Widget_Test {
   @Test
   public void testDispose_withException() {
     widget.addListener( SWT.Dispose, new Listener() {
+      @Override
       public void handleEvent( Event event ) {
         throw new RuntimeException();
       }
@@ -363,11 +370,13 @@ public class Widget_Test {
     ToolBar toolbar = new ToolBar( composite, SWT.NONE );
     final ToolItem[] item = { null };
     toolbar.addDisposeListener( new DisposeListener() {
+      @Override
       public void widgetDisposed( DisposeEvent event ) {
         item[ 0 ].dispose();
       }
     } );
     toolbar.addDisposeListener( new DisposeListener() {
+      @Override
       public void widgetDisposed( DisposeEvent event ) {
         composite.dispose();
       }
@@ -380,6 +389,7 @@ public class Widget_Test {
   @Test
   public void testDisposeSelfWhileInDispose() {
     widget.addDisposeListener( new DisposeListener() {
+      @Override
       public void widgetDisposed( DisposeEvent event ) {
         widget.dispose();
       }
@@ -392,6 +402,7 @@ public class Widget_Test {
   public void testDisposeSelfWhileInDispose_RenderOnce() {
     Fixture.markInitialized( widget );
     widget.addDisposeListener( new DisposeListener() {
+      @Override
       public void widgetDisposed( DisposeEvent event ) {
         widget.dispose();
       }
@@ -511,6 +522,56 @@ public class Widget_Test {
   }
 
   @Test
+  public void testAddListener_preservesListeners() {
+    WidgetRemoteAdapter adapter = ( WidgetRemoteAdapter )widget.getAdapter( RemoteAdapter.class );
+    adapter.clearPreserved();
+
+    widget.addListener( SWT.Selection, mock( Listener.class ) );
+
+    assertTrue( adapter.hasPreservedListeners() );
+    assertEquals( 0, adapter.getPreservedListeners(), SWT.Selection );
+  }
+
+  @Test
+  public void testRemoveListener_preservesListeners() {
+    WidgetRemoteAdapter adapter = ( WidgetRemoteAdapter )widget.getAdapter( RemoteAdapter.class );
+    Listener listener = mock( Listener.class );
+    widget.addListener( SWT.Selection, listener );
+    adapter.clearPreserved();
+
+    widget.removeListener( SWT.Selection, listener );
+
+    assertTrue( adapter.hasPreservedListeners() );
+    assertTrue( EventLCAUtil.containsEvent( adapter.getPreservedListeners(), SWT.Selection ) );
+  }
+
+  @Test
+  public void testRemoveListener_typed_preservesListeners() {
+    WidgetRemoteAdapter adapter = ( WidgetRemoteAdapter )widget.getAdapter( RemoteAdapter.class );
+    SWTEventListener listener = mock( SWTEventListener.class );
+    widget.addListener( SWT.Selection, new TypedListener( listener ) );
+    adapter.clearPreserved();
+
+    widget.removeListener( SWT.Selection, listener );
+
+    assertTrue( adapter.hasPreservedListeners() );
+    assertTrue( EventLCAUtil.containsEvent( adapter.getPreservedListeners(), SWT.Selection ) );
+  }
+
+  @Test
+  public void testRemoveDisposeListener_typed_preservesListeners() {
+    WidgetRemoteAdapter adapter = ( WidgetRemoteAdapter )widget.getAdapter( RemoteAdapter.class );
+    DisposeListener listener = mock( DisposeListener.class );
+    widget.addDisposeListener( listener );
+    adapter.clearPreserved();
+
+    widget.removeDisposeListener( listener );
+
+    assertTrue( adapter.hasPreservedListeners() );
+    assertTrue( EventLCAUtil.containsEvent( adapter.getPreservedListeners(), SWT.Dispose ) );
+  }
+
+  @Test
   public void testRemoveListener() {
     Listener listener = mock( Listener.class );
     widget.addListener( SWT.Selection, listener );
@@ -618,6 +679,7 @@ public class Widget_Test {
   @Test
   public void testNotifyListeners_withDenyingFilter() {
     Listener filter = spy( new Listener() {
+      @Override
       public void handleEvent( Event event ) {
         event.type = SWT.None;
       }
@@ -637,6 +699,7 @@ public class Widget_Test {
   public void testNotifyListeners_eventFields() {
     final AtomicReference<Event> eventCaptor = new AtomicReference<Event>();
     display.addFilter( SWT.Resize, new Listener() {
+      @Override
       public void handleEvent( Event event ) {
         eventCaptor.set( event );
       }
@@ -883,6 +946,7 @@ public class Widget_Test {
     final AtomicReference<Display> displayCaptor = new AtomicReference<Display>();
 
     runInThread( new Runnable() {
+      @Override
       public void run() {
         displayCaptor.set( widget.getDisplay() );
       }
@@ -895,6 +959,7 @@ public class Widget_Test {
   public void testReskin() {
     final java.util.List<Widget> log = new ArrayList<Widget>();
     Listener listener = new Listener() {
+      @Override
       public void handleEvent( Event event ) {
         if( event.type == SWT.Skin ) {
           log.add( event.widget );
@@ -957,6 +1022,27 @@ public class Widget_Test {
     shell.reskin( SWT.ALL );
     display.readAndDispatch();
     assertEquals( 0, log.size() );
+  }
+
+  @Test
+  public void testAddState() {
+    widget.addState( 1 << 2 );
+
+    assertFalse( widget.hasState( 1 << 0 ) );
+    assertFalse( widget.hasState( 1 << 1 ) );
+    assertTrue( widget.hasState( 1 << 2 ) );
+    assertFalse( widget.hasState( 1 << 3 ) );
+  }
+
+  @Test
+  public void testRemoveState() {
+    widget.addState( 1 << 23 );
+    widget.removeState( 1 << 23 );
+
+    assertFalse( widget.hasState( 1 << 0 ) );
+    assertFalse( widget.hasState( 1 << 1 ) );
+    assertFalse( widget.hasState( 1 << 2 ) );
+    assertFalse( widget.hasState( 1 << 3 ) );
   }
 
 }

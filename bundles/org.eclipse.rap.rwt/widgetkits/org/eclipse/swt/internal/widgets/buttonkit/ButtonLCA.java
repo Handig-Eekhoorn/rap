@@ -13,7 +13,6 @@ package org.eclipse.swt.internal.widgets.buttonkit;
 
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.hasChanged;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderClientListeners;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
@@ -29,16 +28,15 @@ import static org.eclipse.swt.internal.widgets.MarkupUtil.isMarkupEnabledFor;
 import java.io.IOException;
 
 import org.eclipse.rap.rwt.RWT;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class ButtonLCA extends AbstractWidgetLCA {
+public final class ButtonLCA extends WidgetLCA<Button> {
 
   private static final String TYPE = "rwt.widgets.Button";
   private static final String[] ALLOWED_STYLES = {
@@ -57,22 +55,17 @@ public final class ButtonLCA extends AbstractWidgetLCA {
   private static final String DEFAULT_ALIGNMENT = "center";
 
   @Override
-  public void preserveValues( Widget widget ) {
-    Button button = ( Button )widget;
-    ControlLCAUtil.preserveValues( button );
-    WidgetLCAUtil.preserveCustomVariant( button );
+  public void preserveValues( Button button ) {
     preserveProperty( button, PROP_TEXT, button.getText() );
     preserveProperty( button, PROP_IMAGE, button.getImage() );
     preserveProperty( button, PROP_SELECTION, Boolean.valueOf( button.getSelection() ) );
     preserveProperty( button, PROP_GRAYED, Boolean.valueOf( button.getGrayed() ) );
     preserveProperty( button, PROP_ALIGNMENT, getAlignment( button ) );
     preserveProperty( button, PROP_BADGE, getBadge( button ) );
-    preserveListenSelection( button );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    Button button = ( Button )widget;
+  public void renderInitialization( Button button ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( button, TYPE );
     remoteObject.setHandler( new ButtonOperationHandler( button ) );
     remoteObject.set( "parent", getId( button.getParent() ) );
@@ -81,8 +74,7 @@ public final class ButtonLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    Button button = ( Button )widget;
+  public void renderChanges( Button button ) throws IOException {
     ControlLCAUtil.renderChanges( button );
     WidgetLCAUtil.renderCustomVariant( button );
     renderText( button );
@@ -93,7 +85,7 @@ public final class ButtonLCA extends AbstractWidgetLCA {
     renderProperty( button, PROP_GRAYED, button.getGrayed(), false );
     renderProperty( button, PROP_BADGE, getBadge( button ), null );
     renderListenSelection( button );
-    renderClientListeners( widget );
+    renderClientListeners( button );
   }
 
   private static String getAlignment( Button button ) {

@@ -18,10 +18,11 @@ import org.eclipse.rap.rwt.Adaptable;
 import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.internal.application.ApplicationContextImpl;
 import org.eclipse.rap.rwt.internal.lifecycle.CurrentPhase;
-import org.eclipse.rap.rwt.internal.lifecycle.LifeCycleAdapterFactory;
 import org.eclipse.rap.rwt.internal.lifecycle.PhaseId;
 import org.eclipse.rap.rwt.internal.lifecycle.RemoteAdapter;
-import org.eclipse.rap.rwt.internal.lifecycle.WidgetLifeCycleAdapter;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetDataUtil;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.theme.ThemeAdapter;
 import org.eclipse.rap.rwt.internal.theme.ThemeManager;
 import org.eclipse.rap.rwt.scripting.ClientListener;
@@ -36,8 +37,8 @@ import org.eclipse.swt.internal.widgets.IDisplayAdapter;
 import org.eclipse.swt.internal.widgets.IWidgetGraphicsAdapter;
 import org.eclipse.swt.internal.widgets.IdGenerator;
 import org.eclipse.swt.internal.widgets.ParentHolderRemoteAdapter;
-import org.eclipse.swt.internal.widgets.WidgetRemoteAdapter;
 import org.eclipse.swt.internal.widgets.WidgetGraphicsAdapter;
+import org.eclipse.swt.internal.widgets.WidgetRemoteAdapter;
 
 
 /**
@@ -109,11 +110,10 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
   static final int SKIN_NEEDED = 1 << 21;
 
   int style;
-  int state;
+  private int state;
   Display display;
   private Object data;
   private EventTable eventTable;
-  private transient LifeCycleAdapterFactory lifeCycleAdapterFactory;
   private RemoteAdapter remoteAdapter;
   private IWidgetGraphicsAdapter widgetGraphicsAdapter;
 
@@ -175,46 +175,23 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
   public <T> T getAdapter( Class<T> adapter ) {
     // The adapters returned here are buffered for performance reasons. Don't change this without
     // good reason
-    T result = null;
     if( adapter == RemoteAdapter.class ) {
-      if( remoteAdapter == null ) {
-        remoteAdapter = createRemoteAdapter( null );
-      } else if( remoteAdapter instanceof ParentHolderRemoteAdapter ) {
-        remoteAdapter = createRemoteAdapter( remoteAdapter.getParent() );
-      }
-      result = ( T )remoteAdapter;
-    } else if( adapter == ThemeAdapter.class ) {
-      ApplicationContextImpl applicationContext = getApplicationContext();
-      ThemeManager themeManager = applicationContext.getThemeManager();
-      result = ( T )themeManager.getThemeAdapterManager().getThemeAdapter( this );
-    } else if( adapter == IWidgetGraphicsAdapter.class ) {
+      return (T) ensureRemoteAdapter();
+    }
+    if( adapter == ThemeAdapter.class ) {
+      ThemeManager themeManager = getApplicationContext().getThemeManager();
+      return (T) themeManager.getThemeAdapterManager().getThemeAdapter( this );
+    }
+    if( adapter == IWidgetGraphicsAdapter.class ) {
       if( widgetGraphicsAdapter == null ) {
         widgetGraphicsAdapter = new WidgetGraphicsAdapter();
       }
-      result = ( T )widgetGraphicsAdapter;
-    } else if ( adapter == WidgetLifeCycleAdapter.class ) {
-      if( lifeCycleAdapterFactory == null ) {
-        lifeCycleAdapterFactory = getApplicationContext().getLifeCycleAdapterFactory();
-      }
-      result = ( T )lifeCycleAdapterFactory.getAdapter( this );
+      return (T) widgetGraphicsAdapter;
     }
-    return result;
-  }
-
-  private RemoteAdapter createRemoteAdapter( Widget parent ) {
-    String id = IdGenerator.getInstance( RWT.getUISession( display ) ).createId( this );
-    return createRemoteAdapter( parent, id );
-  }
-
-  RemoteAdapter createRemoteAdapter( Widget parent, String id ) {
-    WidgetRemoteAdapter remoteAdapter = new WidgetRemoteAdapter( id );
-    remoteAdapter.setParent( parent );
-    return remoteAdapter;
-  }
-
-  private ApplicationContextImpl getApplicationContext() {
-    IDisplayAdapter displayAdapter = display.getAdapter( IDisplayAdapter.class );
-    return ( ApplicationContextImpl )displayAdapter.getUISession().getApplicationContext();
+    if ( adapter == WidgetLCA.class ) {
+      return (T) getApplicationContext().getLifeCycleAdapterFactory().getWidgetLCA( this );
+    }
+    return null;
   }
 
   /**
@@ -241,7 +218,7 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
    */
   public Object getData() {
     checkWidget();
-    return ( state & KEYED_DATA ) != 0 ? ( ( Object[] )data )[ 0 ] : data;
+    return hasState( KEYED_DATA ) ? ( ( Object[] )data )[ 0 ] : data;
   }
 
   /**
@@ -268,7 +245,7 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
    */
   public void setData( Object data ) {
     checkWidget();
-    if( ( state & KEYED_DATA ) != 0 ) {
+    if( hasState( KEYED_DATA ) ) {
       ( ( Object[] )this.data )[ 0 ] = data;
     } else {
       this.data = data;
@@ -286,7 +263,7 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
    * Dispose event on the widget and do so.
    * </p>
    *
-   * @param	key the name of the property
+   * @param key the name of the property
    * @return the value of the property or null if it has not been set
    *
    * @exception IllegalArgumentException <ul>
@@ -305,7 +282,7 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
       error( SWT.ERROR_NULL_ARGUMENT );
     }
     Object result = null;
-    if( ( state & KEYED_DATA ) != 0 ) {
+    if( hasState( KEYED_DATA ) ) {
       Object[] table = ( Object[] )data;
       for( int i = 1; result == null && i < table.length; i += 2 ) {
         if( key.equals( table[ i ] ) ) {
@@ -345,12 +322,18 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
     if( key == null ) {
       error( SWT.ERROR_NULL_ARGUMENT );
     }
-    if( RWT.CUSTOM_VARIANT.equals( key ) && value != null ) {
-      checkCustomVariant( value );
+    if( RWT.CUSTOM_VARIANT.equals( key ) ) {
+      if( value != null ) {
+        checkCustomVariant( value );
+      }
+      WidgetLCAUtil.preserveCustomVariant( this );
+    }
+    if( WidgetDataUtil.getDataKeys().contains( key ) ) {
+      WidgetLCAUtil.preserveData( this );
     }
     int index = 1;
     Object[] table = null;
-    if( ( state & KEYED_DATA ) != 0 ) {
+    if( hasState( KEYED_DATA ) ) {
       table = ( Object[] )data;
       while( index < table.length ) {
         if( key.equals( table[ index ] ) ) {
@@ -360,7 +343,7 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
       }
     }
     if( value != null ) {
-      if( ( state & KEYED_DATA ) != 0 ) {
+      if( hasState( KEYED_DATA ) ) {
         if( index == table.length ) {
           Object[] newTable = new Object[ table.length + 2 ];
           System.arraycopy( table, 0, newTable, 0, table.length );
@@ -370,17 +353,17 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
         table = new Object[ 3 ];
         table[ 0 ] = data;
         data = table;
-        state |= KEYED_DATA;
+        addState( KEYED_DATA );
       }
       table[ index ] = key;
       table[ index + 1 ] = value;
     } else {
-      if( ( state & KEYED_DATA ) != 0 ) {
+      if( hasState( KEYED_DATA ) ) {
         if( index != table.length ) {
           int length = table.length - 2;
           if( length == 1 ) {
             data = table[ 0 ];
-            state &= ~KEYED_DATA;
+            removeState( KEYED_DATA );
           } else {
             Object[] newTable = new Object[ length ];
             System.arraycopy( table, 0, newTable, 0, index );
@@ -414,7 +397,7 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
    * </ul>
    */
   public Display getDisplay() {
-    if( ( state & DISPOSED ) != 0 ) {
+    if( hasState( DISPOSED ) ) {
       error( SWT.ERROR_WIDGET_DISPOSED );
     }
     return display;
@@ -499,6 +482,7 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
     if( listener == null ) {
       error( SWT.ERROR_NULL_ARGUMENT );
     }
+    preserveListeners();
     if( eventTable != null ) {
       eventTable.unhook( SWT.Dispose, listener );
     }
@@ -537,6 +521,7 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
       error( SWT.ERROR_NULL_ARGUMENT );
     }
     ensureEventTable();
+    preserveListeners();
     eventTable.hook( eventType, listener );
     if( listener instanceof ClientListener ) {
       clientListenerAdded( this, eventType, ( ClientListener )listener );
@@ -571,6 +556,7 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
     if( listener == null ) {
       error( SWT.ERROR_NULL_ARGUMENT );
     }
+    preserveListeners();
     if( eventTable != null ) {
       eventTable.unhook( eventType, listener );
     }
@@ -692,6 +678,7 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
     if( listener == null ) {
       error( SWT.ERROR_NULL_ARGUMENT );
     }
+    preserveListeners();
     if( eventTable != null ) {
       eventTable.unhook( eventType, listener );
     }
@@ -764,8 +751,8 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
   }
 
   void reskinWidget() {
-    if( ( state & SKIN_NEEDED ) != SKIN_NEEDED ) {
-      state |= SKIN_NEEDED;
+    if( !hasState( SKIN_NEEDED ) ) {
+      addState( SKIN_NEEDED );
       display.addSkinnableWidget( this );
     }
   }
@@ -853,15 +840,15 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
       if( !isValidThread() ) {
         error( SWT.ERROR_THREAD_INVALID_ACCESS );
       }
-      if( ( state & DISPOSE_SENT ) == 0 ) {
-        state |= DISPOSE_SENT;
+      if( !hasState( DISPOSE_SENT ) ) {
+        addState( DISPOSE_SENT );
         notifyListeners( SWT.Dispose, new Event() );
       }
-      if( ( state & DISPOSED ) == 0 ) {
+      if( !hasState( DISPOSED ) ) {
         releaseChildren();
       }
-      if( ( state & RELEASED ) == 0 ) {
-        state |= RELEASED;
+      if( !hasState( RELEASED ) ) {
+        addState( RELEASED );
         releaseParent();
         releaseWidget();
         getAdapter( RemoteAdapter.class ).markDisposed( this );
@@ -881,11 +868,11 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
    * @return <code>true</code> when the widget is disposed and <code>false</code> otherwise
    */
   public boolean isDisposed() {
-    return ( state & DISPOSED ) != 0;
+    return hasState( DISPOSED );
   }
 
   boolean isInDispose() {
-    return ( state & Widget.DISPOSE_SENT ) != 0;
+    return hasState( DISPOSE_SENT );
   }
 
   void releaseChildren() {
@@ -897,9 +884,8 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
   }
 
   void releaseWidget() {
-    lifeCycleAdapterFactory = null;
     eventTable = null;
-    state |= DISPOSED;
+    addState( DISPOSED );
   }
 
   /**
@@ -973,7 +959,7 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
     if( !isValidThread() ) {
       error( SWT.ERROR_THREAD_INVALID_ACCESS );
     }
-    if( ( state & DISPOSED ) != 0 ) {
+    if( hasState( DISPOSED ) ) {
       error( SWT.ERROR_WIDGET_DISPOSED );
     }
   }
@@ -1033,6 +1019,50 @@ public abstract class Widget implements Adaptable, SerializableCompatibility {
 
   void error( int code ) {
     SWT.error( code );
+  }
+
+  boolean hasState( int flag ) {
+    return ( state & flag ) != 0;
+  }
+
+  void addState( int flag ) {
+    state |= flag;
+  }
+
+  void removeState( int flag ) {
+    state &= ~flag;
+  }
+
+  private void preserveListeners() {
+    WidgetRemoteAdapter adapter = ( WidgetRemoteAdapter )ensureRemoteAdapter();
+    if( !( adapter ).hasPreservedListeners() ) {
+      WidgetLCAUtil.preserveListeners( this, eventTable != null ? eventTable.getEventList() : 0 );
+    }
+  }
+
+  private RemoteAdapter ensureRemoteAdapter() {
+    if( remoteAdapter == null ) {
+      remoteAdapter = createRemoteAdapter( null );
+    } else if( remoteAdapter instanceof ParentHolderRemoteAdapter ) {
+      remoteAdapter = createRemoteAdapter( remoteAdapter.getParent() );
+    }
+    return remoteAdapter;
+  }
+
+  private RemoteAdapter createRemoteAdapter( Widget parent ) {
+    String id = IdGenerator.getInstance( RWT.getUISession( display ) ).createId( this );
+    return createRemoteAdapter( parent, id );
+  }
+
+  RemoteAdapter createRemoteAdapter( Widget parent, String id ) {
+    WidgetRemoteAdapter remoteAdapter = new WidgetRemoteAdapter( id );
+    remoteAdapter.setParent( parent );
+    return remoteAdapter;
+  }
+
+  private ApplicationContextImpl getApplicationContext() {
+    IDisplayAdapter displayAdapter = display.getAdapter( IDisplayAdapter.class );
+    return ( ApplicationContextImpl )displayAdapter.getUISession().getApplicationContext();
   }
 
   private static void checkCustomVariant( Object value ) {

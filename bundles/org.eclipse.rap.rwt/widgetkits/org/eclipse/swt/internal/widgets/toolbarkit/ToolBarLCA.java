@@ -18,15 +18,14 @@ import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRe
 
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.widgets.ToolBar;
-import org.eclipse.swt.widgets.Widget;
 
 
-public class ToolBarLCA extends AbstractWidgetLCA {
+public class ToolBarLCA extends WidgetLCA<ToolBar> {
 
   private static final String TYPE = "rwt.widgets.ToolBar";
   private static final String[] ALLOWED_STYLES = {
@@ -34,15 +33,11 @@ public class ToolBarLCA extends AbstractWidgetLCA {
   };
 
   @Override
-  public void preserveValues( Widget widget ) {
-    ToolBar toolBar = ( ToolBar )widget;
-    ControlLCAUtil.preserveValues( toolBar );
-    WidgetLCAUtil.preserveCustomVariant( toolBar );
+  public void preserveValues( ToolBar toolBar ) {
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    ToolBar toolBar = ( ToolBar )widget;
+  public void renderInitialization( ToolBar toolBar ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( toolBar, TYPE );
     remoteObject.setHandler( new ToolBarOperationHandler( toolBar ) );
     remoteObject.set( "parent", getId( toolBar.getParent() ) );
@@ -50,8 +45,7 @@ public class ToolBarLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    ToolBar toolBar = ( ToolBar )widget;
+  public void renderChanges( ToolBar toolBar ) throws IOException {
     ControlLCAUtil.renderChanges( toolBar );
     WidgetLCAUtil.renderCustomVariant( toolBar );
   }

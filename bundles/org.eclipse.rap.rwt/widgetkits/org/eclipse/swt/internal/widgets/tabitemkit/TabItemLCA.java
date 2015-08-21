@@ -19,17 +19,16 @@ import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemot
 import java.io.IOException;
 
 import org.eclipse.rap.rwt.RWT;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil;
 import org.eclipse.rap.rwt.internal.util.MnemonicUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
-import org.eclipse.swt.widgets.Widget;
 
 
-public class TabItemLCA extends AbstractWidgetLCA {
+public class TabItemLCA extends WidgetLCA<TabItem> {
 
   private static final String TYPE = "rwt.widgets.TabItem";
 
@@ -40,10 +39,7 @@ public class TabItemLCA extends AbstractWidgetLCA {
   private static final String PROP_BADGE = "badge";
 
   @Override
-  public void preserveValues( Widget widget ) {
-    TabItem item = ( TabItem )widget;
-    WidgetLCAUtil.preserveCustomVariant( item );
-    WidgetLCAUtil.preserveData( item );
+  public void preserveValues( TabItem item ) {
     WidgetLCAUtil.preserveToolTipText( item, item.getToolTipText() );
     preserveProperty( item, PROP_TEXT, item.getText() );
     preserveProperty( item, PROP_IMAGE, item.getImage() );
@@ -52,12 +48,11 @@ public class TabItemLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void readData( Widget widget ) {
+  public void readData( TabItem item ) {
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    TabItem item = ( TabItem )widget;
+  public void renderInitialization( TabItem item ) throws IOException {
     TabFolder parent = item.getParent();
     RemoteObject remoteObject = createRemoteObject( item, TYPE );
     // TODO [tb] : Do not render id!
@@ -67,8 +62,7 @@ public class TabItemLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    TabItem item = ( TabItem )widget;
+  public void renderChanges( TabItem item ) throws IOException {
     WidgetLCAUtil.renderCustomVariant( item );
     WidgetLCAUtil.renderData( item );
     WidgetLCAUtil.renderToolTip( item, item.getToolTipText() );

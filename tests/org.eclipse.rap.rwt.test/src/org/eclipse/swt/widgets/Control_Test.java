@@ -11,11 +11,21 @@
  ******************************************************************************/
 package org.eclipse.swt.widgets;
 
+import static java.util.Arrays.asList;
 import static org.eclipse.rap.rwt.testfixture.internal.TestUtil.createImage;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
@@ -25,16 +35,16 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.rap.rwt.RWT;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.PhaseId;
 import org.eclipse.rap.rwt.internal.lifecycle.RemoteAdapter;
-import org.eclipse.rap.rwt.internal.lifecycle.WidgetLifeCycleAdapter;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.theme.ThemeAdapter;
 import org.eclipse.rap.rwt.internal.theme.ThemeTestUtil;
 import org.eclipse.rap.rwt.testfixture.internal.Fixture;
 import org.eclipse.rap.rwt.theme.BoxDimensions;
 import org.eclipse.rap.rwt.theme.ControlThemeAdapter;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTException;
 import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.DragDetectListener;
 import org.eclipse.swt.events.FocusAdapter;
@@ -51,7 +61,6 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.internal.widgets.ControlHolder;
 import org.eclipse.swt.internal.widgets.ControlRemoteAdapter;
 import org.eclipse.swt.internal.widgets.ControlUtil;
 import org.eclipse.swt.internal.widgets.IControlAdapter;
@@ -80,6 +89,19 @@ public class Control_Test {
   @After
   public void tearDown() {
     Fixture.tearDown();
+  }
+
+  @Test
+  public void testCreate() {
+    Control control = new Button( shell, SWT.NONE );
+
+    assertSame( shell, control.getParent() );
+    assertSame( display, control.getDisplay() );
+  }
+
+  @Test( expected = IllegalArgumentException.class )
+  public void testCreate_failsWithNullParent() {
+    new Button( null, SWT.NONE );
   }
 
   @Test
@@ -255,6 +277,47 @@ public class Control_Test {
     IControlAdapter adapter = ControlUtil.getControlAdapter( control );
 
     assertEquals( -1, adapter.getTabIndex() );
+  }
+
+  @Test
+  public void testDispose() {
+    Control control = new Button( shell, SWT.PUSH );
+
+    control.dispose();
+
+    assertTrue( control.isDisposed() );
+  }
+
+  @Test
+  public void testDispose_triggersDisposeEvent() {
+    Control control = new Button( shell, SWT.PUSH );
+    Listener listener = mock( Listener.class );
+    control.addListener( SWT.Dispose, listener );
+
+    control.dispose();
+
+    verify( listener ).handleEvent( any( Event.class ) );
+  }
+
+  @Test
+  public void testDisposeTwice_doesNotTriggerAnotherDisposeEvent() {
+    Control control = new Button( shell, SWT.PUSH );
+    Listener listener = mock( Listener.class );
+    control.addListener( SWT.Dispose, listener );
+
+    control.dispose();
+    control.dispose();
+
+    verify( listener, times( 1 ) ).handleEvent( any( Event.class ) );
+  }
+
+  @Test
+  public void testDispose_removesFromParent() {
+    Control control = new Button( shell, SWT.PUSH );
+
+    control.dispose();
+
+    assertFalse( asList( shell.getChildren() ).contains( control ) );
   }
 
   @Test
@@ -557,36 +620,40 @@ public class Control_Test {
     Control control1 = new Button( shell, SWT.PUSH );
     Control control2 = new Button( shell, SWT.PUSH );
     Control control3 = new Button( shell, SWT.PUSH );
-    assertEquals( 0, ControlHolder.indexOf( shell, control1 ) );
-    assertEquals( 1, ControlHolder.indexOf( shell, control2 ) );
-    assertEquals( 2, ControlHolder.indexOf( shell, control3 ) );
+    assertEquals( 0, indexOf( shell, control1 ) );
+    assertEquals( 1, indexOf( shell, control2 ) );
+    assertEquals( 2, indexOf( shell, control3 ) );
     control3.moveAbove( control2 );
-    assertEquals( 0, ControlHolder.indexOf( shell, control1 ) );
-    assertEquals( 1, ControlHolder.indexOf( shell, control3 ) );
-    assertEquals( 2, ControlHolder.indexOf( shell, control2 ) );
+    assertEquals( 0, indexOf( shell, control1 ) );
+    assertEquals( 1, indexOf( shell, control3 ) );
+    assertEquals( 2, indexOf( shell, control2 ) );
     control1.moveBelow( control3 );
-    assertEquals( 0, ControlHolder.indexOf( shell, control3 ) );
-    assertEquals( 1, ControlHolder.indexOf( shell, control1 ) );
-    assertEquals( 2, ControlHolder.indexOf( shell, control2 ) );
+    assertEquals( 0, indexOf( shell, control3 ) );
+    assertEquals( 1, indexOf( shell, control1 ) );
+    assertEquals( 2, indexOf( shell, control2 ) );
     control2.moveAbove( null );
-    assertEquals( 0, ControlHolder.indexOf( shell, control2 ) );
-    assertEquals( 1, ControlHolder.indexOf( shell, control3 ) );
-    assertEquals( 2, ControlHolder.indexOf( shell, control1 ) );
+    assertEquals( 0, indexOf( shell, control2 ) );
+    assertEquals( 1, indexOf( shell, control3 ) );
+    assertEquals( 2, indexOf( shell, control1 ) );
     control2.moveBelow( null );
-    assertEquals( 0, ControlHolder.indexOf( shell, control3 ) );
-    assertEquals( 1, ControlHolder.indexOf( shell, control1 ) );
-    assertEquals( 2, ControlHolder.indexOf( shell, control2 ) );
+    assertEquals( 0, indexOf( shell, control3 ) );
+    assertEquals( 1, indexOf( shell, control1 ) );
+    assertEquals( 2, indexOf( shell, control2 ) );
     // control is already at the top / bottom
     control3.moveAbove( null );
-    assertEquals( 0, ControlHolder.indexOf( shell, control3 ) );
+    assertEquals( 0, indexOf( shell, control3 ) );
     control2.moveBelow( null );
-    assertEquals( 0, ControlHolder.indexOf( shell, control3 ) );
+    assertEquals( 0, indexOf( shell, control3 ) );
     // try to move control above / below itself
     control1.moveAbove( control1 );
-    assertEquals( 1, ControlHolder.indexOf( shell, control1 ) );
+    assertEquals( 1, indexOf( shell, control1 ) );
     control1.moveBelow( control1 );
-    assertEquals( 1, ControlHolder.indexOf( shell, control1 ) );
+    assertEquals( 1, indexOf( shell, control1 ) );
     shell.dispose();
+  }
+
+  private int indexOf( Composite parent, Control control ) {
+    return asList(parent.getChildren()).indexOf( control );
   }
 
   @Test
@@ -606,6 +673,7 @@ public class Control_Test {
     final Control control2 = new Button( shell, SWT.PUSH );
     final StringBuilder log = new StringBuilder();
     FocusListener focusListener = new FocusListener() {
+      @Override
       public void focusGained( FocusEvent event ) {
         if( event.getSource() == shell ) {
           log.append( "shell.focusGained|" );
@@ -615,6 +683,7 @@ public class Control_Test {
           fail( "Unexpected event: focusGained" );
         }
       }
+      @Override
       public void focusLost( FocusEvent event ) {
         if( event.getSource() == shell ) {
           log.append( "shell.focusLost|" );
@@ -878,6 +947,7 @@ public class Control_Test {
   public void testShowEvent() {
     final java.util.List<Event> log = new ArrayList<Event>();
     Listener showListener = new Listener() {
+      @Override
       public void handleEvent( Event event ) {
         log.add( event );
       }
@@ -907,6 +977,7 @@ public class Control_Test {
   @Test
   public void testShowEventDetails() {
     Listener ensureInvisible = new Listener() {
+      @Override
       public void handleEvent( Event event ) {
         assertFalse( ( ( Control )event.widget ).getVisible() );
       }
@@ -919,6 +990,7 @@ public class Control_Test {
   public void testHideEvent() {
     final java.util.List<Event> log = new ArrayList<Event>();
     Listener showListener = new Listener() {
+      @Override
       public void handleEvent( Event event ) {
         log.add( event );
       }
@@ -972,6 +1044,7 @@ public class Control_Test {
   public void testUntypedHelpListener() {
     final Event[] untypedHelpEvent = { null };
     shell.addListener( SWT.Help, new Listener() {
+      @Override
       public void handleEvent( Event event ) {
         untypedHelpEvent[ 0 ] = event;
       }
@@ -1573,6 +1646,82 @@ public class Control_Test {
   }
 
   @Test
+  public void testMoveAbove() {
+    Control child1 = new Label(shell, SWT.NONE);
+    Control child2 = new Label(shell, SWT.NONE);
+
+    child2.moveAbove( child1 );
+
+    assertArrayEquals( new Control[] {child2, child1}, shell.getChildren() );
+  }
+
+  @Test
+  public void testMoveAbove_ignoresWidgetWithDifferentParent() {
+    Control child1 = new Label(shell, SWT.NONE);
+    Control child2 = new Label(shell, SWT.NONE);
+
+    child1.moveAbove( shell );
+
+    assertArrayEquals( new Control[] {child1, child2}, shell.getChildren() );
+  }
+
+  @Test( expected = SWTException.class )
+  public void testMoveAbove_failsOnDisposed() {
+    Control child1 = new Label(shell, SWT.NONE);
+    Control child2 = new Label(shell, SWT.NONE);
+    child1.dispose();
+
+    child1.moveAbove( child2 );
+  }
+
+  @Test( expected = IllegalArgumentException.class )
+  public void testMoveAbove_failsWithDisposed() {
+    Control child1 = new Label(shell, SWT.NONE);
+    Control child2 = new Label(shell, SWT.NONE);
+    child2.dispose();
+
+    child1.moveAbove( child2 );
+  }
+
+  @Test
+  public void testMoveBelow() {
+    Control child1 = new Label(shell, SWT.NONE);
+    Control child2 = new Label(shell, SWT.NONE);
+
+    child1.moveBelow( child2 );
+
+    assertArrayEquals( new Control[] {child2, child1}, shell.getChildren() );
+  }
+
+  @Test
+  public void testMoveBelow_ignoresWidgetWithDifferentParent() {
+    Control child1 = new Label(shell, SWT.NONE);
+    Control child2 = new Label(shell, SWT.NONE);
+
+    child1.moveBelow( shell );
+
+    assertArrayEquals( new Control[] {child1, child2}, shell.getChildren() );
+  }
+
+  @Test( expected = SWTException.class )
+  public void testMoveBelow_failsOnDisposed() {
+    Control child1 = new Label(shell, SWT.NONE);
+    Control child2 = new Label(shell, SWT.NONE);
+    child1.dispose();
+
+    child1.moveBelow( child2 );
+  }
+
+  @Test( expected = IllegalArgumentException.class )
+  public void testMoveBelow_failsWithDisposed() {
+    Control child1 = new Label(shell, SWT.NONE);
+    Control child2 = new Label(shell, SWT.NONE);
+    child2.dispose();
+
+    child1.moveBelow( child2 );
+  }
+
+  @Test
   public void testRemoteAdapter_isAControlRemoteAdapter() {
     Control control = new Control( shell, SWT.NONE ) {};
 
@@ -1608,6 +1757,56 @@ public class Control_Test {
                 control.getAdapter( IControlAdapter.class ).getBounds() );
   }
 
+  @Test( expected = IllegalArgumentException.class )
+  public void testSetData_forActiveKeys_rejectsNonStringArray() {
+    Control control = new Control( shell, SWT.NONE ) {};
+    control.setData( RWT.ACTIVE_KEYS, "1-Foo-Bar" );
+  }
+
+  @Test
+  public void testSetData_forActiveKeys_acceptsNull() {
+    Control control = new Control( shell, SWT.NONE ) {};
+    control.setData( RWT.ACTIVE_KEYS, new String[] { "foo" } );
+
+    control.setData( RWT.ACTIVE_KEYS, null );
+
+    assertNull( control.getData( RWT.ACTIVE_KEYS ) );
+  }
+
+  @Test
+  public void testSetData_forActiveKeys_preservesActiveKeys() {
+    Control control = new Control( shell, SWT.NONE ) {};
+    control.setData( RWT.ACTIVE_KEYS, new String[] { "foo"} );
+
+    ControlRemoteAdapter adapter = ( ControlRemoteAdapter )control.getAdapter( RemoteAdapter.class );
+    assertTrue( adapter.hasPreservedActiveKeys() );
+  }
+
+  @Test( expected = IllegalArgumentException.class )
+  public void testSetData_forCancelKeys_rejectsNonStringArray() {
+    Control control = new Control( shell, SWT.NONE ) {};
+    control.setData( RWT.CANCEL_KEYS, "1-Foo-Bar" );
+  }
+
+  @Test
+  public void testSetData_forCancelKeys_acceptsNull() {
+    Control control = new Control( shell, SWT.NONE ) {};
+    control.setData( RWT.CANCEL_KEYS, new String[] { "foo" } );
+
+    control.setData( RWT.CANCEL_KEYS, null );
+
+    assertNull( control.getData( RWT.CANCEL_KEYS ) );
+  }
+
+  @Test
+  public void testSetData_forCancelKeys_preservesCancelKeys() {
+    Control control = new Control( shell, SWT.NONE ) {};
+    control.setData( RWT.CANCEL_KEYS, new String[] { "foo"} );
+
+    ControlRemoteAdapter adapter = ( ControlRemoteAdapter )control.getAdapter( RemoteAdapter.class );
+    assertTrue( adapter.hasPreservedCancelKeys() );
+  }
+
   private static class RedrawLogginShell extends Shell {
     private final List<Widget> log;
 
@@ -1620,7 +1819,7 @@ public class Control_Test {
     @SuppressWarnings("unchecked")
     public <T> T getAdapter( Class<T> adapter ) {
       Object result = null;
-      if( adapter == WidgetLifeCycleAdapter.class ) {
+      if( adapter == WidgetLCA.class ) {
         result = new LoggingWidgetLCA( log );
       } else {
         result = super.getAdapter( adapter );
@@ -1629,7 +1828,7 @@ public class Control_Test {
     }
   }
 
-  private static class LoggingWidgetLCA extends AbstractWidgetLCA {
+  private static class LoggingWidgetLCA extends WidgetLCA {
     private final List<Widget> log;
 
     public LoggingWidgetLCA( List<Widget> log ) {

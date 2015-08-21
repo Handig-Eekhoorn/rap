@@ -10,7 +10,6 @@
  ******************************************************************************/
 package org.eclipse.nebula.widgets.grid.internal.gridcolumnkit;
 
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
@@ -23,18 +22,17 @@ import java.io.IOException;
 import org.eclipse.nebula.widgets.grid.GridColumn;
 import org.eclipse.nebula.widgets.grid.GridColumnGroup;
 import org.eclipse.nebula.widgets.grid.internal.IGridAdapter;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.internal.widgets.ItemLCAUtil;
-import org.eclipse.swt.widgets.Widget;
 
 
 @SuppressWarnings( "restriction" )
-public class GridColumnLCA extends AbstractWidgetLCA {
+public class GridColumnLCA extends WidgetLCA<GridColumn> {
 
   private static final String TYPE = "rwt.widgets.GridColumn";
 
@@ -58,8 +56,7 @@ public class GridColumnLCA extends AbstractWidgetLCA {
   private static final String DEFAULT_ALIGNMENT = "left";
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    GridColumn column = ( GridColumn )widget;
+  public void renderInitialization( GridColumn column ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( column, TYPE );
     remoteObject.setHandler( new GridColumnOperationHandler( column ) );
     remoteObject.set( "parent", WidgetUtil.getId( column.getParent() ) );
@@ -70,10 +67,8 @@ public class GridColumnLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void preserveValues( Widget widget ) {
-    GridColumn column = ( GridColumn )widget;
+  public void preserveValues( GridColumn column ) {
     WidgetLCAUtil.preserveToolTipText( column, column.getHeaderTooltip() );
-    WidgetLCAUtil.preserveCustomVariant( column );
     ItemLCAUtil.preserve( column );
     preserveProperty( column, PROP_INDEX, getIndex( column ) );
     preserveProperty( column, PROP_LEFT, getLeft( column ) );
@@ -90,12 +85,10 @@ public class GridColumnLCA extends AbstractWidgetLCA {
     preserveProperty( column, PROP_FOOTER_SPAN, getFooterSpan( column ) );
     preserveProperty( column, PROP_WORD_WRAP, column.getWordWrap() );
     preserveProperty( column, PROP_HEADER_WORD_WRAP, column.getHeaderWordWrap() );
-    preserveListenSelection( column );
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    GridColumn column = ( GridColumn )widget;
+  public void renderChanges( GridColumn column ) throws IOException {
     WidgetLCAUtil.renderToolTip( column, column.getHeaderTooltip() );
     WidgetLCAUtil.renderCustomVariant( column );
     ItemLCAUtil.renderChanges( column );

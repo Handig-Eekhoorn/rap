@@ -14,7 +14,6 @@ package org.eclipse.swt.internal.widgets.tooltipkit;
 import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
@@ -23,16 +22,15 @@ import static org.eclipse.swt.internal.widgets.MarkupUtil.isMarkupEnabledFor;
 
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.internal.widgets.IToolTipAdapter;
 import org.eclipse.swt.widgets.ToolTip;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class ToolTipLCA extends AbstractWidgetLCA {
+public final class ToolTipLCA extends WidgetLCA<ToolTip> {
 
   private static final String TYPE = "rwt.widgets.ToolTip";
   private static final String[] ALLOWED_STYLES = {
@@ -49,22 +47,18 @@ public final class ToolTipLCA extends AbstractWidgetLCA {
   private static final Point DEFAULT_LOCATION = new Point( 0, 0 );
 
   @Override
-  public void preserveValues( Widget widget ) {
-    ToolTip toolTip = ( ToolTip )widget;
-    WidgetLCAUtil.preserveCustomVariant( widget );
-    WidgetLCAUtil.preserveRoundedBorder( widget );
-    WidgetLCAUtil.preserveBackgroundGradient( widget );
+  public void preserveValues( ToolTip toolTip ) {
+    WidgetLCAUtil.preserveRoundedBorder( toolTip );
+    WidgetLCAUtil.preserveBackgroundGradient( toolTip );
     preserveProperty( toolTip, PROP_AUTO_HIDE, toolTip.getAutoHide() );
     preserveProperty( toolTip, PROP_TEXT, toolTip.getText() );
     preserveProperty( toolTip, PROP_MESSAGE, toolTip.getMessage() );
     preserveProperty( toolTip, PROP_LOCATION, getLocation( toolTip ) );
     preserveProperty( toolTip, PROP_VISIBLE, toolTip.isVisible() );
-    preserveListenSelection( toolTip );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    ToolTip toolTip = ( ToolTip )widget;
+  public void renderInitialization( ToolTip toolTip ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( toolTip, TYPE );
     remoteObject.setHandler( new ToolTipOperationHandler( toolTip ) );
     remoteObject.set( "parent", getId( toolTip.getParent() ) );
@@ -73,11 +67,10 @@ public final class ToolTipLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    ToolTip toolTip = ( ToolTip )widget;
-    WidgetLCAUtil.renderCustomVariant( widget );
-    WidgetLCAUtil.renderRoundedBorder( widget );
-    WidgetLCAUtil.renderBackgroundGradient( widget );
+  public void renderChanges( ToolTip toolTip ) throws IOException {
+    WidgetLCAUtil.renderCustomVariant( toolTip );
+    WidgetLCAUtil.renderRoundedBorder( toolTip );
+    WidgetLCAUtil.renderBackgroundGradient( toolTip );
     renderProperty( toolTip, PROP_AUTO_HIDE, toolTip.getAutoHide(), false );
     renderProperty( toolTip, PROP_TEXT, toolTip.getText(), "" );
     renderProperty( toolTip, PROP_MESSAGE, toolTip.getMessage(), "" );

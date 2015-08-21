@@ -18,7 +18,7 @@ import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemot
 
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.RemoteAdapter;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil;
@@ -33,10 +33,9 @@ import org.eclipse.swt.internal.widgets.IWidgetFontAdapter;
 import org.eclipse.swt.internal.widgets.WidgetRemoteAdapter;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class TableItemLCA extends AbstractWidgetLCA {
+public final class TableItemLCA extends WidgetLCA<TableItem> {
 
   private static interface IRenderRunnable {
     void run() throws IOException;
@@ -55,8 +54,7 @@ public final class TableItemLCA extends AbstractWidgetLCA {
   static final String PROP_CACHED = "cached";
 
   @Override
-  public void preserveValues( Widget widget ) {
-    TableItem item = ( TableItem )widget;
+  public void preserveValues( TableItem item ) {
     preserveProperty( item, PROP_INDEX, getIndex( item ) );
     preserveProperty( item, PROP_CACHED, isCached( item ) );
     if( isCached( item ) ) {
@@ -65,8 +63,6 @@ public final class TableItemLCA extends AbstractWidgetLCA {
       WidgetLCAUtil.preserveBackground( item, getUserBackground( item ) );
       WidgetLCAUtil.preserveForeground( item, getUserForeground( item ) );
       WidgetLCAUtil.preserveFont( item, getUserFont( item ) );
-      WidgetLCAUtil.preserveCustomVariant( item );
-      WidgetLCAUtil.preserveData( item );
       preserveProperty( item, PROP_CELL_BACKGROUNDS, getCellBackgrounds( item ) );
       preserveProperty( item, PROP_CELL_FOREGROUNDS, getCellForegrounds( item ) );
       preserveProperty( item, PROP_CELL_FONTS, getCellFonts( item ) );
@@ -76,8 +72,7 @@ public final class TableItemLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    TableItem item = ( TableItem )widget;
+  public void renderInitialization( TableItem item ) throws IOException {
     Table parent = item.getParent();
     RemoteObject remoteObject = createRemoteObject( item, TYPE );
     remoteObject.setHandler( new TableItemOperationHandler( item ) );
@@ -85,8 +80,7 @@ public final class TableItemLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    final TableItem item = ( TableItem )widget;
+  public void renderChanges( final TableItem item ) throws IOException {
     renderProperty( item, PROP_INDEX, getIndex( item ), -1 );
     if( wasCleared( item ) ) {
       renderClear( item );

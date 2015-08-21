@@ -19,12 +19,25 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Menu;
 
+
 public class ControlRemoteAdapter extends WidgetRemoteAdapter {
 
-  private static final int PARENT = 1;
-  private static final int BOUNDS = 2;
+  private static final int PARENT = 11;
+  private static final int BOUNDS = 12;
+  private static final int CHILDREN = 13;
+  private static final int TOOL_TIP_TEXT = 14;
+  private static final int MENU = 15;
+  private static final int FOREGROUND = 16;
+  private static final int BACKGROUND = 17;
+  private static final int FONT = 18;
+  private static final int CURSOR = 19;
+  private static final int VISIBLE = 20;
+  private static final int ENABLED = 21;
+  private static final int BACKGROUND_IMAGE = 22;
+  private static final int ACTIVE_KEYS = 23;
+  private static final int CANCEL_KEYS = 24;
+  private static final int TAB_INDEX = 25;
 
-  private transient int preserved;
   private transient Composite parent;
   private transient Control[] children;
   private transient Rectangle bounds;
@@ -47,12 +60,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveParent( Composite parent ) {
-    preserved |= PARENT;
+    markPreserved( PARENT );
     this.parent = parent;
   }
 
   public boolean hasPreservedParent() {
-    return ( preserved & PARENT ) != 0;
+    return hasPreserved( PARENT );
   }
 
   public Composite getPreservedParent() {
@@ -60,7 +73,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveChildren( Control[] children ) {
+    markPreserved( CHILDREN );
     this.children = children;
+  }
+
+  public boolean hasPreservedChildren() {
+    return hasPreserved( CHILDREN );
   }
 
   public Control[] getPreservedChildren() {
@@ -68,12 +86,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveBounds( Rectangle bounds ) {
-    preserved |= BOUNDS;
+    markPreserved( BOUNDS );
     this.bounds = bounds;
   }
 
   public boolean hasPreservedBounds() {
-    return ( preserved & BOUNDS ) != 0;
+    return hasPreserved( BOUNDS );
   }
 
   public Rectangle getPreservedBounds() {
@@ -81,7 +99,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveTabIndex( int tabIndex ) {
+    markPreserved( TAB_INDEX );
     this.tabIndex = tabIndex;
+  }
+
+  public boolean hasPreservedTabIndex() {
+    return hasPreserved( TAB_INDEX );
   }
 
   public int getPreservedTabIndex() {
@@ -89,7 +112,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveToolTipText( String toolTipText ) {
+    markPreserved( TOOL_TIP_TEXT );
     this.toolTipText = toolTipText;
+  }
+
+  public boolean hasPreservedToolTipText() {
+    return hasPreserved( TOOL_TIP_TEXT );
   }
 
   public String getPreservedToolTipText() {
@@ -97,7 +125,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveMenu( Menu menu ) {
+    markPreserved( MENU );
     this.menu = menu;
+  }
+
+  public boolean hasPreservedMenu() {
+    return hasPreserved( MENU );
   }
 
   public Menu getPreservedMenu() {
@@ -105,7 +138,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveVisible( boolean visible ) {
+    markPreserved( VISIBLE );
     this.visible = visible;
+  }
+
+  public boolean hasPreservedVisible() {
+    return hasPreserved( VISIBLE );
   }
 
   public boolean getPreservedVisible() {
@@ -113,7 +151,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveEnabled( boolean enabled ) {
+    markPreserved( ENABLED );
     this.enabled = enabled;
+  }
+
+  public boolean hasPreservedEnabled() {
+    return hasPreserved( ENABLED );
   }
 
   public boolean getPreservedEnabled() {
@@ -121,7 +164,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveForeground( Color foreground ) {
+    markPreserved( FOREGROUND );
     this.foreground = foreground;
+  }
+
+  public boolean hasPreservedForeground() {
+    return hasPreserved( FOREGROUND );
   }
 
   public Color getPreservedForeground() {
@@ -129,7 +177,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveBackground( Color background ) {
+    markPreserved( BACKGROUND );
     this.background = background;
+  }
+
+  public boolean hasPreservedBackground() {
+    return hasPreserved( BACKGROUND );
   }
 
   public Color getPreservedBackground() {
@@ -137,6 +190,7 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveBackgroundTransparency( boolean transparency ) {
+    markPreserved( BACKGROUND );
     backgroundTransparency = transparency;
   }
 
@@ -145,7 +199,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveBackgroundImage( Image backgroundImage ) {
+    markPreserved( BACKGROUND_IMAGE );
     this.backgroundImage = backgroundImage;
+  }
+
+  public boolean hasPreservedBackgroundImage() {
+    return hasPreserved( BACKGROUND_IMAGE );
   }
 
   public Image getPreservedBackgroundImage() {
@@ -153,7 +212,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveFont( Font font ) {
+    markPreserved( FONT );
     this.font = font;
+  }
+
+  public boolean hasPreservedFont() {
+    return hasPreserved( FONT );
   }
 
   public Font getPreservedFont() {
@@ -161,7 +225,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveCursor( Cursor cursor ) {
+    markPreserved( CURSOR );
     this.cursor = cursor;
+  }
+
+  public boolean hasPreservedCursor() {
+    return hasPreserved( CURSOR );
   }
 
   public Cursor getPreservedCursor() {
@@ -169,7 +238,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveActiveKeys( String[] activeKeys ) {
+    markPreserved( ACTIVE_KEYS );
     this.activeKeys = activeKeys;
+  }
+
+  public boolean hasPreservedActiveKeys() {
+    return hasPreserved( ACTIVE_KEYS );
   }
 
   public String[] getPreservedActiveKeys() {
@@ -177,7 +251,12 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveCancelKeys( String[] cancelKeys ) {
+    markPreserved( CANCEL_KEYS );
     this.cancelKeys = cancelKeys;
+  }
+
+  public boolean hasPreservedCancelKeys() {
+    return hasPreserved( CANCEL_KEYS );
   }
 
   public String[] getPreservedCancelKeys() {
@@ -187,7 +266,6 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   @Override
   public void clearPreserved() {
     super.clearPreserved();
-    preserved = 0;
     parent = null;
     children = null;
     bounds = null;

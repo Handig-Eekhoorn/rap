@@ -24,7 +24,7 @@ import java.io.IOException;
 
 import org.eclipse.rap.json.JsonArray;
 import org.eclipse.rap.json.JsonValue;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil;
@@ -36,10 +36,9 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.internal.custom.ICTabFolderAdapter;
 import org.eclipse.swt.internal.widgets.IWidgetGraphicsAdapter;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class CTabFolderLCA extends AbstractWidgetLCA {
+public final class CTabFolderLCA extends WidgetLCA<CTabFolder> {
 
   private static final String TYPE = "rwt.widgets.CTabFolder";
   private static final String[] ALLOWED_STYLES = {
@@ -79,10 +78,7 @@ public final class CTabFolderLCA extends AbstractWidgetLCA {
   private static final Rectangle ZERO_BOUNDS = new Rectangle( 0, 0, 0, 0 );
 
   @Override
-  public void preserveValues( Widget widget ) {
-    CTabFolder folder = ( CTabFolder )widget;
-    ControlLCAUtil.preserveValues( folder );
-    WidgetLCAUtil.preserveCustomVariant( folder );
+  public void preserveValues( CTabFolder folder ) {
     preserveProperty( folder, PROP_TAB_POSITION, getTabPosition( folder ) );
     preserveProperty( folder, PROP_TAB_HEIGHT, folder.getTabHeight() );
     preserveProperty( folder, PROP_MIN_MAX_STATE, getMinMaxState( folder ) );
@@ -101,12 +97,10 @@ public final class CTabFolderLCA extends AbstractWidgetLCA {
                       getSelectionBackgroundImage( folder ) );
     preserveSelectionBgGradient( folder );
     preserveProperty( folder, PROP_BORDER_VISIBLE, folder.getBorderVisible() );
-    WidgetLCAUtil.preserveListenDefaultSelection( folder );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    CTabFolder folder = ( CTabFolder )widget;
+  public void renderInitialization( CTabFolder folder ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( folder, TYPE );
     remoteObject.setHandler( new CTabFolderOperationHandler( folder ) );
     remoteObject.set( "parent", WidgetUtil.getId( folder.getParent() ) );
@@ -126,8 +120,7 @@ public final class CTabFolderLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    CTabFolder folder = ( CTabFolder )widget;
+  public void renderChanges( CTabFolder folder ) throws IOException {
     ControlLCAUtil.renderChanges( folder );
     WidgetLCAUtil.renderCustomVariant( folder );
     renderProperty( folder, PROP_TAB_POSITION, getTabPosition( folder ), DEFAULT_TAB_POSITION );

@@ -13,7 +13,6 @@ package org.eclipse.swt.internal.widgets.toolitemkit;
 
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.hasChanged;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
@@ -21,10 +20,11 @@ import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
 import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
+
 import java.io.IOException;
 
 import org.eclipse.rap.rwt.RWT;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.util.MnemonicUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
@@ -33,10 +33,9 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.internal.widgets.IToolItemAdapter;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class ToolItemLCA extends AbstractWidgetLCA {
+public final class ToolItemLCA extends WidgetLCA<ToolItem> {
 
   private static final String TYPE = "rwt.widgets.ToolItem";
   private static final String[] ALLOWED_STYLES = {
@@ -53,13 +52,10 @@ public final class ToolItemLCA extends AbstractWidgetLCA {
   private static final String PROP_BADGE = "badge";
 
   @Override
-  public void preserveValues( Widget widget ) {
-    ToolItem item = ( ToolItem )widget;
+  public void preserveValues( ToolItem item ) {
     WidgetLCAUtil.preserveBounds( item, item.getBounds() );
     WidgetLCAUtil.preserveEnabled( item, item.getEnabled() );
     WidgetLCAUtil.preserveToolTipText( item, item.getToolTipText() );
-    WidgetLCAUtil.preserveCustomVariant( item );
-    WidgetLCAUtil.preserveData( item );
     preserveProperty( item, PROP_VISIBLE, isVisible( item ) );
     preserveProperty( item, PROP_TEXT, item.getText() );
     preserveProperty( item, PROP_IMAGE, getImage( item ) );
@@ -67,14 +63,10 @@ public final class ToolItemLCA extends AbstractWidgetLCA {
     preserveProperty( item, PROP_CONTROL, item.getControl() );
     preserveProperty( item, PROP_SELECTION, item.getSelection() );
     preserveProperty( item, PROP_BADGE, getBadge( item ) );
-    if( !isSeparator( item ) ) {
-      preserveListenSelection( item );
-    }
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    ToolItem item = ( ToolItem )widget;
+  public void renderInitialization( ToolItem item ) throws IOException {
     ToolBar toolBar = item.getParent();
     // TODO [tb] For the index, it is currently ignored that controls
     //           attached to a ToolItem use an index-slot of their own on
@@ -90,8 +82,7 @@ public final class ToolItemLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    ToolItem item = ( ToolItem )widget;
+  public void renderChanges( ToolItem item ) throws IOException {
     WidgetLCAUtil.renderBounds( item, item.getBounds() );
     WidgetLCAUtil.renderEnabled( item, item.getEnabled() );
     WidgetLCAUtil.renderToolTip( item, item.getToolTipText() );

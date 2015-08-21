@@ -13,8 +13,6 @@ package org.eclipse.swt.internal.widgets.tablekit;
 
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.hasChanged;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenDefaultSelection;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenDefaultSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
@@ -29,7 +27,7 @@ import static org.eclipse.swt.internal.widgets.MarkupUtil.isMarkupEnabledFor;
 import java.io.IOException;
 
 import org.eclipse.rap.json.JsonArray;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.template.TemplateLCAUtil;
@@ -40,17 +38,15 @@ import org.eclipse.swt.internal.widgets.CellToolTipUtil;
 import org.eclipse.swt.internal.widgets.ICellToolTipAdapter;
 import org.eclipse.swt.internal.widgets.ITableAdapter;
 import org.eclipse.swt.internal.widgets.ItemHolder;
-import org.eclipse.swt.internal.widgets.ScrollBarLCAUtil;
 import org.eclipse.swt.internal.widgets.WidgetRemoteAdapter;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Item;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class TableLCA extends AbstractWidgetLCA {
+public final class TableLCA extends WidgetLCA<Table> {
 
   private static final String TYPE = "rwt.widgets.Grid";
   private static final String[] ALLOWED_STYLES = {
@@ -93,10 +89,7 @@ public final class TableLCA extends AbstractWidgetLCA {
   private static final String DEFAULT_SORT_DIRECTION = "none";
 
   @Override
-  public void preserveValues( Widget widget ) {
-    Table table = ( Table )widget;
-    ControlLCAUtil.preserveValues( table );
-    WidgetLCAUtil.preserveCustomVariant( table );
+  public void preserveValues( Table table ) {
     preserveProperty( table, PROP_ITEM_COUNT, table.getItemCount() );
     preserveProperty( table, PROP_ITEM_HEIGHT, table.getItemHeight() );
     preserveProperty( table, PROP_ITEM_METRICS, getItemMetrics( table ) );
@@ -112,23 +105,13 @@ public final class TableLCA extends AbstractWidgetLCA {
     preserveProperty( table, PROP_SELECTION, getSelection( table ) );
     preserveProperty( table, PROP_SORT_DIRECTION, getSortDirection( table ) );
     preserveProperty( table, PROP_SORT_COLUMN, table.getSortColumn() );
-    preserveListenSelection( table );
-    preserveListenDefaultSelection( table );
     preserveProperty( table, PROP_ALWAYS_HIDE_SELECTION, hasAlwaysHideSelection( table ) );
     preserveProperty( table, PROP_ENABLE_CELL_TOOLTIP, CellToolTipUtil.isEnabledFor( table ) );
     preserveProperty( table, PROP_CELL_TOOLTIP_TEXT, null );
-    ScrollBarLCAUtil.preserveValues( table );
   }
 
   @Override
-  public void readData( Widget widget ) {
-    super.readData( widget );
-    ScrollBarLCAUtil.processSelectionEvent( ( Table )widget );
-  }
-
-  @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    Table table = ( Table )widget;
+  public void renderInitialization( Table table ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( table, TYPE );
     remoteObject.setHandler( new TableOperationHandler( table ) );
     remoteObject.set( "parent", getId( table.getParent() ) );
@@ -148,13 +131,11 @@ public final class TableLCA extends AbstractWidgetLCA {
     remoteObject.set( PROP_TREE_COLUMN, -1 );
     remoteObject.set( PROP_MARKUP_ENABLED, isMarkupEnabledFor( table ) );
     TemplateLCAUtil.renderRowTemplate( table );
-    ScrollBarLCAUtil.renderInitialization( table );
     remoteObject.listen( PROP_SETDATA_LISTENER, isVirtual( table ) );
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    final Table table = ( Table )widget;
+  public void renderChanges( final Table table ) throws IOException {
     ControlLCAUtil.renderChanges( table );
     WidgetLCAUtil.renderCustomVariant( table );
     renderProperty( table, PROP_ITEM_COUNT, table.getItemCount(), ZERO );
@@ -182,7 +163,6 @@ public final class TableLCA extends AbstractWidgetLCA {
     renderProperty( table, PROP_ALWAYS_HIDE_SELECTION, hasAlwaysHideSelection( table ), false );
     renderProperty( table, PROP_ENABLE_CELL_TOOLTIP, CellToolTipUtil.isEnabledFor( table ), false );
     renderProperty( table, PROP_CELL_TOOLTIP_TEXT, getAndResetCellToolTipText( table ), null );
-    ScrollBarLCAUtil.renderChanges( table );
   }
 
   @Override

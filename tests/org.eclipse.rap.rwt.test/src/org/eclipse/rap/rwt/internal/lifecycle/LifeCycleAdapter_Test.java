@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2002, 2014 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2002, 2015 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,11 +11,7 @@
  ******************************************************************************/
 package org.eclipse.rap.rwt.internal.lifecycle;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.util.Locale;
 
@@ -50,54 +46,11 @@ public class LifeCycleAdapter_Test {
   }
 
   @Test
-  public void testDisplayAdapter() {
-    Display display = new Display();
-
-    DisplayLifeCycleAdapter adapter = display.getAdapter( DisplayLifeCycleAdapter.class );
-
-    assertNotNull( adapter );
-  }
-
-  @Test
-  public void testDisplayAdapterReturnsSameAdapterForEachInvocation() {
-    Display display = new Display();
-
-    Object adapter1 = display.getAdapter( DisplayLifeCycleAdapter.class );
-    Object adapter2 = display.getAdapter( DisplayLifeCycleAdapter.class );
-
-    assertSame( adapter1, adapter2 );
-  }
-
-  @Test
-  public void testDisplayAdapterReturnsSameAdapterForDifferentDisplays() {
-    Display display1 = new Display();
-    Object adapter1 = display1.getAdapter( DisplayLifeCycleAdapter.class );
-    display1.dispose();
-    Display display2 = new Display();
-
-    Object adapter2 = display2.getAdapter( DisplayLifeCycleAdapter.class );
-
-    assertSame( adapter1, adapter2 );
-  }
-
-  @Test
-  public void testDisplayAdapterIsApplicationScoped() {
-    Display display1 = new Display();
-    Object adapter1 = display1.getAdapter( DisplayLifeCycleAdapter.class );
-    newSession();
-    Display display2 = new Display();
-
-    Object adapter2 = display2.getAdapter( DisplayLifeCycleAdapter.class );
-
-    assertSame( adapter1, adapter2 );
-  }
-
-  @Test
   public void testWidgetAdapter() {
     Display display = new Display();
     Widget widget = new Shell( display );
 
-    Object adapter = widget.getAdapter( WidgetLifeCycleAdapter.class );
+    Object adapter = widget.getAdapter( WidgetLCA.class );
 
     assertNotNull( adapter );
   }
@@ -107,8 +60,8 @@ public class LifeCycleAdapter_Test {
     Display display = new Display();
     Widget widget = new Shell( display );
 
-    Object adapter1 = widget.getAdapter( WidgetLifeCycleAdapter.class );
-    Object adapter2 = widget.getAdapter( WidgetLifeCycleAdapter.class );
+    Object adapter1 = widget.getAdapter( WidgetLCA.class );
+    Object adapter2 = widget.getAdapter( WidgetLCA.class );
 
     assertSame( adapter1, adapter2 );
   }
@@ -117,10 +70,10 @@ public class LifeCycleAdapter_Test {
   public void testWidgetAdapterReturnsSameAdapterForDifferentInstancesOfSameType() {
     Display display = new Display();
     Widget widget1 = new Shell( display );
-    Object adapter1 = widget1.getAdapter( WidgetLifeCycleAdapter.class );
+    Object adapter1 = widget1.getAdapter( WidgetLCA.class );
     Widget widget2 = new Shell( display );
 
-    Object adapter2 = widget2.getAdapter( WidgetLifeCycleAdapter.class );
+    Object adapter2 = widget2.getAdapter( WidgetLCA.class );
 
     assertSame( adapter1, adapter2 );
   }
@@ -131,8 +84,8 @@ public class LifeCycleAdapter_Test {
     Shell shell = new Shell( display );
     Button button = new Button( shell, SWT.PUSH );
 
-    Object shellAdapter = shell.getAdapter( WidgetLifeCycleAdapter.class );
-    Object buttonAdapter = button.getAdapter( WidgetLifeCycleAdapter.class );
+    Object shellAdapter = shell.getAdapter( WidgetLCA.class );
+    Object buttonAdapter = button.getAdapter( WidgetLCA.class );
 
     assertNotNull( shellAdapter );
     assertNotNull( buttonAdapter );
@@ -143,11 +96,11 @@ public class LifeCycleAdapter_Test {
   public void testWidgetAdapterIsApplicationScoped() {
     Display display1 = new Display();
     Widget widget1 = new Shell( display1 );
-    Object adapter1 = widget1.getAdapter( WidgetLifeCycleAdapter.class );
+    Object adapter1 = widget1.getAdapter( WidgetLCA.class );
     newSession();
     Display display2 = new Display();
     Widget widget2 = new Shell( display2 );
-    Object adapter2 = widget2.getAdapter( WidgetLifeCycleAdapter.class );
+    Object adapter2 = widget2.getAdapter( WidgetLCA.class );
 
     assertSame( adapter1, adapter2 );
   }
@@ -157,11 +110,8 @@ public class LifeCycleAdapter_Test {
     Display display = new Display();
     Shell shell = new Shell( display );
     Widget widget = new TestWidget( shell );
-    try {
-      widget.getAdapter( WidgetLifeCycleAdapter.class );
-      fail();
-    } catch( LifeCycleAdapterException expected ) {
-    }
+
+    assertNull( widget.getAdapter( WidgetLCA.class ) );
   }
 
   @Test
@@ -174,9 +124,9 @@ public class LifeCycleAdapter_Test {
       Tree tree = new Tree( shell, SWT.NONE );
       TreeItem treeItem = new TreeItem( tree, SWT.NONE );
 
-      Object treeItemLCA = treeItem.getAdapter( WidgetLifeCycleAdapter.class );
+      Object treeItemLCA = treeItem.getAdapter( WidgetLCA.class );
 
-      assertTrue( treeItemLCA instanceof WidgetLifeCycleAdapter );
+      assertTrue( treeItemLCA instanceof WidgetLCA );
     } finally {
       Locale.setDefault( originalLocale );
     }

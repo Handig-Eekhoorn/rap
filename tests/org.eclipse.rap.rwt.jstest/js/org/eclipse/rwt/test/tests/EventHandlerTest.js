@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 EclipseSource and others.
+ * Copyright (c) 2010, 2015 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -816,6 +816,64 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.EventHandlerTest", {
 
       assertEquals( 0, logger.getLog().length );
       widget.destroy();
+    },
+
+    testMouseWheelEvent_getPositiveDelta : function() {
+      var logger = TestUtil.getLogger();
+      var widget = this.createDefaultWidget();
+      widget.addEventListener( "mousewheel", function( event ) {
+        logger.log(event.getWheelDelta());
+      });
+
+      TestUtil.fakeWheel( widget, 1 );
+
+      assertEquals( 1, logger.getLog().length );
+      assertEquals( 1, logger.getLog()[0] );
+      widget.destroy();
+    },
+
+    testMouseWheelEvent_getNegativeDelta : function() {
+      var logger = TestUtil.getLogger();
+      var widget = this.createDefaultWidget();
+      widget.addEventListener( "mousewheel", function( event ) {
+        logger.log(event.getWheelDelta());
+      });
+
+      TestUtil.fakeWheel( widget, -1 );
+
+      assertEquals( 1, logger.getLog().length );
+      assertEquals( -1, logger.getLog()[0] );
+      widget.destroy();
+    },
+
+    // See Bug #473482
+    testMouseWheelEvent_ignoreDeltaZero : function() {
+      var logger = TestUtil.getLogger();
+      var widget = this.createDefaultWidget();
+      widget.addEventListener( "mousewheel", function( event ) {
+        logger.log(event.getWheelDelta());
+      });
+
+      TestUtil.fakeWheel( widget, 0 );
+
+      assertEquals( 0, logger.getLog().length );
+      widget.destroy();
+    },
+
+    testSettingCapturingWidgetCancelsDomKeyEvents : function() {
+      var widget1 = new rwt.widgets.base.Terminator();
+      widget1.setCapture( true );
+      widget1.addToDocument();
+      var widget2 = new rwt.widgets.base.Terminator();
+      widget2.setFocused( true );
+      widget2.addToDocument();
+      TestUtil.flush();
+
+      var event = TestUtil.fireFakeKeyDomEvent( widget2.getElement(), "keydown", "A", 0 );
+
+      assertTrue( rwt.event.EventHandlerUtil.wasStopped( event ) );
+      widget1.destroy();
+      widget2.destroy();
     },
 
     /////////

@@ -18,14 +18,14 @@ import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.RemoteAdapter;
 import org.eclipse.rap.rwt.internal.theme.ThemeAdapter;
+import org.eclipse.rap.rwt.internal.util.ActiveKeysUtil;
 import org.eclipse.rap.rwt.theme.BoxDimensions;
 import org.eclipse.rap.rwt.theme.ControlThemeAdapter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.accessibility.Accessible;
+import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.events.ControlListener;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.DragDetectListener;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.GestureListener;
@@ -43,7 +43,6 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.internal.widgets.ControlHolder;
 import org.eclipse.swt.internal.widgets.ControlRemoteAdapter;
 import org.eclipse.swt.internal.widgets.IControlAdapter;
 import org.eclipse.swt.internal.widgets.IDisplayAdapter;
@@ -85,7 +84,17 @@ public abstract class Control extends Widget implements Drawable {
 
     @Override
     public void setTabIndex( int index ) {
-      tabIndex = index;
+      if( takesFocus() ) {
+        ControlLCAUtil.preserveTabIndex( Control.this, tabIndex );
+        tabIndex = index;
+      }
+    }
+
+    private boolean takesFocus() {
+      boolean result = ( getStyle() & SWT.NO_FOCUS ) == 0;
+      result &= Control.this.getClass() != Composite.class;
+      result &= Control.this.getClass() != SashForm.class;
+      return result;
     }
 
     @Override
@@ -133,7 +142,7 @@ public abstract class Control extends Widget implements Drawable {
   private Object layoutData;
   private String toolTipText;
   private Menu menu;
-  private DisposeListener menuDisposeListener;
+  private Listener menuDisposeListener;
   private Color foreground;
   private Color background;
   private Image backgroundImage;
@@ -187,7 +196,7 @@ public abstract class Control extends Widget implements Drawable {
     controlAdapter = new ControlAdapter();
     bounds = new Rectangle( 0, 0, 0, 0 );
     tabIndex = -1;
-    ControlHolder.addControl( parent, this );
+    parent.addChild( this );
     createWidget();
   }
 
@@ -280,7 +289,7 @@ public abstract class Control extends Widget implements Drawable {
    */
   public void setVisible( boolean visible ) {
     checkWidget();
-    if( ( state & HIDDEN ) != 0 != !visible ) {
+    if( hasState( HIDDEN ) != !visible ) {
       if( visible ) {
         notifyListeners( SWT.Show, null );
       }
@@ -290,7 +299,11 @@ public abstract class Control extends Widget implements Drawable {
         control = display.getFocusControl();
         fixFocus = isFocusAncestor( control );
       }
-      state = visible ? state & ~HIDDEN : state | HIDDEN;
+      if( visible ) {
+        removeState( HIDDEN );
+      } else {
+        addState( HIDDEN );
+      }
       if( !visible ) {
         notifyListeners( SWT.Hide, null );
       }
@@ -338,7 +351,7 @@ public abstract class Control extends Widget implements Drawable {
    */
   public boolean getVisible() {
     checkWidget();
-    return ( state & HIDDEN ) == 0;
+    return !hasState( HIDDEN );
   }
 
   //////////////
@@ -373,9 +386,9 @@ public abstract class Control extends Widget implements Drawable {
       fixFocus = isFocusAncestor( control );
     }
     if( enabled ) {
-      state &= ~DISABLED;
+      removeState( DISABLED );
     } else {
-      state |= DISABLED;
+      addState( DISABLED );
     }
     if( fixFocus ) {
       fixFocus( control );
@@ -399,7 +412,7 @@ public abstract class Control extends Widget implements Drawable {
    */
   public boolean getEnabled() {
     checkWidget();
-    return ( state & DISABLED ) == 0;
+    return !hasState( DISABLED );
   }
 
   /**
@@ -446,6 +459,7 @@ public abstract class Control extends Widget implements Drawable {
     if( color != null && color.isDisposed() ) {
       error( SWT.ERROR_INVALID_ARGUMENT );
     }
+    ControlLCAUtil.preserveBackground( this, background, backgroundTransparency );
     background = color;
     updateBackground();
   }
@@ -512,10 +526,9 @@ public abstract class Control extends Widget implements Drawable {
       error( SWT.ERROR_INVALID_ARGUMENT );
     }
     if( backgroundImage != image ) {
+      ControlLCAUtil.preserveBackgroundImage( this, backgroundImage );
       backgroundImage = image;
     }
-    // if( image.type != SWT.BITMAP )
-    // error( SWT.ERROR_INVALID_ARGUMENT );
   }
 
   /**
@@ -559,7 +572,8 @@ public abstract class Control extends Widget implements Drawable {
     if( color != null && color.isDisposed() ) {
       error( SWT.ERROR_INVALID_ARGUMENT );
     }
-      foreground = color;
+    ControlLCAUtil.preserveForeground( this, foreground );
+    foreground = color;
   }
 
   /**
@@ -587,9 +601,9 @@ public abstract class Control extends Widget implements Drawable {
   }
 
   void updateBackgroundMode() {
-    int oldState = state & PARENT_BACKGROUND;
+    boolean oldState = hasState( PARENT_BACKGROUND );
     checkBackground();
-    if( oldState != ( state & PARENT_BACKGROUND ) ) {
+    if( oldState != hasState( PARENT_BACKGROUND ) ) {
       updateBackground();
     }
   }
@@ -604,7 +618,7 @@ public abstract class Control extends Widget implements Drawable {
     if (this == shell) {
       return;
     }
-    state &= ~PARENT_BACKGROUND;
+    removeState( PARENT_BACKGROUND );
     Composite composite = parent;
     do {
       int mode = composite.backgroundMode;
@@ -612,13 +626,13 @@ public abstract class Control extends Widget implements Drawable {
         if (mode == SWT.INHERIT_DEFAULT) {
           Control control = this;
           do {
-            if ((control.state & THEME_BACKGROUND) == 0) {
+            if( !control.hasState( THEME_BACKGROUND ) ) {
               return;
             }
             control = control.parent;
           } while (control != composite);
         }
-        state |= PARENT_BACKGROUND;
+        addState( PARENT_BACKGROUND );
         return;
       }
       if (composite == shell) {
@@ -632,16 +646,17 @@ public abstract class Control extends Widget implements Drawable {
    * Applies the background according to PARENT_BACKGROUND state.
    */
   private void updateBackground() {
+    ControlLCAUtil.preserveBackground( this, background, backgroundTransparency );
     backgroundTransparency =    background == null
                              && backgroundImage == null
-                             && ( state & PARENT_BACKGROUND ) != 0;
+                             && hasState( PARENT_BACKGROUND );
   }
 
   Control findBackgroundControl() {
     Control result = null;
     if( background != null || backgroundImage != null ) {
       result = this;
-    } else if( ( state & PARENT_BACKGROUND ) != 0 ) {
+    } else if( hasState( PARENT_BACKGROUND ) ) {
       result = parent.findBackgroundControl();
     }
     return result;
@@ -670,6 +685,7 @@ public abstract class Control extends Widget implements Drawable {
     if( font != null && font.isDisposed() ) {
       error( SWT.ERROR_INVALID_ARGUMENT );
     }
+    ControlLCAUtil.preserveFont( this, this.font );
     this.font = font;
   }
 
@@ -721,6 +737,7 @@ public abstract class Control extends Widget implements Drawable {
     if( cursor != null && cursor.isDisposed() ) {
       error( SWT.ERROR_INVALID_ARGUMENT );
     }
+    ControlLCAUtil.preserveCursor( this, this.cursor );
     this.cursor = cursor;
   }
 
@@ -1334,6 +1351,7 @@ public abstract class Control extends Widget implements Drawable {
     {
       MarkupValidator.getInstance().validate( toolTipText );
     }
+    ControlLCAUtil.preserveToolTipText( this, this.toolTipText );
     this.toolTipText = toolTipText;
   }
 
@@ -1396,7 +1414,7 @@ public abstract class Control extends Widget implements Drawable {
         }
       }
       removeMenuDisposeListener();
-      this.menu = menu;
+      _setMenu( menu );
       addMenuDisposeListener();
     }
   }
@@ -1452,12 +1470,7 @@ public abstract class Control extends Widget implements Drawable {
     if( this instanceof Shell ) {
       // TODO: add support for Shell reordering
     } else if( control == null || control.parent == parent && control != this ) {
-      ControlHolder.removeControl( getParent(), this );
-      int index = 0;
-      if( control != null ) {
-        index = ControlHolder.indexOf( getParent(), control );
-      }
-      ControlHolder.addControl( getParent(), this, index );
+      parent.moveAbove( this, control );
     }
   }
 
@@ -1489,12 +1502,7 @@ public abstract class Control extends Widget implements Drawable {
     if( this instanceof Shell ) {
       // TODO: add support for Shell reordering
     } else if( control == null || control.parent == parent && control != this ) {
-      ControlHolder.removeControl( getParent(), this );
-      int index = ControlHolder.size( getParent() );
-      if( control != null ) {
-        index = ControlHolder.indexOf( getParent(), control ) + 1;
-      }
-      ControlHolder.addControl( getParent(), this, index );
+      parent.moveBelow( this, control );
     }
   }
 
@@ -2160,7 +2168,7 @@ public abstract class Control extends Widget implements Drawable {
       }
       ControlLCAUtil.preserveParent( this, this.parent );
       this.parent = parent;
-      ControlHolder.addControl( parent, this );
+      parent.addChild( this );
     }
     return true;
   }
@@ -2399,9 +2407,25 @@ public abstract class Control extends Widget implements Drawable {
 
   @Override
   public void setData( String key, Object value ) {
-    if( !RWT.TOOLTIP_MARKUP_ENABLED.equals( key ) || !isToolTipMarkupEnabledFor( this ) ) {
-      super.setData( key, value );
+    if( RWT.TOOLTIP_MARKUP_ENABLED.equals( key ) && isToolTipMarkupEnabledFor( this ) ) {
+      // MARKUP_ENABLED cannot be changed once it is set
+      return;
     }
+    if( RWT.ACTIVE_KEYS.equals( key ) ) {
+      if( value != null && !( value instanceof String[] ) ) {
+        String mesg = "Illegal value for RWT.ACTIVE_KEYS in data, must be a string array";
+        throw new IllegalArgumentException( mesg );
+      }
+      ActiveKeysUtil.preserveActiveKeys( this );
+    }
+    if( RWT.CANCEL_KEYS.equals( key ) ) {
+      if( value != null && !( value instanceof String[] ) ) {
+        String mesg = "Illegal value for RWT.CANCEL_KEYS in data, must be a string array";
+        throw new IllegalArgumentException( mesg );
+      }
+      ActiveKeysUtil.preserveCancelKeys( this );
+    }
+    super.setData( key, value );
   }
 
   ////////////
@@ -2410,7 +2434,7 @@ public abstract class Control extends Widget implements Drawable {
   @Override
   void releaseParent() {
     if( parent != null ) {
-      parent.removeControl( this );
+      parent.removeChild( this );
     }
   }
 
@@ -2478,6 +2502,11 @@ public abstract class Control extends Widget implements Drawable {
     bounds = rectangle;
     bounds.width = Math.max( 0, bounds.width );
     bounds.height = Math.max( 0, bounds.height );
+  }
+
+  private void _setMenu( Menu menu ) {
+    ControlLCAUtil.preserveMenu( this, this.menu );
+    this.menu = menu;
   }
 
   void updateMode() {
@@ -2599,26 +2628,45 @@ public abstract class Control extends Widget implements Drawable {
     oldDecorations.fixDecorations( newDecorations, this );
   }
 
-  ///////////////////////////////////////////////////////
-  // Helping methods to observe the disposal of the menu
+  @Override
+  void addState( int flag ) {
+    preserveState( flag );
+    super.addState( flag );
+  }
+
+  @Override
+  void removeState( int flag ) {
+    preserveState( flag );
+    super.removeState( flag );
+  }
+
+  private void preserveState( int flag ) {
+    if( ( flag & DISABLED ) != 0 ) {
+      ControlLCAUtil.preserveEnabled( this, !hasState( DISABLED ) );
+    }
+    if( ( flag & HIDDEN ) != 0 ) {
+      ControlLCAUtil.preserveVisible( this, !hasState( HIDDEN ) );
+    }
+  }
 
   private void addMenuDisposeListener() {
     if( menu != null ) {
       if( menuDisposeListener == null ) {
-        menuDisposeListener = new DisposeListener() {
+        menuDisposeListener = new Listener() {
           @Override
-          public void widgetDisposed( DisposeEvent event ) {
-            menu = null;
+          public void handleEvent( Event event ) {
+            _setMenu( null );
           }
         };
       }
-      menu.addDisposeListener( menuDisposeListener );
+      menu.addListener( SWT.Dispose, menuDisposeListener );
     }
   }
 
   private void removeMenuDisposeListener() {
     if( menu != null ) {
-      menu.removeDisposeListener( menuDisposeListener );
+      menu.removeListener( SWT.Dispose, menuDisposeListener );
     }
   }
+
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2008, 2014 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2008, 2015 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -13,31 +13,31 @@ package org.eclipse.swt.internal.widgets.datetimekit;
 
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.DateTime;
 import org.eclipse.swt.widgets.Widget;
 
 
-public final class DateTimeLCA extends AbstractWidgetLCA {
+public final class DateTimeLCA extends WidgetLCA<DateTime> {
 
   private static final AbstractDateTimeLCADelegate DATE_LCA = new DateTimeDateLCA();
   private static final AbstractDateTimeLCADelegate TIME_LCA = new DateTimeTimeLCA();
   private static final AbstractDateTimeLCADelegate CALENDAR_LCA = new DateTimeCalendarLCA();
 
   @Override
-  public void preserveValues( Widget widget ) {
-    getDelegate( widget ).preserveValues( ( DateTime )widget );
+  public void preserveValues( DateTime dateTime ) {
+    getDelegate( dateTime ).preserveValues( dateTime );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    getDelegate( widget ).renderInitialization( ( DateTime )widget );
+  public void renderInitialization( DateTime dateTime ) throws IOException {
+    getDelegate( dateTime ).renderInitialization( dateTime );
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    getDelegate( widget ).renderChanges( ( DateTime )widget );
+  public void renderChanges( DateTime dateTime ) throws IOException {
+    getDelegate( dateTime ).renderChanges( dateTime );
   }
 
   private static AbstractDateTimeLCADelegate getDelegate( Widget widget ) {
@@ -51,4 +51,5 @@ public final class DateTimeLCA extends AbstractWidgetLCA {
     }
     return result;
   }
+
 }
