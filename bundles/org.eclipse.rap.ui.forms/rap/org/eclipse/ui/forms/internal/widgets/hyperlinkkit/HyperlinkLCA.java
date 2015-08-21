@@ -12,7 +12,6 @@
 package org.eclipse.ui.forms.internal.widgets.hyperlinkkit;
 
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenDefaultSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenDefaultSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
@@ -24,13 +23,12 @@ import java.io.IOException;
 import org.eclipse.rap.rwt.internal.lifecycle.*;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.forms.internal.widgets.IHyperlinkAdapter;
 import org.eclipse.ui.forms.widgets.Hyperlink;
 
 
 @SuppressWarnings("restriction")
-public class HyperlinkLCA extends AbstractWidgetLCA {
+public class HyperlinkLCA extends WidgetLCA<Hyperlink> {
 
   private static final String TYPE = "forms.widgets.Hyperlink"; //$NON-NLS-1$
   private static final String[] ALLOWED_STYLES = new String[] { "WRAP" }; //$NON-NLS-1$
@@ -44,10 +42,7 @@ public class HyperlinkLCA extends AbstractWidgetLCA {
   private static final int DEFAULT_UNDERLINE_MODE = 0;
 
   @Override
-  public void preserveValues( Widget widget ) {
-    Hyperlink hyperlink = ( Hyperlink )widget;
-    ControlLCAUtil.preserveValues( hyperlink );
-    WidgetLCAUtil.preserveCustomVariant( hyperlink );
+  public void preserveValues( Hyperlink hyperlink ) {
     preserveProperty( hyperlink, PROP_TEXT, hyperlink.getText() );
     preserveProperty( hyperlink, PROP_UNDERLINED, hyperlink.isUnderlined() );
     preserveProperty( hyperlink,
@@ -59,12 +54,10 @@ public class HyperlinkLCA extends AbstractWidgetLCA {
     preserveProperty( hyperlink,
                       PROP_ACTIVE_BACKGROUND,
                       getActiveBackground( hyperlink ) );
-    preserveListenDefaultSelection( hyperlink );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    Hyperlink hyperlink = ( Hyperlink )widget;
+  public void renderInitialization( Hyperlink hyperlink ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( hyperlink, TYPE );
     remoteObject.setHandler( new HyperlinkOperationHandler( hyperlink ) );
     remoteObject.set( "parent", getId( hyperlink.getParent() ) ); //$NON-NLS-1$
@@ -72,10 +65,9 @@ public class HyperlinkLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    Hyperlink hyperlink = ( Hyperlink )widget;
+  public void renderChanges( Hyperlink hyperlink ) throws IOException {
     ControlLCAUtil.renderChanges( hyperlink );
-    WidgetLCAUtil.renderCustomVariant( widget );
+    WidgetLCAUtil.renderCustomVariant( hyperlink );
     renderProperty( hyperlink, PROP_TEXT, hyperlink.getText(), "" ); //$NON-NLS-1$
     renderProperty( hyperlink, PROP_UNDERLINED, hyperlink.isUnderlined(), false );
     renderProperty( hyperlink,

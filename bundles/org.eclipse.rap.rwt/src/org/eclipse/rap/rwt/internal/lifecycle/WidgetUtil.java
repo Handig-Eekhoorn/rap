@@ -41,10 +41,10 @@ public final class WidgetUtil {
     return ( String )widget.getData( RWT.CUSTOM_VARIANT );
   }
 
-  public static AbstractWidgetLCA getLCA( Widget widget ) {
-    AbstractWidgetLCA lca = ( AbstractWidgetLCA )widget.getAdapter( WidgetLifeCycleAdapter.class );
+  public static <T extends Widget> WidgetLCA<T> getLCA( T widget ) {
+    WidgetLCA<T> lca = widget.getAdapter( WidgetLCA.class );
     if( lca == null ) {
-      throw new IllegalStateException( "Could not retrieve an instance of WidgetLifeCycleAdapter." );
+      throw new IllegalStateException( "Could not retrieve an instance of WidgetLCA." );
     }
     return lca;
   }

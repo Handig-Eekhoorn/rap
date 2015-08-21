@@ -221,12 +221,6 @@ public class Slider extends Control {
     thumb = 10;
   }
 
-  @Override
-  public boolean getEnabled() {
-    checkWidget();
-    return( state & DISABLED ) == 0;
-  }
-
   /**
    * Returns the amount that the receiver's value will be
    * modified by when the up/down (or right/left) arrows

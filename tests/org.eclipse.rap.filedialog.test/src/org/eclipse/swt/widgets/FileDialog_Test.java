@@ -12,6 +12,7 @@ package org.eclipse.swt.widgets;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -29,15 +30,18 @@ import org.eclipse.rap.rwt.client.ClientFile;
 import org.eclipse.rap.rwt.dnd.ClientFileTransfer;
 import org.eclipse.rap.rwt.internal.client.ClientFileImpl;
 import org.eclipse.rap.rwt.internal.serverpush.ServerPushManager;
+import org.eclipse.rap.rwt.internal.widgets.IDialogAdapter;
 import org.eclipse.rap.rwt.testfixture.TestContext;
 import org.eclipse.rap.rwt.widgets.DialogCallback;
 import org.eclipse.rap.rwt.widgets.DialogUtil;
+import org.eclipse.rap.rwt.widgets.FileDialogUtil;
 import org.eclipse.rap.rwt.widgets.FileUpload;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DropTarget;
 import org.eclipse.swt.dnd.FileTransfer;
 import org.eclipse.swt.internal.dnd.DNDEvent;
+import org.eclipse.swt.internal.widgets.FileDialogAdapter;
 import org.eclipse.swt.internal.widgets.FileUploadRunnable;
 import org.eclipse.swt.layout.GridData;
 import org.junit.Before;
@@ -276,6 +280,64 @@ public class FileDialog_Test {
     dialog.deleteUploadedFiles( new String[] { uploadedFile.getAbsolutePath() } );
 
     assertFalse( uploadedFile.exists() );
+  }
+
+  @Test
+  public void testSetClientFiles() {
+    ClientFile[] files = { mock( ClientFile.class ) };
+
+    dialog.getAdapter( FileDialogAdapter.class ).setClientFiles( files );
+    DialogUtil.open( dialog, callback );
+
+    verify( singleThreadExecutor ).execute( any( FileUploadRunnable.class ) );
+  }
+
+  @Test
+  public void testSetClientFiles_handlesEmptyArray() {
+    dialog = new TestFileDialog( shell );
+
+    dialog.getAdapter( FileDialogAdapter.class ).setClientFiles( new ClientFile[ 0 ] );
+    DialogUtil.open( dialog, callback );
+
+    verify( singleThreadExecutor, never() ).execute( any( FileUploadRunnable.class ) );
+  }
+
+  @Test
+  public void testSetClientFiles_canBeResetToNull() {
+    ClientFile[] files = { mock( ClientFile.class ) };
+    dialog.getAdapter( FileDialogAdapter.class ).setClientFiles( files );
+
+    dialog.getAdapter( FileDialogAdapter.class ).setClientFiles( null );
+    DialogUtil.open( dialog, callback );
+
+    verify( singleThreadExecutor, never() ).execute( any( FileUploadRunnable.class ) );
+  }
+
+  @Test
+  public void testGetAdapter_returnsFileDialogAdapter() {
+    assertNotNull( dialog.getAdapter( FileDialogAdapter.class ) );
+  }
+
+  @Test
+  public void testGetAdapter_returnsSameFileDialogAdapterInstance() {
+    assertSame( dialog.getAdapter( FileDialogAdapter.class ),
+                dialog.getAdapter( FileDialogAdapter.class ) );
+  }
+
+  @Test
+  public void testGetAdapter_returnsDialogAdapter() {
+    assertNotNull( dialog.getAdapter( IDialogAdapter.class ) );
+  }
+
+  @Test
+  public void testOpen_twice_withClientFiles() {
+    // expected not to fail
+    dialog = new FileDialog( shell );
+    FileDialogUtil.setClientFiles( dialog, new ClientFile[] { mock( ClientFile.class ) } );
+    DialogUtil.open( dialog, callback );
+    dialog.shell.close();
+    FileDialogUtil.setClientFiles( dialog, new ClientFile[] { mock( ClientFile.class ) } );
+    DialogUtil.open( dialog, callback );
   }
 
   private DropTarget getDropTarget() {

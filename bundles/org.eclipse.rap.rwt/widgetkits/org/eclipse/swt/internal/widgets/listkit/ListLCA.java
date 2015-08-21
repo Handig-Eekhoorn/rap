@@ -14,8 +14,6 @@ package org.eclipse.swt.internal.widgets.listkit;
 import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenDefaultSelection;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenDefaultSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
@@ -25,18 +23,16 @@ import static org.eclipse.swt.internal.widgets.MarkupUtil.isMarkupEnabledFor;
 
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.internal.widgets.IListAdapter;
-import org.eclipse.swt.internal.widgets.ScrollBarLCAUtil;
 import org.eclipse.swt.widgets.List;
-import org.eclipse.swt.widgets.Widget;
 
 
-public class ListLCA extends AbstractWidgetLCA {
+public class ListLCA extends WidgetLCA<List> {
 
   private static final String TYPE = "rwt.widgets.List";
   private static final String[] ALLOWED_STYLES = { "SINGLE", "MULTI", "BORDER" };
@@ -55,40 +51,25 @@ public class ListLCA extends AbstractWidgetLCA {
   private static final Point DEFAULT_ITEM_DIMENSIONS = new Point( 0, 0 );
 
   @Override
-  public void preserveValues( Widget widget ) {
-    List list = ( List  )widget;
-    ControlLCAUtil.preserveValues( list );
-    WidgetLCAUtil.preserveCustomVariant( list );
+  public void preserveValues( List list ) {
     preserveProperty( list, PROP_ITEMS, list.getItems() );
     preserveProperty( list, PROP_SELECTION_INDICES, list.getSelectionIndices() );
     preserveProperty( list, PROP_TOP_INDEX, list.getTopIndex() );
     preserveProperty( list, PROP_FOCUS_INDEX, list.getFocusIndex() );
     preserveProperty( list, PROP_ITEM_DIMENSIONS, getItemDimensions( list ) );
-    preserveListenSelection( list );
-    preserveListenDefaultSelection( list );
-    ScrollBarLCAUtil.preserveValues( list );
   }
 
   @Override
-  public void readData( Widget widget ) {
-    super.readData( widget );
-    ScrollBarLCAUtil.processSelectionEvent( ( List )widget );
-  }
-
-  @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    List list = ( List )widget;
+  public void renderInitialization( List list ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( list, TYPE );
     remoteObject.setHandler( new ListOperationHandler( list ) );
     remoteObject.set( "parent", getId( list.getParent() ) );
     remoteObject.set( "style", createJsonArray( getStyles( list, ALLOWED_STYLES ) ) );
     remoteObject.set( PROP_MARKUP_ENABLED, isMarkupEnabledFor( list ) );
-    ScrollBarLCAUtil.renderInitialization( list );
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    List list = ( List )widget;
+  public void renderChanges( List list ) throws IOException {
     ControlLCAUtil.renderChanges( list );
     WidgetLCAUtil.renderCustomVariant( list );
     renderProperty( list, PROP_ITEMS, list.getItems(), DEFAUT_ITEMS );
@@ -104,7 +85,6 @@ public class ListLCA extends AbstractWidgetLCA {
                     PROP_ITEM_DIMENSIONS,
                     getItemDimensions( list ),
                     DEFAULT_ITEM_DIMENSIONS );
-    ScrollBarLCAUtil.renderChanges( list );
   }
 
   //////////////////

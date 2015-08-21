@@ -12,14 +12,13 @@
 package org.eclipse.swt.internal.widgets.tablecolumnkit;
 
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.SWT;
@@ -29,10 +28,9 @@ import org.eclipse.swt.internal.widgets.ITableAdapter;
 import org.eclipse.swt.internal.widgets.ItemLCAUtil;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class TableColumnLCA extends AbstractWidgetLCA {
+public final class TableColumnLCA extends WidgetLCA<TableColumn> {
 
   private static final String TYPE = "rwt.widgets.GridColumn";
 
@@ -48,10 +46,8 @@ public final class TableColumnLCA extends AbstractWidgetLCA {
   private static final String DEFAULT_ALIGNMENT = "left";
 
   @Override
-  public void preserveValues( Widget widget ) {
-    TableColumn column = ( TableColumn )widget;
+  public void preserveValues( TableColumn column ) {
     WidgetLCAUtil.preserveToolTipText( column, column.getToolTipText() );
-    WidgetLCAUtil.preserveCustomVariant( column );
     WidgetLCAUtil.preserveFont( column, getFont( column ) );
     ItemLCAUtil.preserve( column );
     preserveProperty( column, PROP_INDEX, getIndex( column ) );
@@ -61,20 +57,17 @@ public final class TableColumnLCA extends AbstractWidgetLCA {
     preserveProperty( column, PROP_MOVEABLE, column.getMoveable() );
     preserveProperty( column, PROP_ALIGNMENT, getAlignment( column ) );
     preserveProperty( column, PROP_FIXED, isFixed( column ) );
-    preserveListenSelection( column );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    TableColumn column = ( TableColumn )widget;
+  public void renderInitialization( TableColumn column ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( column, TYPE );
     remoteObject.setHandler( new TableColumnOperationHandler( column ) );
     remoteObject.set( "parent", getId( column.getParent() ) );
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    TableColumn column = ( TableColumn )widget;
+  public void renderChanges( TableColumn column ) throws IOException {
     WidgetLCAUtil.renderToolTip( column, column.getToolTipText() );
     WidgetLCAUtil.renderCustomVariant( column );
     WidgetLCAUtil.renderFont( column, getFont( column ) );

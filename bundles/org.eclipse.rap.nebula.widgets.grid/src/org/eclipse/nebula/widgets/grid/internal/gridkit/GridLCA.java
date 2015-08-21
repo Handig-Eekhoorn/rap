@@ -11,8 +11,6 @@
 package org.eclipse.nebula.widgets.grid.internal.gridkit;
 
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenDefaultSelection;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenDefaultSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
@@ -30,22 +28,20 @@ import org.eclipse.nebula.widgets.grid.GridColumn;
 import org.eclipse.nebula.widgets.grid.GridItem;
 import org.eclipse.nebula.widgets.grid.internal.IGridAdapter;
 import org.eclipse.rap.json.JsonArray;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.template.TemplateLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.internal.widgets.CellToolTipUtil;
 import org.eclipse.swt.internal.widgets.ICellToolTipAdapter;
-import org.eclipse.swt.internal.widgets.ScrollBarLCAUtil;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.ScrollBar;
-import org.eclipse.swt.widgets.Widget;
 
 
 @SuppressWarnings("restriction")
-public class GridLCA extends AbstractWidgetLCA {
+public class GridLCA extends WidgetLCA<Grid> {
 
   private static final String TYPE = "rwt.widgets.Grid";
   private static final String[] ALLOWED_STYLES = new String[] {
@@ -91,8 +87,7 @@ public class GridLCA extends AbstractWidgetLCA {
   private static final String DEFAULT_SORT_DIRECTION = "none";
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    Grid grid = ( Grid )widget;
+  public void renderInitialization( Grid grid ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( grid, TYPE );
     remoteObject.setHandler( new GridOperationHandler( grid ) );
     remoteObject.set( "parent", getId( grid.getParent() ) );
@@ -102,7 +97,6 @@ public class GridLCA extends AbstractWidgetLCA {
     remoteObject.set( "indentionWidth", adapter.getIndentationWidth() );
     remoteObject.set( PROP_MARKUP_ENABLED, isMarkupEnabledFor( grid ) );
     TemplateLCAUtil.renderRowTemplate( grid );
-    ScrollBarLCAUtil.renderInitialization( grid );
     remoteObject.listen( PROP_SETDATA_LISTENER, isVirtual( grid ) );
     // Always render listen for Expand and Collapse, currently required for scrollbar
     // visibility update and setData events.
@@ -111,16 +105,7 @@ public class GridLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void readData( Widget widget ) {
-    super.readData( widget );
-    ScrollBarLCAUtil.processSelectionEvent( ( Grid )widget );
-  }
-
-  @Override
-  public void preserveValues( Widget widget ) {
-    Grid grid = ( Grid )widget;
-    ControlLCAUtil.preserveValues( ( Control )widget );
-    WidgetLCAUtil.preserveCustomVariant( grid );
+  public void preserveValues( Grid grid ) {
     preserveProperty( grid, PROP_ITEM_COUNT, grid.getRootItemCount() );
     preserveProperty( grid, PROP_ITEM_HEIGHT, grid.getItemHeight() );
     preserveProperty( grid, PROP_ITEM_METRICS, getItemMetrics( grid ) );
@@ -139,16 +124,12 @@ public class GridLCA extends AbstractWidgetLCA {
     preserveProperty( grid, PROP_AUTO_HEIGHT, grid.isAutoHeight() );
     preserveProperty( grid, PROP_SORT_DIRECTION, getSortDirection( grid ) );
     preserveProperty( grid, PROP_SORT_COLUMN, getSortColumn( grid ) );
-    preserveListenSelection( grid );
-    preserveListenDefaultSelection( grid );
     preserveProperty( grid, PROP_ENABLE_CELL_TOOLTIP, CellToolTipUtil.isEnabledFor( grid ) );
     preserveProperty( grid, PROP_CELL_TOOLTIP_TEXT, null );
-    ScrollBarLCAUtil.preserveValues( grid );
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    Grid grid = ( Grid )widget;
+  public void renderChanges( Grid grid ) throws IOException {
     ControlLCAUtil.renderChanges( grid );
     WidgetLCAUtil.renderCustomVariant( grid );
     renderProperty( grid, PROP_ITEM_COUNT, grid.getRootItemCount(), ZERO );
@@ -173,7 +154,6 @@ public class GridLCA extends AbstractWidgetLCA {
     renderListenDefaultSelection( grid );
     renderProperty( grid, PROP_ENABLE_CELL_TOOLTIP, CellToolTipUtil.isEnabledFor( grid ), false );
     renderProperty( grid, PROP_CELL_TOOLTIP_TEXT, getAndResetCellToolTipText( grid ), null );
-    ScrollBarLCAUtil.renderChanges( grid );
   }
 
   @Override

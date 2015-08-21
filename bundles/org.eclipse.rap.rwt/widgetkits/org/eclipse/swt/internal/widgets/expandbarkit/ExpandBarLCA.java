@@ -20,20 +20,18 @@ import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
 
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.internal.widgets.IExpandBarAdapter;
-import org.eclipse.swt.internal.widgets.ScrollBarLCAUtil;
 import org.eclipse.swt.widgets.ExpandBar;
 import org.eclipse.swt.widgets.ExpandItem;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class ExpandBarLCA extends AbstractWidgetLCA {
+public final class ExpandBarLCA extends WidgetLCA<ExpandBar> {
 
   private static final String TYPE = "rwt.widgets.ExpandBar";
   private static final String[] ALLOWED_STYLES = { "NO_RADIO_GROUP", "BORDER" };
@@ -44,24 +42,13 @@ public final class ExpandBarLCA extends AbstractWidgetLCA {
   private static final String PROP_COLLAPSE_LISTENER = "Collapse";
 
   @Override
-  public void preserveValues( Widget widget ) {
-    ExpandBar expandBar = ( ExpandBar )widget;
-    ControlLCAUtil.preserveValues( expandBar );
-    WidgetLCAUtil.preserveCustomVariant( expandBar );
+  public void preserveValues( ExpandBar expandBar ) {
     preserveProperty( expandBar, PROP_BOTTOM_SPACING_BOUNDS, getBottomSpacingBounds( expandBar ) );
     preserveProperty( expandBar, PROP_VSCROLLBAR_MAX, getVScrollBarMax( expandBar ) );
-    ScrollBarLCAUtil.preserveValues( expandBar );
   }
 
   @Override
-  public void readData( Widget widget ) {
-    super.readData( widget );
-    ScrollBarLCAUtil.processSelectionEvent( ( ExpandBar )widget );
-  }
-
-  @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    ExpandBar expandBar = ( ExpandBar )widget;
+  public void renderInitialization( ExpandBar expandBar ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( expandBar, TYPE );
     remoteObject.setHandler( new ExpandBarOperationHandler( expandBar ) );
     remoteObject.set( "parent", getId( expandBar.getParent() ) );
@@ -70,12 +57,10 @@ public final class ExpandBarLCA extends AbstractWidgetLCA {
     // Currently required for item's control visibility and bounds update.
     remoteObject.listen( PROP_EXPAND_LISTENER, true );
     remoteObject.listen( PROP_COLLAPSE_LISTENER, true );
-    ScrollBarLCAUtil.renderInitialization( expandBar );
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    ExpandBar expandBar = ( ExpandBar )widget;
+  public void renderChanges( ExpandBar expandBar ) throws IOException {
     ControlLCAUtil.renderChanges( expandBar );
     WidgetLCAUtil.renderCustomVariant( expandBar );
     renderProperty( expandBar,
@@ -83,7 +68,6 @@ public final class ExpandBarLCA extends AbstractWidgetLCA {
                     getBottomSpacingBounds( expandBar ),
                     null );
     renderProperty( expandBar, PROP_VSCROLLBAR_MAX, getVScrollBarMax( expandBar ), 0 );
-    ScrollBarLCAUtil.renderChanges( expandBar );
   }
 
   //////////////////

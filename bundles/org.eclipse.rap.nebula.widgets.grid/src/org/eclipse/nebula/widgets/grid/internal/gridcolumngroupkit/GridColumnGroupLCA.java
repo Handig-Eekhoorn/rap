@@ -25,16 +25,15 @@ import java.io.IOException;
 import org.eclipse.nebula.widgets.grid.Grid;
 import org.eclipse.nebula.widgets.grid.GridColumn;
 import org.eclipse.nebula.widgets.grid.GridColumnGroup;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.internal.widgets.ItemLCAUtil;
-import org.eclipse.swt.widgets.Widget;
 
 
 @SuppressWarnings( "restriction" )
-public class GridColumnGroupLCA extends AbstractWidgetLCA {
+public class GridColumnGroupLCA extends WidgetLCA<GridColumnGroup> {
 
   private static final String TYPE = "rwt.widgets.GridColumnGroup";
   private static final String[] ALLOWED_STYLES = new String[] { "TOGGLE" };
@@ -52,8 +51,7 @@ public class GridColumnGroupLCA extends AbstractWidgetLCA {
   private static final int ZERO = 0;
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    GridColumnGroup group = ( GridColumnGroup )widget;
+  public void renderInitialization( GridColumnGroup group ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( group, TYPE );
     remoteObject.setHandler( new GridColumnGroupOperationHandler( group ) );
     remoteObject.set( "parent", getId( group.getParent() ) );
@@ -65,9 +63,7 @@ public class GridColumnGroupLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void preserveValues( Widget widget ) {
-    GridColumnGroup group = ( GridColumnGroup )widget;
-    WidgetLCAUtil.preserveCustomVariant( group );
+  public void preserveValues( GridColumnGroup group ) {
     ItemLCAUtil.preserve( group );
     preserveProperty( group, PROP_LEFT, getLeft( group ) );
     preserveProperty( group, PROP_WIDTH, getWidth( group ) );
@@ -79,8 +75,7 @@ public class GridColumnGroupLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    GridColumnGroup group = ( GridColumnGroup )widget;
+  public void renderChanges( GridColumnGroup group ) throws IOException {
     WidgetLCAUtil.renderCustomVariant( group );
     ItemLCAUtil.renderChanges( group );
     renderProperty( group, PROP_LEFT, getLeft( group ), ZERO );

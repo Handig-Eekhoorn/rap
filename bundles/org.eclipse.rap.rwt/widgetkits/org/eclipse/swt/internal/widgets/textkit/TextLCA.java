@@ -16,29 +16,24 @@ import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRe
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.hasChanged;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenDefaultSelection;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListener;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderClientListeners;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenDefaultSelection;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListener;
+import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenModifyVerify;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
-import static org.eclipse.swt.internal.events.EventLCAUtil.isListening;
-
 import java.io.IOException;
 
 import org.eclipse.rap.json.JsonArray;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.swt.widgets.Widget;
 
-public final class TextLCA extends AbstractWidgetLCA {
+public final class TextLCA extends WidgetLCA<Text> {
 
   private static final String TYPE = "rwt.widgets.Text";
   private static final String[] ALLOWED_STYLES = {
@@ -71,28 +66,21 @@ public final class TextLCA extends AbstractWidgetLCA {
   private static final String PROP_EDITABLE = "editable";
   private static final String PROP_ECHO_CHAR = "echoChar";
   private static final String PROP_MESSAGE = "message";
-  private static final String PROP_MODIFY_LISTENER = "Modify";
 
   private static final Point ZERO_SELECTION = new Point( 0, 0 );
 
   @Override
-  public void preserveValues( Widget widget ) {
-    Text text = ( Text )widget;
-    ControlLCAUtil.preserveValues( text );
-    WidgetLCAUtil.preserveCustomVariant( text );
+  public void preserveValues( Text text ) {
     preserveProperty( text, PROP_TEXT, text.getText() );
     preserveProperty( text, PROP_SELECTION, text.getSelection() );
     preserveProperty( text, PROP_TEXT_LIMIT, getTextLimit( text ) );
     preserveProperty( text, PROP_EDITABLE, text.getEditable() );
     preserveProperty( text, PROP_ECHO_CHAR, getEchoChar( text ) );
     preserveProperty( text, PROP_MESSAGE, text.getMessage() );
-    preserveListener( text, SWT.Modify, hasModifyListener( text ) );
-    preserveListenDefaultSelection( text );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    Text text = ( Text )widget;
+  public void renderInitialization( Text text ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( text, TYPE );
     remoteObject.setHandler( new TextOperationHandler( text ) );
     remoteObject.set( "parent", getId( text.getParent() ) );
@@ -100,8 +88,7 @@ public final class TextLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    Text text = ( Text )widget;
+  public void renderChanges( Text text ) throws IOException {
     ControlLCAUtil.renderChanges( text );
     WidgetLCAUtil.renderCustomVariant( text );
     renderProperty( text, PROP_TEXT, text.getText(), "" );
@@ -110,7 +97,7 @@ public final class TextLCA extends AbstractWidgetLCA {
     renderProperty( text, PROP_TEXT_LIMIT, getTextLimit( text ), null );
     renderProperty( text, PROP_ECHO_CHAR, getEchoChar( text ), null );
     renderProperty( text, PROP_MESSAGE, text.getMessage(), "" );
-    renderListener( text, SWT.Modify, PROP_MODIFY_LISTENER, hasModifyListener( text ) );
+    renderListenModifyVerify( text );
     renderListenDefaultSelection( text );
     renderClientListeners( text );
   }
@@ -145,11 +132,6 @@ public final class TextLCA extends AbstractWidgetLCA {
 
   private static String getEchoChar( Text text ) {
     return text.getEchoChar() == 0 ? null : String.valueOf( text.getEchoChar() );
-  }
-
-  private static boolean hasModifyListener( Text text ) {
-    // NOTE : Client does not support Verify, it is created server-side from Modify
-    return isListening( text, SWT.Modify ) || isListening( text, SWT.Verify );
   }
 
 }

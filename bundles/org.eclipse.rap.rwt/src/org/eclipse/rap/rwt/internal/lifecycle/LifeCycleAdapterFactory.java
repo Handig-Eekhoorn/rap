@@ -11,64 +11,34 @@
  ******************************************************************************/
 package org.eclipse.rap.rwt.internal.lifecycle;
 
+import static org.eclipse.rap.rwt.internal.lifecycle.LifeCycleAdapterUtil.getKitPackageVariants;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.rap.rwt.internal.util.ClassInstantiationException;
 import org.eclipse.rap.rwt.internal.util.ClassUtil;
-import org.eclipse.swt.internal.widgets.displaykit.DisplayLCA;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Widget;
 
 
 public final class LifeCycleAdapterFactory {
 
-  private final Object displayAdapterLock;
   private final Object widgetAdaptersLock;
-  // Holds the single display life cycle adapter. MUST be created lazily because its constructor
-  // needs a resource manager to be in place
-  private DisplayLifeCycleAdapter displayAdapter;
-  // Maps widget classes to their respective life cycle adapters
-  private final Map<Class<?>, WidgetLifeCycleAdapter> widgetAdapters;
+  private final Map<Class<?>, WidgetLCA<?>> widgetAdapters;
 
   public LifeCycleAdapterFactory() {
-    displayAdapterLock = new Object();
     widgetAdaptersLock = new Object();
     widgetAdapters = new HashMap<>();
   }
 
-  public Object getAdapter( Object adaptable ) {
-    Object result = null;
-    if( adaptable instanceof Display ) {
-      result = getDisplayLCA();
-    } else if( adaptable instanceof Widget ) {
-      result = getWidgetLCA( adaptable.getClass() );
-    }
-    return result;
-  }
-
-  ///////////////////////////////////////////////////////////
-  // Helping methods to obtain life cycle adapter for display
-
-  private DisplayLifeCycleAdapter getDisplayLCA() {
-    synchronized( displayAdapterLock ) {
-      if( displayAdapter == null ) {
-        displayAdapter = new DisplayLCA();
-      }
-      return displayAdapter;
-    }
-  }
-
-  ////////////////////////////////////////////////////////////
-  // Helping methods to obtain life cycle adapters for widgets
-
-  private WidgetLifeCycleAdapter getWidgetLCA( Class<?> clazz ) {
+  public WidgetLCA<?> getWidgetLCA( Widget widget ) {
+    Class<?> clazz = widget.getClass();
     // [fappel] This code is performance critical, don't change without checking against a profiler
-    WidgetLifeCycleAdapter result;
+    WidgetLCA<?> result;
     synchronized( widgetAdaptersLock ) {
       result = widgetAdapters.get( clazz );
       if( result == null ) {
-        WidgetLifeCycleAdapter adapter = null;
+        WidgetLCA<?> adapter = null;
         Class<?> superClass = clazz;
         while( !Object.class.equals( superClass ) && adapter == null ) {
           adapter = loadWidgetLCA( superClass );
@@ -80,32 +50,25 @@ public final class LifeCycleAdapterFactory {
         result = adapter;
       }
     }
-    if( result == null ) {
-      String msg = "Failed to obtain life cycle adapter for: " + clazz.getName();
-      throw new LifeCycleAdapterException( msg );
-    }
     return result;
   }
 
-  private static WidgetLifeCycleAdapter loadWidgetLCA( Class<?> clazz ) {
-    WidgetLifeCycleAdapter result = null;
-    String className = LifeCycleAdapterUtil.getSimpleClassName( clazz );
-    String[] variants = LifeCycleAdapterUtil.getKitPackageVariants( clazz );
-    for( int i = 0; result == null && i < variants.length; i++ ) {
-      StringBuilder buffer = new StringBuilder();
-      buffer.append( variants[ i ] );
-      buffer.append( "." );
-      buffer.append( className );
-      buffer.append( "LCA" );
-      String classToLoad = buffer.toString();
-      ClassLoader loader = clazz.getClassLoader();
+  private static WidgetLCA<?> loadWidgetLCA( Class<?> clazz ) {
+    String className = clazz.getSimpleName();
+    ClassLoader loader = clazz.getClassLoader();
+    for( String variant : getKitPackageVariants( clazz ) ) {
+      String classToLoad = new StringBuilder()
+        .append( variant )
+        .append( '.' )
+        .append( className )
+        .append( "LCA" ).toString();
       try {
-        result = ( WidgetLifeCycleAdapter )ClassUtil.newInstance( loader, classToLoad );
+        return ( WidgetLCA<?> )ClassUtil.newInstance( loader, classToLoad );
       } catch( @SuppressWarnings( "unused" ) ClassInstantiationException ignore ) {
         // ignore and try to load next package name variant
       }
     }
-    return result;
+    return null;
   }
 
 }

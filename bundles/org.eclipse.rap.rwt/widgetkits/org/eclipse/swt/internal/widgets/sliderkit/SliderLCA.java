@@ -14,22 +14,20 @@ package org.eclipse.swt.internal.widgets.sliderkit;
 import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.widgets.Slider;
-import org.eclipse.swt.widgets.Widget;
 
 
-public class SliderLCA extends AbstractWidgetLCA {
+public class SliderLCA extends WidgetLCA<Slider> {
 
   private static final String TYPE = "rwt.widgets.Slider";
   private static final String[] ALLOWED_STYLES = {
@@ -53,22 +51,17 @@ public class SliderLCA extends AbstractWidgetLCA {
   private static final int DEFAULT_THUMB = 10;
 
   @Override
-  public void preserveValues( Widget widget ) {
-    Slider slider = ( Slider )widget;
-    ControlLCAUtil.preserveValues( slider );
-    WidgetLCAUtil.preserveCustomVariant( slider );
+  public void preserveValues( Slider slider ) {
     preserveProperty( slider, PROP_MINIMUM, slider.getMinimum() );
     preserveProperty( slider, PROP_MAXIMUM, slider.getMaximum() );
     preserveProperty( slider, PROP_SELECTION, slider.getSelection() );
     preserveProperty( slider, PROP_INCREMENT, slider.getIncrement() );
     preserveProperty( slider, PROP_PAGE_INCREMENT, slider.getPageIncrement() );
     preserveProperty( slider, PROP_THUMB, slider.getThumb() );
-    preserveListenSelection( slider );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    Slider slider = ( Slider )widget;
+  public void renderInitialization( Slider slider ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( slider, TYPE );
     remoteObject.setHandler( new SliderOperationHandler( slider ) );
     remoteObject.set( "parent", getId( slider.getParent() ) );
@@ -76,10 +69,9 @@ public class SliderLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    Slider slider = ( Slider )widget;
+  public void renderChanges( Slider slider ) throws IOException {
     ControlLCAUtil.renderChanges( slider );
-    WidgetLCAUtil.renderCustomVariant( widget );
+    WidgetLCAUtil.renderCustomVariant( slider );
     renderProperty( slider, PROP_MINIMUM, slider.getMinimum(), DEFAULT_MINIMUM );
     renderProperty( slider, PROP_MAXIMUM, slider.getMaximum(), DEFAULT_MAXIMUM );
     renderProperty( slider, PROP_SELECTION, slider.getSelection(), DEFAULT_SELECTION );

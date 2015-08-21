@@ -12,7 +12,12 @@
 package org.eclipse.swt.internal.widgets;
 
 import static org.eclipse.rap.rwt.testfixture.internal.SerializationTestUtil.serializeAndDeserialize;
-import static org.junit.Assert.*;
+import static org.eclipse.swt.internal.events.EventLCAUtil.getEventMask;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import org.eclipse.rap.rwt.internal.lifecycle.DisposedWidgets;
@@ -30,11 +35,10 @@ import org.junit.Test;
 public class WidgetRemoteAdapter_Test {
 
   private Display display;
+  private WidgetRemoteAdapter adapter;
 
   @Rule
   public TestContext context = new TestContext();
-
-  private WidgetRemoteAdapter adapter;
 
   @Before
   public void setUp() {
@@ -101,56 +105,6 @@ public class WidgetRemoteAdapter_Test {
   }
 
   @Test
-  public void testGetPreservedListener_initiallyFalse() {
-    assertFalse( adapter.getPreservedListener( 1 ) );
-    assertFalse( adapter.getPreservedListener( 23 ) );
-    assertFalse( adapter.getPreservedListener( 64 ) );
-  }
-
-  @Test
-  public void testGetPreservedListener_setAfterPreserving() {
-    adapter.preserveListener( 1, true );
-    adapter.preserveListener( 23, false );
-    adapter.preserveListener( 42, true );
-    adapter.preserveListener( 64, false );
-
-    assertTrue( adapter.getPreservedListener( 1 ) );
-    assertFalse( adapter.getPreservedListener( 23 ) );
-    assertTrue( adapter.getPreservedListener( 42 ) );
-    assertFalse( adapter.getPreservedListener( 64 ) );
-  }
-
-  @Test( expected = IllegalArgumentException.class )
-  public void testGetPreservedListener_failsForIllegalValues() {
-    adapter.preserveListener( 65, false );
-  }
-
-  @Test
-  public void testGetPreservedListener_resetAfterClear() {
-    adapter.preserveListener( 23, true );
-    adapter.preserveListener( 42, false );
-
-    adapter.clearPreserved();
-
-    assertFalse( adapter.getPreservedListener( 23 ) );
-    assertFalse( adapter.getPreservedListener( 42 ) );
-  }
-
-  @Test( expected = IllegalArgumentException.class )
-  public void testPreserveListener_failsWithIllegalValues() {
-    adapter.preserveListener( 65, true );
-  }
-
-  @Test
-  public void testPreserveListener_isTransient() throws Exception {
-    adapter.preserveListener( 23, true );
-
-    adapter = serializeAndDeserialize( adapter );
-
-    assertFalse( adapter.getPreservedListener( 23 ) );
-  }
-
-  @Test
   public void testGetRenderRunnables_initial() {
     assertEquals( 0, adapter.getRenderRunnables().length );
   }
@@ -213,6 +167,7 @@ public class WidgetRemoteAdapter_Test {
 
     adapter.preserveData( data );
 
+    assertTrue( adapter.hasPreservedData() );
     assertSame( data, adapter.getPreservedData() );
   }
 
@@ -222,6 +177,7 @@ public class WidgetRemoteAdapter_Test {
 
     adapter.clearPreserved();
 
+    assertFalse( adapter.hasPreservedData() );
     assertNull( adapter.getPreservedData() );
   }
 
@@ -231,13 +187,43 @@ public class WidgetRemoteAdapter_Test {
 
     adapter = serializeAndDeserialize( adapter );
 
+    assertFalse( adapter.hasPreservedData() );
     assertNull( adapter.getPreservedData() );
+  }
+
+  @Test
+  public void testPreserveListeners() {
+    adapter.preserveListeners( 23 );
+
+    assertTrue( adapter.hasPreservedListeners() );
+    assertEquals( 23, adapter.getPreservedListeners() );
+  }
+
+  @Test
+  public void testPreserveListeners_isCleared() {
+    adapter.preserveListeners( 23 );
+
+    adapter.clearPreserved();
+
+    assertFalse( adapter.hasPreservedListeners() );
+    assertEquals( 0, adapter.getPreservedListeners() );
+  }
+
+  @Test
+  public void testPreserveListeners_isTransient() throws Exception {
+    adapter.preserveListeners( getEventMask( 23 ) );
+
+    adapter = serializeAndDeserialize( adapter );
+
+    assertFalse( adapter.hasPreservedListeners() );
+    assertEquals( 0, adapter.getPreservedListeners() );
   }
 
   @Test
   public void testPreserveVariant() {
     adapter.preserveVariant( "foo" );
 
+    assertTrue( adapter.hasPreservedVariant() );
     assertEquals( "foo", adapter.getPreservedVariant() );
   }
 
@@ -247,6 +233,7 @@ public class WidgetRemoteAdapter_Test {
 
     adapter.clearPreserved();
 
+    assertFalse( adapter.hasPreservedVariant() );
     assertNull( adapter.getPreservedVariant() );
   }
 
@@ -256,6 +243,7 @@ public class WidgetRemoteAdapter_Test {
 
     adapter = serializeAndDeserialize( adapter );
 
+    assertFalse( adapter.hasPreservedVariant() );
     assertNull( adapter.getPreservedVariant() );
   }
 

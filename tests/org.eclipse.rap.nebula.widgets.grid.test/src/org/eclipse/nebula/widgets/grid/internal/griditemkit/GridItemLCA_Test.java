@@ -14,7 +14,6 @@ import static org.eclipse.nebula.widgets.grid.GridTestUtil.createGridColumns;
 import static org.eclipse.nebula.widgets.grid.GridTestUtil.createGridItems;
 import static org.eclipse.nebula.widgets.grid.GridTestUtil.loadImage;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
-import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
 import static org.eclipse.rap.rwt.testfixture.internal.TestMessage.getParent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -218,34 +217,12 @@ public class GridItemLCA_Test {
   }
 
   @Test
-  public void testRenderInitialCustomVariant() throws IOException {
-    lca.render( item );
-
-    TestMessage message = Fixture.getProtocolMessage();
-    CreateOperation operation = message.findCreateOperation( item );
-    assertTrue( operation.getProperties().names().indexOf( "customVariant" ) == -1 );
-  }
-
-  @Test
   public void testRenderCustomVariant() throws IOException {
     item.setData( RWT.CUSTOM_VARIANT, "blue" );
     lca.renderChanges( item );
 
     TestMessage message = Fixture.getProtocolMessage();
     assertEquals( "variant_blue", message.findSetProperty( item, "customVariant" ).asString() );
-  }
-
-  @Test
-  public void testRenderCustomVariantUnchanged() throws IOException {
-    Fixture.markInitialized( display );
-    Fixture.markInitialized( item );
-
-    item.setData( RWT.CUSTOM_VARIANT, "blue" );
-    Fixture.preserveWidgets();
-    lca.renderChanges( item );
-
-    TestMessage message = Fixture.getProtocolMessage();
-    assertNull( message.findSetOperation( item, "customVariant" ) );
   }
 
   @Test
@@ -758,22 +735,6 @@ public class GridItemLCA_Test {
 
     TestMessage message = Fixture.getProtocolMessage();
     assertNull( message.findSetOperation( item, "cellCheckable" ) );
-  }
-
-  @Test
-  public void testRenderScrollbarsVisibleAfterExpanded() {
-    grid.setSize( 200, 200 );
-    createGridColumns( grid, 3, SWT.NONE );
-    GridItem[] items = createGridItems( grid, 5, 10 );
-    Fixture.markInitialized( items[ 0 ] );
-    getRemoteObject( items[ 0 ] ).setHandler( new GridItemOperationHandler( items[ 0 ] ) );
-
-    Fixture.markInitialized( grid );
-    Fixture.fakeSetProperty( getId( items[ 0 ] ), "expanded", true );
-    Fixture.executeLifeCycleFromServerThread();
-
-    TestMessage message = Fixture.getProtocolMessage();
-    assertNotNull( message.findSetOperation( grid.getVerticalBar(), "visibility" ) );
   }
 
   @Test

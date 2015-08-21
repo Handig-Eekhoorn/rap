@@ -13,8 +13,6 @@ package org.eclipse.swt.internal.widgets.treekit;
 
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.hasChanged;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenDefaultSelection;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenDefaultSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
@@ -29,7 +27,7 @@ import static org.eclipse.swt.internal.widgets.MarkupUtil.isMarkupEnabledFor;
 import java.io.IOException;
 
 import org.eclipse.rap.json.JsonArray;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.template.TemplateLCAUtil;
@@ -40,16 +38,14 @@ import org.eclipse.swt.internal.widgets.CellToolTipUtil;
 import org.eclipse.swt.internal.widgets.ICellToolTipAdapter;
 import org.eclipse.swt.internal.widgets.ITreeAdapter;
 import org.eclipse.swt.internal.widgets.ItemHolder;
-import org.eclipse.swt.internal.widgets.ScrollBarLCAUtil;
 import org.eclipse.swt.internal.widgets.WidgetRemoteAdapter;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Item;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class TreeLCA extends AbstractWidgetLCA {
+public final class TreeLCA extends WidgetLCA<Tree> {
 
   private static final String TYPE = "rwt.widgets.Grid";
   private static final String[] ALLOWED_STYLES = {
@@ -92,10 +88,7 @@ public final class TreeLCA extends AbstractWidgetLCA {
   private static final String DEFAULT_SORT_DIRECTION = "none";
 
   @Override
-  public void preserveValues( Widget widget ) {
-    Tree tree = ( Tree )widget;
-    ControlLCAUtil.preserveValues( ( Control )widget );
-    WidgetLCAUtil.preserveCustomVariant( tree );
+  public void preserveValues( Tree tree ) {
     preserveProperty( tree, PROP_ITEM_COUNT, tree.getItemCount() );
     preserveProperty( tree, PROP_ITEM_HEIGHT, tree.getItemHeight() );
     preserveProperty( tree, PROP_ITEM_METRICS, getItemMetrics( tree ) );
@@ -112,22 +105,12 @@ public final class TreeLCA extends AbstractWidgetLCA {
     preserveProperty( tree, PROP_SELECTION, getSelection( tree ) );
     preserveProperty( tree, PROP_SORT_DIRECTION, getSortDirection( tree ) );
     preserveProperty( tree, PROP_SORT_COLUMN, tree.getSortColumn() );
-    preserveListenSelection( tree );
-    preserveListenDefaultSelection( tree );
     preserveProperty( tree, PROP_ENABLE_CELL_TOOLTIP, CellToolTipUtil.isEnabledFor( tree ) );
     preserveProperty( tree, PROP_CELL_TOOLTIP_TEXT, null );
-    ScrollBarLCAUtil.preserveValues( tree );
   }
 
   @Override
-  public void readData( Widget widget ) {
-    super.readData( widget );
-    ScrollBarLCAUtil.processSelectionEvent( ( Tree )widget );
-  }
-
-  @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    Tree tree = ( Tree )widget;
+  public void renderInitialization( Tree tree ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( tree, TYPE );
     remoteObject.setHandler( new TreeOperationHandler( tree ) );
     remoteObject.set( "parent", getId( tree.getParent() ) );
@@ -153,7 +136,6 @@ public final class TreeLCA extends AbstractWidgetLCA {
     remoteObject.set( "indentionWidth", adapter.getIndentionWidth() );
     remoteObject.set( PROP_MARKUP_ENABLED, isMarkupEnabledFor( tree ) );
     TemplateLCAUtil.renderRowTemplate( tree );
-    ScrollBarLCAUtil.renderInitialization( tree );
     remoteObject.listen( PROP_SETDATA_LISTENER, isVirtual( tree ) );
     // Always render listen for Expand and Collapse, currently required for scrollbar
     // visibility update and setData events.
@@ -162,8 +144,7 @@ public final class TreeLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    final Tree tree = ( Tree )widget;
+  public void renderChanges( final Tree tree ) throws IOException {
     ControlLCAUtil.renderChanges( tree );
     WidgetLCAUtil.renderCustomVariant( tree );
     renderProperty( tree, PROP_ITEM_COUNT, tree.getItemCount(), ZERO );
@@ -193,7 +174,6 @@ public final class TreeLCA extends AbstractWidgetLCA {
     renderListenDefaultSelection( tree );
     renderProperty( tree, PROP_ENABLE_CELL_TOOLTIP, CellToolTipUtil.isEnabledFor( tree ), false );
     renderProperty( tree, PROP_CELL_TOOLTIP_TEXT, getAndResetCellToolTipText( tree ), null );
-    ScrollBarLCAUtil.renderChanges( tree );
   }
 
   @Override

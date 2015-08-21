@@ -11,24 +11,23 @@
  ******************************************************************************/
 package org.eclipse.swt.internal.widgets.coolitemkit;
 
-import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
-import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
+import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
+import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
 
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.internal.widgets.Props;
 import org.eclipse.swt.widgets.CoolItem;
-import org.eclipse.swt.widgets.Widget;
 
 
-public class CoolItemLCA extends AbstractWidgetLCA {
+public class CoolItemLCA extends WidgetLCA<CoolItem> {
 
   private static final String TYPE = "rwt.widgets.CoolItem";
   private static final String[] ALLOWED_STYLES = { "DROP_DOWN", "VERTICAL" };
@@ -40,17 +39,13 @@ public class CoolItemLCA extends AbstractWidgetLCA {
    * nor image
    */
   @Override
-  public void preserveValues( Widget widget ) {
-    CoolItem item = ( CoolItem )widget;
+  public void preserveValues( CoolItem item ) {
     preserveProperty( item, PROP_CONTROL, item.getControl() );
     preserveProperty( item, Props.BOUNDS, item.getBounds() );
-    WidgetLCAUtil.preserveCustomVariant( item );
-    WidgetLCAUtil.preserveData( item );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    CoolItem item = ( CoolItem )widget;
+  public void renderInitialization( CoolItem item ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( item, TYPE );
     remoteObject.setHandler( new CoolItemOperationHandler( item ) );
     remoteObject.set( "parent", getId( item.getParent() ) );
@@ -58,8 +53,7 @@ public class CoolItemLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    CoolItem item = ( CoolItem )widget;
+  public void renderChanges( CoolItem item ) throws IOException {
     WidgetLCAUtil.renderBounds( item, item.getBounds() );
     renderProperty( item, PROP_CONTROL, item.getControl(), null );
     WidgetLCAUtil.renderCustomVariant( item );

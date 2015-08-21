@@ -11,25 +11,22 @@
  ******************************************************************************/
 package org.eclipse.swt.internal.widgets.menukit;
 
-import static org.eclipse.rap.rwt.internal.protocol.ClientMessageConst.EVENT_SHOW;
-import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
-import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
-import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenHelp;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListener;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenHelp;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListener;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.wasEventSent;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
-import static org.eclipse.swt.internal.events.EventLCAUtil.isListening;
+import static org.eclipse.rap.rwt.internal.protocol.ClientMessageConst.EVENT_SHOW;
+import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
+import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
+import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
 
 import java.io.IOException;
 
 import org.eclipse.rap.json.JsonObject;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.SWT;
@@ -40,11 +37,9 @@ import org.eclipse.swt.internal.widgets.IShellAdapter;
 import org.eclipse.swt.internal.widgets.Props;
 import org.eclipse.swt.widgets.Decorations;
 import org.eclipse.swt.widgets.Menu;
-import org.eclipse.swt.widgets.MenuItem;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class MenuLCA extends AbstractWidgetLCA {
+public final class MenuLCA extends WidgetLCA<Menu> {
 
   private static final String TYPE = "rwt.widgets.Menu";
   private static final String[] ALLOWED_STYLES = {
@@ -60,30 +55,28 @@ public final class MenuLCA extends AbstractWidgetLCA {
   private static final Rectangle DEFAULT_BOUNDS = new Rectangle( 0, 0, 0, 0 );
 
   @Override
-  public void preserveValues( Widget widget ) {
-    Menu menu = ( Menu )widget;
+  public void preserveValues( Menu menu ) {
     preserveProperty( menu, PROP_ENABLED, menu.getEnabled() );
-    preserveListener( menu, SWT.Show, hasShowListener( menu ) );
-    preserveListener( menu, SWT.Hide, hasHideListener( menu ) );
-    WidgetLCAUtil.preserveCustomVariant( menu );
-    preserveListenHelp( menu );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    Menu menu = ( Menu )widget;
+  public void renderInitialization( Menu menu ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( menu , TYPE );
     remoteObject.setHandler( new MenuOperationHandler( menu ) );
     remoteObject.set( "parent", getId( menu.getParent() ) );
     remoteObject.set( "style", createJsonArray( getStyles( menu, ALLOWED_STYLES ) ) );
+    // Always listen to Show events in order to notify potential Arm listeners on menu items
+    if( !isMenuBar( menu ) ) {
+      remoteObject.listen( PROP_SHOW_LISTENER, true );
+    }
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    Menu menu = ( Menu )widget;
+  public void renderChanges( Menu menu ) throws IOException {
     renderProperty( menu, PROP_ENABLED, menu.getEnabled(), true );
-    renderListener( menu, SWT.Show, PROP_SHOW_LISTENER, hasShowListener( menu ) );
-    renderListener( menu, SWT.Hide, PROP_HIDE_LISTENER, hasHideListener( menu ) );
+    if( !isMenuBar( menu ) ) {
+      renderListener( menu, SWT.Hide, PROP_HIDE_LISTENER );
+    }
     WidgetLCAUtil.renderCustomVariant( menu );
     renderListenHelp( menu );
     renderBounds( menu );
@@ -92,9 +85,9 @@ public final class MenuLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderDispose( Widget widget ) throws IOException {
+  public void renderDispose( Menu menu ) throws IOException {
     // TODO [tb] : The menu can currently not be destroyed automatically on the client
-    getRemoteObject( widget ).destroy();
+    getRemoteObject( menu ).destroy();
   }
 
   private static void renderBounds( Menu menu ) {
@@ -124,24 +117,6 @@ public final class MenuLCA extends AbstractWidgetLCA {
       JsonObject parameters = new JsonObject().add( "reveal", reveal );
       getRemoteObject( menu ).call( METHOD_UNHIDE_ITEMS, parameters );
     }
-  }
-
-  private static boolean hasShowListener( Menu menu ) {
-    boolean result = false;
-    if( !isMenuBar( menu ) ) {
-      result = isListening( menu, SWT.Show );
-      if( !result ) {
-        MenuItem[] items = menu.getItems();
-        for( int i = 0; !result && i < items.length && !result; i++ ) {
-          result = isListening( items[ i ], SWT.Arm );
-        }
-      }
-    }
-    return result;
-  }
-
-  private static boolean hasHideListener( Menu menu ) {
-    return isMenuBar( menu ) ? false : isListening( menu, SWT.Hide );
   }
 
   private static Rectangle getBounds( Menu menu ) {

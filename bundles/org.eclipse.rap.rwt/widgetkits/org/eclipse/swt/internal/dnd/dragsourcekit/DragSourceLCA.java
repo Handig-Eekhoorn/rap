@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 EclipseSource and others.
+ * Copyright (c) 2009, 2015 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -25,15 +25,14 @@ import static org.eclipse.swt.internal.events.EventLCAUtil.isListening;
 import java.io.IOException;
 
 import org.eclipse.rap.json.JsonValue;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DragSource;
 import org.eclipse.swt.dnd.Transfer;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class DragSourceLCA extends AbstractWidgetLCA {
+public final class DragSourceLCA extends WidgetLCA<DragSource> {
 
   private static final String TYPE = "rwt.widgets.DragSource";
   private static final String PROP_TRANSFER = "transfer";
@@ -43,8 +42,7 @@ public final class DragSourceLCA extends AbstractWidgetLCA {
   private static final Transfer[] DEFAULT_TRANSFER = new Transfer[ 0 ];
 
   @Override
-  public void preserveValues( Widget widget ) {
-    DragSource dragSource = ( DragSource )widget;
+  public void preserveValues( DragSource dragSource ) {
     preserveProperty( dragSource, PROP_TRANSFER, dragSource.getTransfer() );
     preserveListener( dragSource,
                       PROP_DRAG_START_LISTENER,
@@ -53,12 +51,11 @@ public final class DragSourceLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void readData( Widget widget ) {
+  public void readData( DragSource dragSource ) {
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    DragSource dragSource = ( DragSource )widget;
+  public void renderInitialization( DragSource dragSource ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( dragSource, TYPE );
     remoteObject.setHandler( new DragSourceOperationHandler( dragSource ) );
     remoteObject.set( "control", getId( dragSource.getControl() ) );
@@ -66,8 +63,7 @@ public final class DragSourceLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    DragSource dragSource = ( DragSource )widget;
+  public void renderChanges( DragSource dragSource ) throws IOException {
     renderTransfer( dragSource );
     renderCancel( dragSource );
     renderListener( dragSource,

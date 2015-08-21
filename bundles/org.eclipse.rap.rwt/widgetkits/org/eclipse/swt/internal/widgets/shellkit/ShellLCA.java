@@ -24,7 +24,7 @@ import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
 import java.io.IOException;
 
 import org.eclipse.rap.json.JsonArray;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil;
@@ -39,10 +39,9 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class ShellLCA extends AbstractWidgetLCA {
+public final class ShellLCA extends WidgetLCA<Shell> {
 
   private static final String TYPE = "rwt.widgets.Shell";
   private static final String[] ALLOWED_STYLES = {
@@ -77,10 +76,7 @@ public final class ShellLCA extends AbstractWidgetLCA {
   private static final String PROP_DEFAULT_BUTTON = "defaultButton";
 
   @Override
-  public void preserveValues( Widget widget ) {
-    Shell shell = ( Shell )widget;
-    ControlLCAUtil.preserveValues( shell );
-    WidgetLCAUtil.preserveCustomVariant( shell );
+  public void preserveValues( Shell shell ) {
     preserveProperty( shell, PROP_ACTIVE_CONTROL, getActiveControl( shell ) );
     preserveProperty( shell, PROP_ACTIVE_SHELL, shell.getDisplay().getActiveShell() );
     preserveProperty( shell, PROP_TEXT, shell.getText() );
@@ -93,15 +89,14 @@ public final class ShellLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void readData( Widget widget ) {
+  public void readData( Shell shell ) {
     // [if] Preserve the menu bounds before setting the new shell bounds.
-    preserveMenuBounds( ( Shell )widget );
-    super.readData( widget );
+    preserveMenuBounds( shell );
+    super.readData( shell );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    Shell shell = ( Shell )widget;
+  public void renderInitialization( Shell shell ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( shell, TYPE );
     remoteObject.setHandler( new ShellOperationHandler( shell ) );
     remoteObject.set( "style", createJsonArray( getStyles( shell, ALLOWED_STYLES ) ) );
@@ -119,8 +114,7 @@ public final class ShellLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    Shell shell = ( Shell )widget;
+  public void renderChanges( Shell shell ) throws IOException {
     WidgetLCAUtil.renderCustomVariant( shell ); // Order matters for animation
     renderImage( shell );
     renderText( shell );
@@ -134,8 +128,8 @@ public final class ShellLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderDispose( Widget widget ) throws IOException {
-    getRemoteObject( widget ).destroy();
+  public void renderDispose( Shell shell ) throws IOException {
+    getRemoteObject( shell ).destroy();
   }
 
   //////////////////

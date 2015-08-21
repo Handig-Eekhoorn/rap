@@ -10,25 +10,23 @@
  ******************************************************************************/
 package org.eclipse.swt.internal.internal.widgets.controldecoratorkit;
 
-import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
-import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
-import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenDefaultSelection;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
+import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
+import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
+import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
+
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.internal.widgets.ControlDecorator;
-import org.eclipse.swt.widgets.Widget;
 
 
-public class ControlDecoratorLCA extends AbstractWidgetLCA {
+public class ControlDecoratorLCA extends WidgetLCA<ControlDecorator> {
 
   private static final String TYPE = "rwt.widgets.ControlDecorator";
   private static final String[] ALLOWED_STYLES = {
@@ -41,20 +39,16 @@ public class ControlDecoratorLCA extends AbstractWidgetLCA {
   private static final String PROP_SHOW_HOVER = "showHover";
 
   @Override
-  public void preserveValues( Widget widget ) {
-    ControlDecorator decorator = ( ControlDecorator )widget;
+  public void preserveValues( ControlDecorator decorator ) {
     WidgetLCAUtil.preserveBounds( decorator, decorator.getBounds() );
     preserveProperty( decorator, PROP_TEXT, decorator.getText() );
     preserveProperty( decorator, PROP_IMAGE, decorator.getImage() );
     preserveProperty( decorator, PROP_VISIBLE, decorator.isVisible() );
     preserveProperty( decorator, PROP_SHOW_HOVER, decorator.getShowHover() );
-    preserveListenSelection( decorator );
-    preserveListenDefaultSelection( decorator );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    ControlDecorator decorator = ( ControlDecorator )widget;
+  public void renderInitialization( ControlDecorator decorator ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( decorator, TYPE );
     remoteObject.setHandler( new ControlDecoratorOperationHandler( decorator ) );
     remoteObject.set( "parent", getId( decorator.getParent() ) );
@@ -62,8 +56,7 @@ public class ControlDecoratorLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    ControlDecorator decorator = ( ControlDecorator )widget;
+  public void renderChanges( ControlDecorator decorator ) throws IOException {
     WidgetLCAUtil.renderBounds( decorator, decorator.getBounds() );
     renderProperty( decorator, PROP_TEXT, decorator.getText(), "" );
     renderProperty( decorator, PROP_IMAGE, decorator.getImage(), null );
@@ -74,8 +67,8 @@ public class ControlDecoratorLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderDispose( Widget widget ) throws IOException {
-    getRemoteObject( widget ).destroy();
+  public void renderDispose( ControlDecorator decorator ) throws IOException {
+    getRemoteObject( decorator ).destroy();
   }
 
 }

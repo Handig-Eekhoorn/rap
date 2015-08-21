@@ -18,7 +18,7 @@ import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemot
 
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.RemoteAdapter;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil;
@@ -36,7 +36,7 @@ import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.swt.widgets.Widget;
 
 
-public final class TreeItemLCA extends AbstractWidgetLCA {
+public final class TreeItemLCA extends WidgetLCA<TreeItem> {
 
   private static final String TYPE = "rwt.widgets.GridItem";
 
@@ -55,8 +55,7 @@ public final class TreeItemLCA extends AbstractWidgetLCA {
   private static final int DEFAULT_ITEM_COUNT = 0;
 
   @Override
-  public void preserveValues( Widget widget ) {
-    TreeItem item = ( TreeItem )widget;
+  public void preserveValues( TreeItem item ) {
     preserveProperty( item, PROP_INDEX, getIndex( item ) );
     preserveProperty( item, PROP_CACHED, isCached( item ) );
     if( isCached( item ) ) {
@@ -66,8 +65,6 @@ public final class TreeItemLCA extends AbstractWidgetLCA {
       WidgetLCAUtil.preserveBackground( item, getUserBackground( item ) );
       WidgetLCAUtil.preserveForeground( item, getUserForeground( item ) );
       WidgetLCAUtil.preserveFont( item, getUserFont( item ) );
-      WidgetLCAUtil.preserveCustomVariant( item );
-      WidgetLCAUtil.preserveData( item );
       preserveProperty( item, PROP_CELL_BACKGROUNDS, getCellBackgrounds( item ) );
       preserveProperty( item, PROP_CELL_FOREGROUNDS, getCellForegrounds( item ) );
       preserveProperty( item, PROP_CELL_FONTS, getCellFonts( item ) );
@@ -78,8 +75,7 @@ public final class TreeItemLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    TreeItem item = ( TreeItem )widget;
+  public void renderInitialization( TreeItem item ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( item, TYPE );
     remoteObject.setHandler( new TreeItemOperationHandler( item ) );
     Widget parent = item.getParentItem() == null ? item.getParent() : item.getParentItem();
@@ -87,8 +83,7 @@ public final class TreeItemLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    final TreeItem item = ( TreeItem )widget;
+  public void renderChanges( final TreeItem item ) throws IOException {
     renderProperty( item, PROP_INDEX, getIndex( item ), -1 );
     if( wasCleared( item ) ) {
       renderClear( item );
@@ -138,10 +133,9 @@ public final class TreeItemLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderDispose( Widget widget ) throws IOException {
-    TreeItem item = ( TreeItem )widget;
+  public void renderDispose( TreeItem item ) throws IOException {
     ITreeItemAdapter itemAdapter = item.getAdapter( ITreeItemAdapter.class );
-    RemoteObject remoteObject = getRemoteObject( widget );
+    RemoteObject remoteObject = getRemoteObject( item );
     // The parent by the clients logic is the parent-item, not the tree (except for root layer)
     if( !itemAdapter.isParentDisposed() ) {
       remoteObject.destroy();

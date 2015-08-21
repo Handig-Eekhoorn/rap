@@ -14,7 +14,6 @@ import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
@@ -23,15 +22,14 @@ import java.io.IOException;
 
 import org.eclipse.rap.json.JsonObject;
 import org.eclipse.rap.rwt.internal.widgets.IFileUploadAdapter;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.rap.rwt.widgets.FileUpload;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class FileUploadLCA extends AbstractWidgetLCA {
+public final class FileUploadLCA extends WidgetLCA<FileUpload> {
 
   private static final String TYPE = "rwt.widgets.FileUpload";
   private static final String[] ALLOWED_STYLES = { "BORDER", "MULTI" };
@@ -40,18 +38,13 @@ public final class FileUploadLCA extends AbstractWidgetLCA {
   private static final String PROP_IMAGE = "image";
 
   @Override
-  public void preserveValues( Widget widget ) {
-    FileUpload fileUpload = ( FileUpload ) widget;
-    ControlLCAUtil.preserveValues( fileUpload );
-    WidgetLCAUtil.preserveCustomVariant( fileUpload );
+  public void preserveValues( FileUpload fileUpload ) {
     preserveProperty( fileUpload, PROP_TEXT, fileUpload.getText() );
     preserveProperty( fileUpload, PROP_IMAGE, fileUpload.getImage() );
-    preserveListenSelection( fileUpload );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    FileUpload fileUpload = ( FileUpload ) widget;
+  public void renderInitialization( FileUpload fileUpload ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( fileUpload, TYPE );
     remoteObject.setHandler( new FileUploadOperationHandler( fileUpload ) );
     remoteObject.set( "parent", getId( fileUpload.getParent() ) );
@@ -59,8 +52,7 @@ public final class FileUploadLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    FileUpload fileUpload = ( FileUpload ) widget;
+  public void renderChanges( FileUpload fileUpload ) throws IOException {
     ControlLCAUtil.renderChanges( fileUpload );
     WidgetLCAUtil.renderCustomVariant( fileUpload );
     renderProperty( fileUpload, PROP_TEXT, fileUpload.getText(), "" );

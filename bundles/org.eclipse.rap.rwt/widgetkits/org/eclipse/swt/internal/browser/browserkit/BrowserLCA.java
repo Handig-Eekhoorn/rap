@@ -29,7 +29,7 @@ import org.eclipse.rap.json.JsonArray;
 import org.eclipse.rap.json.JsonObject;
 import org.eclipse.rap.json.JsonValue;
 import org.eclipse.rap.rwt.RWT;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil;
@@ -43,10 +43,9 @@ import org.eclipse.swt.internal.events.EventTypes;
 import org.eclipse.swt.internal.widgets.IBrowserAdapter;
 import org.eclipse.swt.internal.widgets.WidgetRemoteAdapter;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class BrowserLCA extends AbstractWidgetLCA {
+public final class BrowserLCA extends WidgetLCA<Browser> {
 
   private static final String TYPE = "rwt.widgets.Browser";
   private static final String[] ALLOWED_STYLES = { "BORDER" };
@@ -73,16 +72,12 @@ public final class BrowserLCA extends AbstractWidgetLCA {
   private static final String FUNCTIONS_TO_DESTROY = PREFIX.concat( "#functionsToDestroy." );
 
   @Override
-  public void preserveValues( Widget widget ) {
-    Browser browser = ( Browser )widget;
-    ControlLCAUtil.preserveValues( browser );
-    WidgetLCAUtil.preserveCustomVariant( browser );
+  public void preserveValues( Browser browser ) {
     preserveListener( browser, PARAM_PROGRESS_LISTENER, hasProgressListener( browser ) );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    Browser browser = ( Browser )widget;
+  public void renderInitialization( Browser browser ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( browser, TYPE );
     remoteObject.setHandler( new BrowserOperationHandler( browser ) );
     remoteObject.set( "parent", getId( browser.getParent() ) );
@@ -90,8 +85,7 @@ public final class BrowserLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    final Browser browser = ( Browser )widget;
+  public void renderChanges( final Browser browser ) throws IOException {
     ControlLCAUtil.renderChanges( browser );
     WidgetLCAUtil.renderCustomVariant( browser );
     destroyBrowserFunctions( browser );

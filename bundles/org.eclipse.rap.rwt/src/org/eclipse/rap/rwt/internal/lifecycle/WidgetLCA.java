@@ -30,10 +30,9 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Widget;
 
 
-public abstract class AbstractWidgetLCA implements WidgetLifeCycleAdapter {
+public abstract class WidgetLCA<T extends Widget>  {
 
-  @Override
-  public void render( Widget widget ) throws IOException {
+  public void render( T widget ) throws IOException {
     WidgetRemoteAdapter adapter = ( WidgetRemoteAdapter )WidgetUtil.getAdapter( widget );
     if( !adapter.isInitialized() ) {
       renderInitialization( widget );
@@ -42,8 +41,7 @@ public abstract class AbstractWidgetLCA implements WidgetLifeCycleAdapter {
     adapter.setInitialized( true );
   }
 
-  @Override
-  public void readData( Widget widget ) {
+  public void readData( T widget ) {
     ClientMessage clientMessage = ProtocolUtil.getClientMessage();
     String id = getId( widget );
     List<Operation> operations = clientMessage.getAllOperationsFor( id );
@@ -55,15 +53,14 @@ public abstract class AbstractWidgetLCA implements WidgetLifeCycleAdapter {
     }
   }
 
-  @Override
-  public abstract void preserveValues( Widget widget );
+  public abstract void preserveValues( T widget );
 
-  public abstract void renderInitialization( Widget widget ) throws IOException;
+  public abstract void renderInitialization( T widget ) throws IOException;
 
-  public abstract void renderChanges( Widget widget ) throws IOException;
+  public abstract void renderChanges( T widget ) throws IOException;
 
   @SuppressWarnings( "unused" )
-  public void renderDispose( Widget widget ) throws IOException {
+  public void renderDispose( T widget ) throws IOException {
     RemoteAdapter adapter = WidgetUtil.getAdapter( widget );
     RemoteObject remoteObject = getRemoteObject( widget );
     if( adapter.getParent() == null || !adapter.getParent().isDisposed() ) {

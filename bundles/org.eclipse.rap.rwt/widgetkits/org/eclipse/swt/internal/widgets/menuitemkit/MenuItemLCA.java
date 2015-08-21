@@ -11,30 +11,28 @@
  ******************************************************************************/
 package org.eclipse.swt.internal.widgets.menuitemkit;
 
-import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
-import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenHelp;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenHelp;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
+import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
+import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
+
 import java.io.IOException;
 
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory;
 import org.eclipse.rap.rwt.internal.util.MnemonicUtil;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
-import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class MenuItemLCA extends AbstractWidgetLCA {
+public final class MenuItemLCA extends WidgetLCA<MenuItem> {
 
   private static final String TYPE = "rwt.widgets.MenuItem";
   private static final String[] ALLOWED_STYLES = {
@@ -49,22 +47,16 @@ public final class MenuItemLCA extends AbstractWidgetLCA {
   private static final String PROP_SELECTION = "selection";
 
   @Override
-  public void preserveValues( Widget widget ) {
-    MenuItem item = ( MenuItem )widget;
-    WidgetLCAUtil.preserveCustomVariant( item );
-    WidgetLCAUtil.preserveData( item );
+  public void preserveValues( MenuItem item ) {
     preserveProperty( item, PROP_TEXT, item.getText() );
     preserveProperty( item, PROP_IMAGE, item.getImage() );
     preserveProperty( item, PROP_MENU, item.getMenu() );
     preserveProperty( item, PROP_ENABLED, item.getEnabled() );
     preserveProperty( item, PROP_SELECTION, item.getSelection() );
-    preserveListenSelection( item );
-    preserveListenHelp( item );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    MenuItem item = ( MenuItem )widget;
+  public void renderInitialization( MenuItem item ) throws IOException {
     RemoteObject remoteObject = RemoteObjectFactory.createRemoteObject( item, TYPE );
     remoteObject.setHandler( new MenuItemOperationHandler( item ) );
     Menu parent = item.getParent();
@@ -74,8 +66,7 @@ public final class MenuItemLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    MenuItem item = ( MenuItem )widget;
+  public void renderChanges( MenuItem item ) throws IOException {
     WidgetLCAUtil.renderCustomVariant( item );
     WidgetLCAUtil.renderData( item );
     renderText( item );

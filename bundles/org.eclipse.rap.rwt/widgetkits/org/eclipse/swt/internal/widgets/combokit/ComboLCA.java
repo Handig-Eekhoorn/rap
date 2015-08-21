@@ -13,24 +13,19 @@ package org.eclipse.swt.internal.widgets.combokit;
 
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.hasChanged;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenDefaultSelection;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListener;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderClientListeners;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenDefaultSelection;
+import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenModifyVerify;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListener;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
 import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
-import static org.eclipse.swt.internal.events.EventLCAUtil.isListening;
-
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil;
@@ -38,10 +33,9 @@ import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Combo;
-import org.eclipse.swt.widgets.Widget;
 
 
-public class ComboLCA extends AbstractWidgetLCA {
+public class ComboLCA extends WidgetLCA<Combo> {
 
   private static final String TYPE = "rwt.widgets.Combo";
   private static final String[] ALLOWED_STYLES = { "DROP_DOWN", "SIMPLE", "BORDER" };
@@ -55,7 +49,6 @@ public class ComboLCA extends AbstractWidgetLCA {
   static final String PROP_LIST_VISIBLE = "listVisible";
   static final String PROP_EDITABLE = "editable";
   static final String PROP_VISIBLE_ITEM_COUNT = "visibleItemCount";
-  static final String PROP_MODIFY_LISTENER = "Modify";
 
   // Default values
   private static final String[] DEFAUT_ITEMS = new String[ 0 ];
@@ -64,10 +57,7 @@ public class ComboLCA extends AbstractWidgetLCA {
   private static final int DEFAULT_VISIBLE_ITEM_COUNT = 5;
 
   @Override
-  public void preserveValues( Widget widget ) {
-    Combo combo = ( Combo )widget;
-    ControlLCAUtil.preserveValues( combo );
-    WidgetLCAUtil.preserveCustomVariant( combo );
+  public void preserveValues( Combo combo ) {
     preserveProperty( combo, PROP_ITEMS, combo.getItems() );
     preserveProperty( combo, PROP_SELECTION_INDEX, Integer.valueOf( combo.getSelectionIndex() ) );
     preserveProperty( combo, PROP_SELECTION, combo.getSelection() );
@@ -76,14 +66,10 @@ public class ComboLCA extends AbstractWidgetLCA {
     preserveProperty( combo, PROP_TEXT, combo.getText() );
     preserveProperty( combo, PROP_LIST_VISIBLE, combo.getListVisible() );
     preserveProperty( combo, PROP_EDITABLE, Boolean.valueOf( isEditable( combo ) ) );
-    preserveListenSelection( combo );
-    preserveListenDefaultSelection( combo );
-    preserveListener( combo, SWT.Modify, hasModifyListener( combo ) );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    Combo combo = ( Combo )widget;
+  public void renderInitialization( Combo combo ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( combo, TYPE );
     remoteObject.setHandler( new ComboOperationHandler( combo ) );
     remoteObject.set( "parent", getId( combo.getParent() ) );
@@ -91,8 +77,7 @@ public class ComboLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    Combo combo = ( Combo )widget;
+  public void renderChanges( Combo combo ) throws IOException {
     ControlLCAUtil.renderChanges( combo );
     WidgetLCAUtil.renderCustomVariant( combo );
     renderVisibleItemCount( combo );
@@ -105,7 +90,7 @@ public class ComboLCA extends AbstractWidgetLCA {
     renderTextLimit( combo );
     renderListenSelection( combo );
     renderListenDefaultSelection( combo );
-    renderListenModify( combo );
+    renderListenModifyVerify( combo );
     renderClientListeners( combo );
   }
 
@@ -157,14 +142,6 @@ public class ComboLCA extends AbstractWidgetLCA {
 
   private static void renderTextLimit( Combo combo ) {
     renderProperty( combo, PROP_TEXT_LIMIT, getTextLimit( combo ), null );
-  }
-
-  private static void renderListenModify( Combo combo ) {
-    renderListener( combo, SWT.Modify, PROP_MODIFY_LISTENER, hasModifyListener( combo ) );
-  }
-
-  private static boolean hasModifyListener( Combo combo ) {
-    return isListening( combo, SWT.Modify ) || isListening( combo, SWT.Verify );
   }
 
   //////////////////

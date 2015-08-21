@@ -11,11 +11,11 @@
  ******************************************************************************/
 package org.eclipse.ui.forms.internal.widgets.togglehyperlinkkit;
 
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenDefaultSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenDefaultSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderProperty;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -25,7 +25,6 @@ import org.eclipse.rap.rwt.widgets.WidgetUtil;
 import org.eclipse.swt.graphics.Device;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.forms.widgets.*;
 
 
@@ -34,7 +33,7 @@ import org.eclipse.ui.forms.widgets.*;
  * org.eclipse.ui.forms.widgets.Twistie.
  */
 @SuppressWarnings("restriction")
-public final class ToggleHyperlinkLCA extends AbstractWidgetLCA {
+public final class ToggleHyperlinkLCA extends WidgetLCA<ToggleHyperlink> {
 
   private static final String TYPE = "forms.widgets.ToggleHyperlink"; //$NON-NLS-1$
 
@@ -55,17 +54,12 @@ public final class ToggleHyperlinkLCA extends AbstractWidgetLCA {
   private static final Image[] DEFAULT_IMAGES = new Image[] { null, null, null, null };
 
   @Override
-  public void preserveValues( Widget widget ) {
-    ToggleHyperlink hyperlink = ( ToggleHyperlink )widget;
-    ControlLCAUtil.preserveValues( hyperlink );
-    WidgetLCAUtil.preserveCustomVariant( hyperlink );
+  public void preserveValues( ToggleHyperlink hyperlink ) {
     preserveProperty( hyperlink, PROP_EXPANDED, hyperlink.isExpanded() );
-    preserveListenDefaultSelection( hyperlink );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    ToggleHyperlink hyperlink = ( ToggleHyperlink )widget;
+  public void renderInitialization( ToggleHyperlink hyperlink ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( hyperlink, TYPE );
     remoteObject.setHandler( new ToggleHyperlinkOperationHandler( hyperlink ) );
     remoteObject.set( "parent", WidgetUtil.getId( hyperlink.getParent() ) ); //$NON-NLS-1$
@@ -73,8 +67,7 @@ public final class ToggleHyperlinkLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    ToggleHyperlink hyperlink = ( ToggleHyperlink )widget;
+  public void renderChanges( ToggleHyperlink hyperlink ) throws IOException {
     ControlLCAUtil.renderChanges( hyperlink );
     WidgetLCAUtil.renderCustomVariant( hyperlink );
     renderProperty( hyperlink, PROP_EXPANDED, hyperlink.isExpanded(), false );

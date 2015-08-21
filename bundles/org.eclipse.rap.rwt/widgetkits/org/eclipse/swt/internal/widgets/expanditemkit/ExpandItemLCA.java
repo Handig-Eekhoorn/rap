@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2008, 2014 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2008, 2015 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -18,17 +18,16 @@ import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
 
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.internal.widgets.IExpandBarAdapter;
 import org.eclipse.swt.internal.widgets.ItemLCAUtil;
 import org.eclipse.swt.widgets.ExpandItem;
-import org.eclipse.swt.widgets.Widget;
 
 
-public final class ExpandItemLCA extends AbstractWidgetLCA {
+public final class ExpandItemLCA extends WidgetLCA<ExpandItem> {
 
   private static final String TYPE = "rwt.widgets.ExpandItem";
 
@@ -38,9 +37,7 @@ public final class ExpandItemLCA extends AbstractWidgetLCA {
   public static final int DEFAULT_HEADER_HEIGHT = 24;
 
   @Override
-  public void preserveValues( Widget widget ) {
-    ExpandItem item = ( ExpandItem )widget;
-    WidgetLCAUtil.preserveCustomVariant( item );
+  public void preserveValues( ExpandItem item ) {
     WidgetLCAUtil.preserveBounds( item, getBounds( item ) );
     ItemLCAUtil.preserve( item );
     preserveProperty( item, PROP_EXPANDED, item.getExpanded() );
@@ -48,17 +45,15 @@ public final class ExpandItemLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    ExpandItem item = ( ExpandItem )widget;
+  public void renderInitialization( ExpandItem item ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( item, TYPE );
     remoteObject.setHandler( new ExpandItemOperationHandler( item ) );
     remoteObject.set( "parent", getId( item.getParent() ) );
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    ExpandItem item = ( ExpandItem )widget;
-    WidgetLCAUtil.renderCustomVariant( widget );
+  public void renderChanges( ExpandItem item ) throws IOException {
+    WidgetLCAUtil.renderCustomVariant( item );
     WidgetLCAUtil.renderBounds( item, getBounds( item ) );
     ItemLCAUtil.renderChanges( item );
     renderProperty( item, PROP_EXPANDED, item.getExpanded(), false );

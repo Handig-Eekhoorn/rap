@@ -11,18 +11,12 @@
  ******************************************************************************/
 package org.eclipse.swt.widgets;
 
-import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
-
-import org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil;
-import org.eclipse.rap.rwt.internal.remote.RemoteObjectImpl;
 import org.eclipse.rap.rwt.internal.theme.ThemeAdapter;
-import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.internal.widgets.WidgetRemoteAdapter;
 import org.eclipse.swt.internal.widgets.scrollbarkit.ScrollBarThemeAdapter;
 
 /**
@@ -181,9 +175,13 @@ public class ScrollBar extends Widget {
    */
   public void setVisible( boolean visible ) {
     checkWidget();
-    boolean isVisible = ( state & HIDDEN ) == 0;
+    boolean isVisible = !hasState( HIDDEN );
     if( isVisible != visible ) {
-      state = visible ? state & ~HIDDEN : state | HIDDEN;
+      if( visible ) {
+        removeState( HIDDEN );
+      } else {
+        addState( HIDDEN );
+      }
     }
   }
 
@@ -206,7 +204,7 @@ public class ScrollBar extends Widget {
    */
   public boolean getVisible() {
     checkWidget();
-    return ( state & HIDDEN ) == 0;
+    return !hasState( HIDDEN );
   }
 
   /**
@@ -247,9 +245,9 @@ public class ScrollBar extends Widget {
   public void setEnabled( boolean enabled ) {
     checkWidget();
     if( enabled ) {
-      state &= ~DISABLED;
+      removeState( DISABLED );
     } else {
-      state |= DISABLED;
+      addState( DISABLED );
     }
   }
 
@@ -270,7 +268,7 @@ public class ScrollBar extends Widget {
    */
   public boolean getEnabled() {
     checkWidget();
-    return ( state & DISABLED ) == 0;
+    return !hasState( DISABLED );
   }
 
   /**
@@ -525,17 +523,14 @@ public class ScrollBar extends Widget {
   }
 
   @Override
-  public void dispose() {
-    // FIXME: [if] ScrollBar has no LCA. Quick fix that prevents Scrollbars to be added to
-    // DisposedWidgets list. See DisplayLCA#disposeWidgets().
-    // For the same reason the remote object is marked as destroyed here too.
-    WidgetRemoteAdapter adapter = ( WidgetRemoteAdapter )WidgetUtil.getAdapter( this );
-    adapter.setInitialized( false );
-    RemoteObject remoteObject = getRemoteObject( this );
-    if( remoteObject != null ) {
-      ( ( RemoteObjectImpl )remoteObject ).markDestroyed();
+  void releaseParent() {
+    super.releaseParent();
+    if( parent.horizontalBar == this ) {
+      parent.horizontalBar = null;
     }
-    super.dispose();
+    if( parent.verticalBar == this ) {
+      parent.verticalBar = null;
+    }
   }
 
   //////////////////

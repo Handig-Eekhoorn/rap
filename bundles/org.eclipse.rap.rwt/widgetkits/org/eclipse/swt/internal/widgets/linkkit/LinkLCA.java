@@ -16,7 +16,6 @@ import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRe
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.hasChanged;
-import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenSelection;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
@@ -24,17 +23,16 @@ import java.io.IOException;
 
 import org.eclipse.rap.json.JsonArray;
 import org.eclipse.rap.json.JsonValue;
-import org.eclipse.rap.rwt.internal.lifecycle.AbstractWidgetLCA;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.internal.widgets.ILinkAdapter;
 import org.eclipse.swt.widgets.Link;
-import org.eclipse.swt.widgets.Widget;
 
 
-public class LinkLCA extends AbstractWidgetLCA {
+public class LinkLCA extends WidgetLCA<Link> {
 
   private static final String TYPE = "rwt.widgets.Link";
   private static final String[] ALLOWED_STYLES = { "BORDER" };
@@ -42,17 +40,12 @@ public class LinkLCA extends AbstractWidgetLCA {
   static final String PROP_TEXT = "text";
 
   @Override
-  public void preserveValues( Widget widget ) {
-    Link link = ( Link )widget;
-    ControlLCAUtil.preserveValues( link );
-    WidgetLCAUtil.preserveCustomVariant( link );
+  public void preserveValues( Link link ) {
     preserveProperty( link, PROP_TEXT, link.getText() );
-    preserveListenSelection( link );
   }
 
   @Override
-  public void renderInitialization( Widget widget ) throws IOException {
-    Link link = ( Link )widget;
+  public void renderInitialization( Link link ) throws IOException {
     RemoteObject remoteObject = createRemoteObject( link, TYPE );
     remoteObject.setHandler( new LinkOperationHandler( link ) );
     remoteObject.set( "parent", getId( link.getParent() ) );
@@ -60,8 +53,7 @@ public class LinkLCA extends AbstractWidgetLCA {
   }
 
   @Override
-  public void renderChanges( Widget widget ) throws IOException {
-    Link link = ( Link )widget;
+  public void renderChanges( Link link ) throws IOException {
     ControlLCAUtil.renderChanges( link );
     WidgetLCAUtil.renderCustomVariant( link );
     renderText( link );

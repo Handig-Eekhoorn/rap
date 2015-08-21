@@ -23,10 +23,14 @@ import org.eclipse.swt.widgets.Widget;
 public class WidgetRemoteAdapter implements RemoteAdapter, SerializableCompatibility {
 
   private final static Runnable[] EMPTY = new Runnable[ 0 ];
+  private static final int DATA = 1;
+  private static final int LISTENERS = 2;
+  private static final int VARIANT = 3;
 
   private final String id;
   private Widget parent;
   private boolean initialized;
+  private transient int preserved;
   private transient Map<String, Object> preservedValues;
   private transient long preservedListeners;
   private transient Runnable[] renderRunnables;
@@ -75,21 +79,26 @@ public class WidgetRemoteAdapter implements RemoteAdapter, SerializableCompatibi
     return preservedValues.get( propertyName );
   }
 
-  public void preserveListener( int eventType, boolean value ) {
-    long eventMask = getEventMask( eventType );
-    if( value ) {
-      preservedListeners |= eventMask;
-    } else {
-      preservedListeners &= ~eventMask;
-    }
+  public void preserveListeners( long eventList ) {
+    markPreserved( LISTENERS );
+    preservedListeners = eventList;
   }
 
-  public boolean getPreservedListener( int eventType ) {
-    return ( preservedListeners & getEventMask( eventType ) ) != 0;
+  public boolean hasPreservedListeners() {
+    return hasPreserved( LISTENERS );
+  }
+
+  public long getPreservedListeners() {
+    return preservedListeners;
   }
 
   public void preserveData( Object[] data ) {
+    markPreserved( DATA );
     this.data = data;
+  }
+
+  public boolean hasPreservedData() {
+    return hasPreserved( DATA );
   }
 
   public Object[] getPreservedData() {
@@ -97,7 +106,12 @@ public class WidgetRemoteAdapter implements RemoteAdapter, SerializableCompatibi
   }
 
   public void preserveVariant( String variant ) {
+    markPreserved( VARIANT );
     this.variant = variant;
+  }
+
+  public boolean hasPreservedVariant() {
+    return hasPreserved( VARIANT );
   }
 
   public String getPreservedVariant() {
@@ -105,10 +119,19 @@ public class WidgetRemoteAdapter implements RemoteAdapter, SerializableCompatibi
   }
 
   public void clearPreserved() {
+    preserved = 0;
     preservedValues.clear();
     preservedListeners = 0;
     data = null;
     variant = null;
+  }
+
+  protected void markPreserved( int index ) {
+    preserved |= ( 1 << index );
+  }
+
+  protected boolean hasPreserved( int index ) {
+    return ( preserved & ( 1 << index ) ) != 0;
   }
 
   public void addRenderRunnable( Runnable renderRunnable ) {
@@ -140,13 +163,6 @@ public class WidgetRemoteAdapter implements RemoteAdapter, SerializableCompatibi
   private Object readResolve() {
     initialize();
     return this;
-  }
-
-  private static long getEventMask( int eventType ) {
-    if( eventType <= 0 || eventType > 64 ) {
-      throw new IllegalArgumentException( "eventType not supported: " + eventType );
-    }
-    return 1L << (eventType - 1);
   }
 
 }
