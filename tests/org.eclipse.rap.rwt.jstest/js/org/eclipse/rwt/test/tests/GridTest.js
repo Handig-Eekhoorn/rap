@@ -928,9 +928,9 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridTest", {
       var sample = tree._rowContainer.getRow( 5 ).$el.get( 0 );
       var bounds = getElementBounds( sample );
       assertEquals( 0, bounds.left );
-      assertEquals( 140, bounds.top );
+      assertTrue( bounds.top === 140 || bounds.top === 145 );
       assertEquals( 500, bounds.width );
-      assertEquals( 28, bounds.height );
+      assertTrue( bounds.height === 28 || bounds.height === 29 );
       tree.destroy();
     },
 
@@ -3961,6 +3961,23 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridTest", {
       tree.destroy();
     },
 
+    testKeyboardNavigationRight_alwaysScrollsWithCtrl : function() {
+      var tree = this._createDefaultTree();
+      tree.setWidth( 100 );
+      tree.setItemCount( 1 );
+      var item0 = this._createItem( tree.getRootItem(), 0 );
+      item0.setTexts( [ "very long text that can be scrolled by left and right arrow key" ] );
+      item0.setItemCount( 1 );
+      var item1 = this._createItem( item0, 0 );
+      TestUtil.flush();
+
+      TestUtil.clickDOM( tree._rowContainer.getRow( 0 ).$el.get( 0 ) );
+      TestUtil.ctrlPress( tree, "Right" );
+
+      assertEquals( 10, tree.getHorizontalBar().getValue() );
+      tree.destroy();
+    },
+
     testKeyboardNavigationLeft : function() {
       var tree = this._createDefaultTree();
       tree.setItemCount( 1 );
@@ -4021,6 +4038,25 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridTest", {
       assertEquals( 50, offsetItemSelected );
       assertEquals( 50, offsetItemCollapsed );
       assertEquals( 40, offsetScrolled );
+      tree.destroy();
+    },
+
+    testKeyboardNavigationLeft_alwaysScrollsWithCtrl : function() {
+      var tree = this._createDefaultTree();
+      tree.setWidth( 100 );
+      tree.setItemCount( 1 );
+      var item0 = this._createItem( tree.getRootItem(), 0 );
+      item0.setTexts( [ "very long text that can be scrolled by left and right arrow key" ] );
+      item0.setItemCount( 1 );
+      var item1 = this._createItem( item0, 0 );
+      item0.setExpanded( true );
+      tree.getHorizontalBar().setValue( 50 );
+      TestUtil.flush();
+
+      TestUtil.clickDOM( tree._rowContainer.getRow( 1 ).$el.get( 0 ) );
+      TestUtil.ctrlPress( tree, "Left" );
+
+      assertEquals( 40, tree.getHorizontalBar().getValue() );
       tree.destroy();
     },
 

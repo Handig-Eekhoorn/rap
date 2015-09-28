@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2007, 2014 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2007, 2015 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -80,6 +80,7 @@ abstract class ExampleTab implements Serializable {
 
   private boolean visible = true;
   private boolean enabled = true;
+  private int orientation = SWT.LEFT_TO_RIGHT;
   private Text text;
   private final StringBuffer content = new StringBuffer();
   private FontDialog fontChooser;
@@ -159,6 +160,7 @@ abstract class ExampleTab implements Serializable {
     createExampleControls( exampleComp );
     updateVisible();
     updateEnabled();
+    updateOrientation();
     if( fgColorChooser != null ) {
       updateFgColor();
     }
@@ -588,6 +590,20 @@ abstract class ExampleTab implements Serializable {
     } );
   }
 
+  protected Button createOrientationButton() {
+    final Button button = new Button( styleComp, SWT.CHECK );
+    button.setText( "RIGHT_TO_LEFT orientation" );
+    button.setSelection( orientation == SWT.RIGHT_TO_LEFT );
+    button.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent event ) {
+        orientation = button.getSelection() ? SWT.RIGHT_TO_LEFT : SWT.LEFT_TO_RIGHT;
+        updateOrientation();
+      }
+    } );
+    return button;
+  }
+
   /**
    * Adds a control to the list of registered controls. Registered controls can
    * be hidden and disabled by the checkbuttons in the property area. This
@@ -598,6 +614,7 @@ abstract class ExampleTab implements Serializable {
   protected void registerControl( final Control control ) {
     controls.add( control );
     control.addDisposeListener( new DisposeListener() {
+      @Override
       public void widgetDisposed( DisposeEvent event ) {
         controls.remove( control );
       }
@@ -662,6 +679,14 @@ abstract class ExampleTab implements Serializable {
     while( iter.hasNext() ) {
       Control control = iter.next();
       control.setEnabled( enabled );
+    }
+  }
+
+  private void updateOrientation() {
+    Iterator<Control> iter = controls.iterator();
+    while( iter.hasNext() ) {
+      Control control = iter.next();
+      control.setOrientation( orientation );
     }
   }
 

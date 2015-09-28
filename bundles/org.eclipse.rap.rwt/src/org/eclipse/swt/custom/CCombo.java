@@ -10,6 +10,7 @@
  ******************************************************************************/
 package org.eclipse.swt.custom;
 
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.textsize.TextSizeUtil;
 import org.eclipse.rap.rwt.internal.theme.ThemeAdapter;
 import org.eclipse.rap.rwt.theme.BoxDimensions;
@@ -21,6 +22,7 @@ import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.internal.custom.ccombokit.CComboLCA;
 import org.eclipse.swt.internal.custom.ccombokit.CComboThemeAdapter;
 import org.eclipse.swt.internal.graphics.FontUtil;
 import org.eclipse.swt.internal.widgets.ITextAdapter;
@@ -115,14 +117,14 @@ public class CCombo extends Composite {
    * @see Widget#getStyle()
    */
   public CCombo( Composite parent, int style ) {
-  	super( parent, checkStyle( style ) );
-  	text = "";
-  	textLimit = LIMIT;
-  	selection = new Point( 0, 0 );
-  	visibleCount = 5;
-  	dropped = false;
-  	editable = ( style & SWT.READ_ONLY ) != 0 ? false : true;
-  	model = new ListModel( true );
+    super( parent, checkStyle( style ) );
+    text = "";
+    textLimit = LIMIT;
+    selection = new Point( 0, 0 );
+    visibleCount = 5;
+    dropped = false;
+    editable = ( style & SWT.READ_ONLY ) != 0 ? false : true;
+    model = new ListModel( true );
   }
 
   @Override
@@ -367,8 +369,8 @@ public class CCombo extends Composite {
    * @see #add(String,int)
    */
   public void add( String string ) {
-  	checkWidget();
-  	model.add( string );
+    checkWidget();
+    model.add( string );
   }
 
   /**
@@ -395,8 +397,8 @@ public class CCombo extends Composite {
    * @see #add(String)
    */
   public void add( String string, int index) {
-  	checkWidget();
-  	model.add( string, index );
+    checkWidget();
+    model.add( string, index );
   }
 
   /**
@@ -1030,8 +1032,8 @@ public class CCombo extends Composite {
 
   @Override
   public Control[] getChildren() {
-  	checkWidget();
-  	return new Control[ 0 ];
+    checkWidget();
+    return new Control[ 0 ];
   }
 
   /**
@@ -1051,17 +1053,17 @@ public class CCombo extends Composite {
    */
   @Override
   public void setLayout( Layout layout ) {
-  	checkWidget();
-  	return;
+    checkWidget();
+    return;
   }
 
   @Override
   @SuppressWarnings("unchecked")
   public <T> T getAdapter( Class<T> adapter ) {
-    T result;
     if( adapter == ITextAdapter.class ) {
       if( textAdapter == null ) {
         textAdapter = new ITextAdapter() {
+          @Override
           public void setText( String text ) {
             if( internalSetText( text, true ) ) {
               adjustSelection();
@@ -1070,11 +1072,12 @@ public class CCombo extends Composite {
           }
         };
       }
-      result = ( T )textAdapter;
-    } else {
-      result = super.getAdapter( adapter );
+      return ( T )textAdapter;
     }
-    return result;
+    if( adapter == WidgetLCA.class ) {
+      return ( T )CComboLCA.INSTANCE;
+    }
+    return super.getAdapter( adapter );
   }
 
   private void updateText() {
@@ -1157,7 +1160,8 @@ public class CCombo extends Composite {
   }
 
   private static int checkStyle( int style ) {
-    int mask = SWT.BORDER | SWT.READ_ONLY | SWT.FLAT | SWT.LEFT_TO_RIGHT;
+    int mask = SWT.BORDER | SWT.READ_ONLY | SWT.FLAT | SWT.LEFT_TO_RIGHT | SWT.RIGHT_TO_LEFT;
     return style & mask;
   }
+
 }

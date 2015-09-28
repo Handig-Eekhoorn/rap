@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2004, 2014 1&1 Internet AG, Germany, http://www.1und1.de,
+ * Copyright (c) 2004, 2015 1&1 Internet AG, Germany, http://www.1und1.de,
  *                          and EclipseSource
  *
  * This program and the accompanying materials are made available under the
@@ -135,8 +135,6 @@ rwt.qx.Class.define( "rwt.widgets.base.Scrollable", {
     _configureClientArea : function() {
       this._clientArea.setStyleProperty( "overflowX", "scroll" );
       this._clientArea.setStyleProperty( "overflowY", "scroll" );
-      this._clientArea.setLeft( 0 );
-      this._clientArea.setTop( 0 );
       this._clientArea.addEventListener( "create", this._onClientCreate, this );
       this._clientArea.addEventListener( "appear", this._onClientAppear, this );
       // TOOD [tb] : Do this with an eventlistner after fixing Bug 327023
@@ -146,44 +144,49 @@ rwt.qx.Class.define( "rwt.widgets.base.Scrollable", {
     _configureScrollBars : function() {
       var dragBlocker = function( event ) { event.stopPropagation(); };
       this._horzScrollBar.setZIndex( 1e8 );
-      this._horzScrollBar.setLeft( 0 );
       this._horzScrollBar.addEventListener( "dragstart", dragBlocker );
       this._horzScrollBar.addEventListener( "changeValue", this._onHorzScrollBarChangeValue, this );
       this._horzScrollBar.addEventListener( "changeMaximum", this._syncSpacer, this );
       this._vertScrollBar.setZIndex( 1e8 );
-      this._vertScrollBar.setTop( 0 );
       this._vertScrollBar.addEventListener( "dragstart", dragBlocker );
       this._vertScrollBar.addEventListener( "changeValue", this._onVertScrollBarChangeValue, this );
       this._vertScrollBar.addEventListener( "changeMaximum", this._syncSpacer, this );
     },
 
-    _applyWidth : function( newValue, oldValue ) {
-      this.base( arguments, newValue, oldValue );
-      this._layoutX();
-    },
-
-    _applyHeight : function( newValue, oldValue ) {
-      this.base( arguments, newValue, oldValue );
-      this._layoutY();
-    },
-
-    _applyBorder : function( newValue, oldValue ) {
-      this.base( arguments, newValue, oldValue );
-      this._layoutX();
-      this._layoutY();
+    _applyDirection : function( value ) {
+      this.base( arguments, value );
+      this._horzScrollBar.setDirection( value );
+      this._syncSpacer();
+      if( this._isCreated ) {
+        this._syncClientArea( true, false );
+      }
     },
 
     _layoutX : function() {
       var clientWidth = this.getWidth() - this.getFrameWidth();
       this._clientArea.setWidth( clientWidth );
-      this._vertScrollBar.setLeft( clientWidth - this._vertScrollBar.getWidth() );
+      if( this.getDirection() === "rtl" ) {
+        this._clientArea.setLeft( null );
+        this._clientArea.setRight( 0 );
+        this._vertScrollBar.setLeft( 0 );
+        this._horzScrollBar.setLeft( null );
+        this._horzScrollBar.setRight( 0 );
+      } else {
+        this._clientArea.setLeft( 0 );
+        this._clientArea.setRight( null );
+        this._vertScrollBar.setLeft( clientWidth - this._vertScrollBar.getWidth() );
+        this._horzScrollBar.setLeft( 0 );
+        this._horzScrollBar.setRight( null );
+      }
       this._horzScrollBar.setWidth( clientWidth - this.getVerticalBarWidth() );
     },
 
     _layoutY : function() {
       var clientHeight = this.getHeight() - this.getFrameHeight();
+      this._clientArea.setTop( 0 );
       this._clientArea.setHeight( clientHeight );
       this._horzScrollBar.setTop( clientHeight - this._horzScrollBar.getHeight() );
+      this._vertScrollBar.setTop( 0 );
       this._vertScrollBar.setHeight( clientHeight - this.getHorizontalBarHeight() );
     },
 
@@ -286,7 +289,7 @@ rwt.qx.Class.define( "rwt.widgets.base.Scrollable", {
 
     _syncClientArea : function( horz, vert ) {
       if( horz && this._horzScrollBar != null ) {
-        var scrollX = this._horzScrollBar.getValue();
+        var scrollX = this._adjustScrollLeft( this._horzScrollBar.getValue() );
         if( this._clientArea.getScrollLeft() !== scrollX ) {
           this._clientArea.setScrollLeft( scrollX );
         }
@@ -322,17 +325,33 @@ rwt.qx.Class.define( "rwt.widgets.base.Scrollable", {
     },
 
     _syncScrollBars : function() {
-      var scrollX = this._clientArea.getScrollLeft();
+      var scrollX = this._adjustScrollLeft( this._clientArea.getScrollLeft() );
       this._horzScrollBar.setValue( scrollX );
       var scrollY = this._clientArea.getScrollTop();
       this._vertScrollBar.setValue( scrollY );
     },
 
     _syncSpacer : function() {
+      var isRTL = this.getDirection() === "rtl";
+      var posX = this._horzScrollBar.getMaximum() + this.getVerticalBarWidth();
       this.$spacer.css( {
         "top" : this._vertScrollBar.getMaximum() + this.getHorizontalBarHeight(),
-        "left" : this._horzScrollBar.getMaximum() + this.getVerticalBarWidth()
+        "left" : isRTL ? "" : posX,
+        "right" : isRTL ? posX : ""
       } );
+    },
+
+    _adjustScrollLeft : function( scrollLeft ) {
+      if( this.getDirection() === "rtl" ) {
+        if( rwt.client.Client.isGecko() ) {
+          return - scrollLeft;
+        } else if( rwt.client.Client.isTrident() ) {
+          return scrollLeft;
+        } else {
+          return this._horzScrollBar.getMaximum() - this._horzScrollBar.getThumb() - scrollLeft;
+        }
+      }
+      return scrollLeft;
     }
 
   }

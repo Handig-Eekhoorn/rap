@@ -772,19 +772,23 @@ rwt.qx.Class.define( "rwt.widgets.Grid", {
     },
 
     _handleKeyLeft : function( event ) {
-      if( this._focusItem.isExpanded() ) {
+      if( event.isCtrlPressed() ) {
+        this._scrollLeft();
+      } else if( this._focusItem.isExpanded() ) {
         this._focusItem.setExpanded( false );
       } else if( !this._focusItem.getParent().isRootItem() ) {
         var item = this._focusItem.getParent();
         var itemIndex = item.getFlatIndex();
         this._handleKeyboardSelect( event, item, itemIndex, true );
       } else {
-        this._horzScrollBar.setValue( this._horzScrollBar.getValue() - 10 );
+        this._scrollLeft();
       }
     },
 
     _handleKeyRight : function( event ) {
-      if( this._focusItem.hasChildren() ) {
+      if( event.isCtrlPressed() ) {
+        this._scrollRight();
+      } else if( this._focusItem.hasChildren() ) {
         if( !this._focusItem.isExpanded() ) {
           this._focusItem.setExpanded( true );
         } else {
@@ -793,7 +797,7 @@ rwt.qx.Class.define( "rwt.widgets.Grid", {
           this._handleKeyboardSelect( event, item, itemIndex, true );
         }
       } else {
-        this._horzScrollBar.setValue( this._horzScrollBar.getValue() + 10 );
+        this._scrollRight();
       }
     },
 
@@ -813,6 +817,14 @@ rwt.qx.Class.define( "rwt.widgets.Grid", {
           this.setFocusItem( firstItem );
         }
       }
+    },
+
+    _scrollLeft : function() {
+      this._horzScrollBar.setValue( this._horzScrollBar.getValue() - 10 );
+    },
+
+    _scrollRight : function() {
+      this._horzScrollBar.setValue( this._horzScrollBar.getValue() + 10 );
     },
 
     /////////////////
@@ -1211,22 +1223,6 @@ rwt.qx.Class.define( "rwt.widgets.Grid", {
 
     _applyBackgroundImage : function( newValue ) {
       this._rowContainer.setBackgroundImage( newValue );
-    },
-
-    _applyWidth : function( newValue, oldValue ) {
-      this.base( arguments, newValue, oldValue );
-      this._layoutX();
-    },
-
-    _applyHeight : function( newValue, oldValue ) {
-      this.base( arguments, newValue, oldValue );
-      this._layoutY();
-    },
-
-    _applyBorder : function( newValue, oldValue ) {
-      this.base( arguments, newValue, oldValue );
-      this._layoutX();
-      this._layoutY();
     },
 
     _layoutX : function() {

@@ -21,10 +21,11 @@ import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
 import static org.eclipse.rap.rwt.internal.protocol.JsonUtil.createJsonArray;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.createRemoteObject;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
+
 import java.io.IOException;
 
-import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
@@ -33,6 +34,8 @@ import org.eclipse.swt.graphics.Point;
 
 
 public final class CComboLCA extends WidgetLCA<CCombo> {
+
+  public static final CComboLCA INSTANCE = new CComboLCA();
 
   private static final String TYPE = "rwt.widgets.Combo";
   private static final String[] ALLOWED_STYLES = { "FLAT", "BORDER" };
@@ -139,15 +142,16 @@ public final class CComboLCA extends WidgetLCA<CCombo> {
     renderProperty( ccombo, PROP_TEXT_LIMIT, getTextLimit( ccombo ), null );
   }
 
-  //////////////////
-  // Helping methods
-
   private static Integer getTextLimit( CCombo ccombo ) {
     Integer result = Integer.valueOf( ccombo.getTextLimit() );
     if( result.intValue() == CCombo.LIMIT  ) {
       result = null;
     }
     return result;
+  }
+
+  private CComboLCA() {
+    // prevent instantiation
   }
 
 }

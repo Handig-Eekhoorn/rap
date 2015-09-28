@@ -11,6 +11,7 @@
  ******************************************************************************/
 package org.eclipse.swt.widgets;
 
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.events.HelpListener;
@@ -20,6 +21,7 @@ import org.eclipse.swt.internal.widgets.IItemHolderAdapter;
 import org.eclipse.swt.internal.widgets.IMenuAdapter;
 import org.eclipse.swt.internal.widgets.ItemHolder;
 import org.eclipse.swt.internal.widgets.MenuHolder;
+import org.eclipse.swt.internal.widgets.menukit.MenuLCA;
 
 
 /**
@@ -28,13 +30,13 @@ import org.eclipse.swt.internal.widgets.MenuHolder;
  * <dl>
  * <dt><b>Styles:</b></dt>
  * <dd>BAR, DROP_DOWN, POP_UP, NO_RADIO_GROUP</dd>
- * <dd>LEFT_TO_RIGHT <!--, RIGHT_TO_LEFT --></dd>
+ * <dd>LEFT_TO_RIGHT, RIGHT_TO_LEFT</dd>
  * <dt><b>Events:</b></dt>
  * <dd>Help, Hide, Show </dd>
  * </dl>
  * <p>
  * Note: Only one of BAR, DROP_DOWN and POP_UP may be specified.
- * <!-- Only one of LEFT_TO_RIGHT or RIGHT_TO_LEFT may be specified. -->
+ * Only one of LEFT_TO_RIGHT or RIGHT_TO_LEFT may be specified.
  * </p><p>
  * IMPORTANT: This class is <em>not</em> intended to be subclassed.
  * </p>
@@ -149,14 +151,17 @@ public class Menu extends Widget {
    * @see SWT#DROP_DOWN
    * @see SWT#POP_UP
    * @see SWT#NO_RADIO_GROUP
+   * @see SWT#LEFT_TO_RIGHT
+   * @see SWT#RIGHT_TO_LEFT
    * @see Widget#checkSubclass
    * @see Widget#getStyle
    */
   public Menu( Decorations parent, int style ) {
     super( parent, checkStyle( style ) );
     this.parent = parent;
-    this.itemHolder = new ItemHolder<MenuItem>( MenuItem.class );
+    itemHolder = new ItemHolder<>( MenuItem.class );
     MenuHolder.addMenu( parent, this );
+    checkOrientation( parent );
   }
 
   /**
@@ -214,10 +219,10 @@ public class Menu extends Widget {
   @Override
   @SuppressWarnings("unchecked")
   public <T> T getAdapter( Class<T> adapter ) {
-    T result;
     if( adapter == IItemHolderAdapter.class ) {
-      result = ( T )itemHolder;
-    } else if( adapter == IMenuAdapter.class ) {
+      return ( T )itemHolder;
+    }
+    if( adapter == IMenuAdapter.class ) {
       if( menuAdapter == null ) {
         menuAdapter = new IMenuAdapter() {
           @Override
@@ -226,11 +231,12 @@ public class Menu extends Widget {
           }
         };
       }
-      result = ( T )menuAdapter;
-    } else {
-      result = super.getAdapter( adapter );
+      return ( T )menuAdapter;
     }
-    return result;
+    if( adapter == WidgetLCA.class ) {
+      return ( T )MenuLCA.INSTANCE;
+    }
+    return super.getAdapter( adapter );
   }
 
   /**
@@ -316,9 +322,6 @@ public class Menu extends Widget {
   /**
    * Sets the orientation of the receiver, which must be one
    * of the constants <code>SWT.LEFT_TO_RIGHT</code> or <code>SWT.RIGHT_TO_LEFT</code>.
-   * <p>
-   * Note: Currently RWT does not support SWT.RIGHT_TO_LEFT.
-   * </p>
    *
    * @param orientation new orientation style
    *
@@ -331,14 +334,19 @@ public class Menu extends Widget {
    */
   public void setOrientation( int orientation ) {
     checkWidget();
+    if( ( style & ( SWT.BAR | SWT.DROP_DOWN ) ) == 0 ) {
+      int flags = SWT.RIGHT_TO_LEFT | SWT.LEFT_TO_RIGHT;
+      if( ( orientation & flags ) == 0 || ( orientation & flags ) == flags ) {
+        return;
+      }
+      style &= ~flags;
+      style |= orientation & flags;
+    }
   }
 
   /**
    * Returns the orientation of the receiver, which will be one of the
    * constants <code>SWT.LEFT_TO_RIGHT</code> or <code>SWT.RIGHT_TO_LEFT</code>.
-   * <p>
-   * Note: Currently RWT does not support SWT.RIGHT_TO_LEFT.
-   * </p>
    *
    * @return the orientation style
    *
@@ -351,7 +359,7 @@ public class Menu extends Widget {
    */
   public int getOrientation() {
     checkWidget();
-    return SWT.LEFT_TO_RIGHT;
+    return style & ( SWT.LEFT_TO_RIGHT | SWT.RIGHT_TO_LEFT );
   }
 
   ///////////

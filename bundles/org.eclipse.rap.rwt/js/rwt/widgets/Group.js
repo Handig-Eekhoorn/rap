@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2002, 2014 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2002, 2015 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -28,6 +28,8 @@ rwt.qx.Class.define( "rwt.widgets.Group", {
     themeValues.dispose();
     this._legend.addEventListener( "mouseover", this._onMouseOver, this );
     this._legend.addEventListener( "mouseout", this._onMouseOut, this );
+    this._legend.setTop( 0 );
+    this._legend.setLeft( 0 );
     // Disable scrolling (see bug 345903)
     rwt.widgets.base.Widget.disableScrolling( this );
   },
@@ -127,6 +129,11 @@ rwt.qx.Class.define( "rwt.widgets.Group", {
     _onMouseOut : function() {
       this._legend.removeState( "over" );
       this._frame.removeState( "over" );
+    },
+
+    _applyDirection : function( value ) {
+      this.base( arguments, value );
+      this.getLayoutImpl().setMirror( value === "rtl" );
     },
 
     _layoutPost : function( changes ) {

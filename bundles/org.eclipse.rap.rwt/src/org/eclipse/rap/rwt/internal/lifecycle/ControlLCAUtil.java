@@ -55,6 +55,7 @@ public class ControlLCAUtil {
   private static final String PROP_MENU = "menu";
   private static final String PROP_VISIBLE = "visibility";
   private static final String PROP_ENABLED = "enabled";
+  private static final String PROP_ORIENTATION = "direction";
   private static final String PROP_FOREGROUND = "foreground";
   private static final String PROP_BACKGROUND = "background";
   private static final String PROP_BACKGROUND_IMAGE = "backgroundImage";
@@ -88,6 +89,7 @@ public class ControlLCAUtil {
     renderMenu( control );
     renderVisible( control );
     renderEnabled( control );
+    renderOrientation( control );
     renderForeground( control );
     renderBackground( control );
     renderBackgroundImage( control );
@@ -370,6 +372,25 @@ public class ControlLCAUtil {
       Cursor preserved = remoteAdapter.getPreservedCursor();
       if( changed( control, actual, preserved, null ) ) {
         getRemoteObject( control ).set( PROP_CURSOR, getQxCursor( actual ) );
+      }
+    }
+  }
+
+  public static void preserveOrientation( Control control, int orientation ) {
+    ControlRemoteAdapter remoteAdapter = getRemoteAdapter( control );
+    if( !remoteAdapter.hasPreservedOrientation() ) {
+      remoteAdapter.preserveOrientation( orientation );
+    }
+  }
+
+  private static void renderOrientation( Control control ) {
+    ControlRemoteAdapter remoteAdapter = getRemoteAdapter( control );
+    if( !remoteAdapter.isInitialized() || remoteAdapter.hasPreservedOrientation() ) {
+      int actual = control.getOrientation();
+      int preserved = remoteAdapter.getPreservedOrientation();
+      if( changed( control, actual, preserved, SWT.LEFT_TO_RIGHT ) ) {
+        String orientation = control.getOrientation() == SWT.RIGHT_TO_LEFT ? "rtl" : "ltr";
+        getRemoteObject( control ).set( PROP_ORIENTATION, orientation );
       }
     }
   }

@@ -879,10 +879,38 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.ComboTest", {
       assertFalse( hasFocusIndicator( combo ) );
     },
 
+    testDirectionAddsStateToSubWidgets : function() {
+      var combo = this._createDefaultCombo( true );
+
+      assertTrue( button.hasState( "rwt_RIGHT_TO_LEFT" ) );
+      assertTrue( field.hasState( "rwt_RIGHT_TO_LEFT" ) );
+      combo.destroy();
+    },
+
+    testSetDirection_setsReverseChildrenOrder : function() {
+      var combo = this._createDefaultCombo();
+
+      combo.setDirection( "rtl" );
+      TestUtil.flush();
+
+      assertTrue( combo.getReverseChildrenOrder() );
+      combo.destroy();
+    },
+
+    testSetDirection_setsHorizontalChildrenAlign : function() {
+      var combo = this._createDefaultCombo();
+
+      combo.setDirection( "rtl" );
+      TestUtil.flush();
+
+      assertEquals( "right", combo.getHorizontalChildrenAlign() );
+      combo.destroy();
+    },
+
     //////////
     // Helpers
 
-    _createDefaultCombo : function() {
+    _createDefaultCombo : function( rtl ) {
       var combo = new rwt.widgets.Combo();
       combo.addToDocument();
       combo.setSpace( 239, 81, 6, 23 );
@@ -890,6 +918,9 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.ComboTest", {
       combo.setItems( [ "Eiffel", "Java", "Python", "Ruby", "Simula", "Smalltalk" ] );
       combo.setVisibleItemCount( 5 );
       combo.setFocused( true );
+      if( rtl ) {
+        combo.setDirection( "rtl" );
+      }
       var handler = rwt.remote.HandlerRegistry.getHandler( "rwt.widgets.Combo" );
       rwt.remote.ObjectRegistry.add( "w3", combo, handler );
       list = combo._list;

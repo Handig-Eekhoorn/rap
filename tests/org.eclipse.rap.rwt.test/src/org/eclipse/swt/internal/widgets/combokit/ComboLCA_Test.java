@@ -72,7 +72,7 @@ public class ComboLCA_Test {
     display = new Display();
     shell = new Shell( display, SWT.NONE );
     combo = new Combo( shell, SWT.NONE );
-    lca = new ComboLCA();
+    lca = ComboLCA.INSTANCE;
   }
 
   @After
@@ -209,6 +209,25 @@ public class ComboLCA_Test {
     TestMessage message = Fixture.getProtocolMessage();
     CreateOperation operation = message.findCreateOperation( combo );
     assertEquals( getId( combo.getParent() ), getParent( operation ) );
+  }
+
+  @Test
+  public void testRenderDirection_default() throws IOException {
+    lca.render( combo );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    CreateOperation operation = message.findCreateOperation( combo );
+    assertNull( operation.getProperties().get( "direction" ) );
+  }
+
+  @Test
+  public void testRenderDirection_RTL() throws IOException {
+    combo = new Combo( shell, SWT.RIGHT_TO_LEFT );
+
+    lca.render( combo );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( "rtl", message.findCreateProperty( combo, "direction" ).asString() );
   }
 
   @Test

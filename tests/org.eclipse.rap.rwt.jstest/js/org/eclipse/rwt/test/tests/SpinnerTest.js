@@ -322,6 +322,38 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.SpinnerTest", {
       spinner.destroy();
     },
 
+    testSetDirection_setsReverseChildrenOrder : function() {
+      var spinner = this._createDefaultSpinner();
+
+      spinner.setDirection( "rtl" );
+      TestUtil.flush();
+
+      assertTrue( spinner.getReverseChildrenOrder() );
+      spinner.destroy();
+    },
+
+    testSetDirection_setsHorizontalChildrenAlign : function() {
+      var spinner = this._createDefaultSpinner();
+
+      spinner.setDirection( "rtl" );
+      TestUtil.flush();
+
+      assertEquals( "right", spinner.getHorizontalChildrenAlign() );
+      spinner.destroy();
+    },
+
+    testSetDirection_addsStateToSubWidgets : function() {
+      var spinner = this._createDefaultSpinner();
+
+      spinner.setDirection( "rtl" );
+      TestUtil.flush();
+
+      assertTrue( spinner._upbutton.hasState( "rwt_RIGHT_TO_LEFT" ) );
+      assertTrue( spinner._downbutton.hasState( "rwt_RIGHT_TO_LEFT" ) );
+      assertTrue( spinner._textfield.hasState( "rwt_RIGHT_TO_LEFT" ) );
+      spinner.destroy();
+    },
+
     //////////
     // Helpers
 
