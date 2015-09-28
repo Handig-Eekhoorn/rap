@@ -12,6 +12,7 @@
 package org.eclipse.swt.internal.widgets.menukit;
 
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.getStyles;
+import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.hasChanged;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.preserveProperty;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListenHelp;
 import static org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil.renderListener;
@@ -41,22 +42,27 @@ import org.eclipse.swt.widgets.Menu;
 
 public final class MenuLCA extends WidgetLCA<Menu> {
 
+  public static final MenuLCA INSTANCE = new MenuLCA();
+
   private static final String TYPE = "rwt.widgets.Menu";
   private static final String[] ALLOWED_STYLES = {
     "BAR", "DROP_DOWN", "POP_UP", "NO_RADIO_GROUP"
   };
 
   private static final String PROP_ENABLED = "enabled";
+  private static final String PROP_ORIENTATION = "direction";
   private static final String PROP_SHOW_LISTENER = "Show";
   private static final String PROP_HIDE_LISTENER = "Hide";
   private static final String METHOD_UNHIDE_ITEMS = "unhideItems";
   private static final String METHOD_SHOW_MENU = "showMenu";
 
   private static final Rectangle DEFAULT_BOUNDS = new Rectangle( 0, 0, 0, 0 );
+  private static final Integer DEFAULT_DIRECTION = Integer.valueOf( SWT.LEFT_TO_RIGHT );
 
   @Override
   public void preserveValues( Menu menu ) {
     preserveProperty( menu, PROP_ENABLED, menu.getEnabled() );
+    preserveProperty( menu, PROP_ORIENTATION, menu.getOrientation() );
   }
 
   @Override
@@ -74,6 +80,7 @@ public final class MenuLCA extends WidgetLCA<Menu> {
   @Override
   public void renderChanges( Menu menu ) throws IOException {
     renderProperty( menu, PROP_ENABLED, menu.getEnabled(), true );
+    renderOrientation( menu );
     if( !isMenuBar( menu ) ) {
       renderListener( menu, SWT.Hide, PROP_HIDE_LISTENER );
     }
@@ -88,6 +95,14 @@ public final class MenuLCA extends WidgetLCA<Menu> {
   public void renderDispose( Menu menu ) throws IOException {
     // TODO [tb] : The menu can currently not be destroyed automatically on the client
     getRemoteObject( menu ).destroy();
+  }
+
+  private static void renderOrientation( Menu menu ) {
+    int orientation = menu.getOrientation();
+    if( hasChanged( menu, PROP_ORIENTATION, Integer.valueOf( orientation ), DEFAULT_DIRECTION ) ) {
+      String value = orientation == SWT.LEFT_TO_RIGHT ?  "ltr" : "rtl";
+      getRemoteObject( menu ).set( PROP_ORIENTATION, value );
+    }
   }
 
   private static void renderBounds( Menu menu ) {
@@ -146,6 +161,10 @@ public final class MenuLCA extends WidgetLCA<Menu> {
 
   private static boolean isDropDownMenu( Menu menu ) {
     return ( menu.getStyle() & SWT.DROP_DOWN ) != 0;
+  }
+
+  private MenuLCA() {
+    // prevent instantiation
   }
 
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 EclipseSource and others.
+ * Copyright (c) 2013, 2015 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -21,18 +21,23 @@ import static org.junit.Assert.fail;
 import java.io.IOException;
 
 import org.eclipse.rap.rwt.RWT;
-import org.eclipse.rap.rwt.internal.lifecycle.PhaseId;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
+import org.eclipse.rap.rwt.testfixture.TestContext;
 import org.eclipse.rap.rwt.testfixture.internal.Fixture;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.internal.widgets.MarkupValidator;
-import org.junit.After;
+import org.eclipse.swt.internal.widgets.tabitemkit.TabItemLCA;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 
 public class TabItem_Test {
+
+  @Rule
+  public TestContext context = new TestContext();
 
   private Display display;
   private Shell shell;
@@ -41,17 +46,10 @@ public class TabItem_Test {
 
   @Before
   public void setUp() {
-    Fixture.setUp();
-    Fixture.fakePhase( PhaseId.PROCESS_ACTION );
     display = new Display();
     shell = new Shell( display );
     folder = new TabFolder( shell, SWT.NONE );
     item = new TabItem( folder, SWT.NONE );
-  }
-
-  @After
-  public void tearDown() {
-    Fixture.tearDown();
   }
 
   @Test
@@ -90,6 +88,17 @@ public class TabItem_Test {
     assertEquals( new Rectangle( 0, 368, 74, 32 ), folder.getItem( 0 ).getBounds() );
     assertEquals( new Rectangle( 74, 368, 74, 29 ), folder.getItem( 1 ).getBounds() );
     assertEquals( new Rectangle( 149, 368, 74, 29 ), folder.getItem( 2 ).getBounds() );
+  }
+
+  @Test
+  public void testGetBounds_RTL() {
+    folder = new TabFolder( shell, SWT.RIGHT_TO_LEFT );
+    folder.setSize( 400, 400 );
+    createItems( folder, 3 );
+
+    assertEquals( new Rectangle( 326, 0, 74, 32 ), folder.getItem( 0 ).getBounds() );
+    assertEquals( new Rectangle( 252, 3, 74, 29 ), folder.getItem( 1 ).getBounds() );
+    assertEquals( new Rectangle( 177, 3, 74, 29 ), folder.getItem( 2 ).getBounds() );
   }
 
   @Test
@@ -242,6 +251,12 @@ public class TabItem_Test {
       TabItem item = new TabItem( folder, SWT.NONE );
       item.setText( "TabItem " + i );
     }
+  }
+
+  @Test
+  public void testGetAdapter_LCA() {
+    assertTrue( item.getAdapter( WidgetLCA.class ) instanceof TabItemLCA );
+    assertSame( item.getAdapter( WidgetLCA.class ), item.getAdapter( WidgetLCA.class ) );
   }
 
 }

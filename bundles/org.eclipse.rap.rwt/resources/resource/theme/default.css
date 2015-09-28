@@ -359,6 +359,11 @@ Combo-Button {
   width: 30px;
 }
 
+Combo-Button[RIGHT_TO_LEFT] {
+  border: none;
+  border-right: 1px solid #bdbdbd;
+}
+
 Combo-Button:disabled {
   background-image: none;
   background-color: transparent;
@@ -753,7 +758,11 @@ MenuItem-RadioIcon {
 }
 
 MenuItem-CascadeIcon {
-  background-image: url( resource/widget/rap/menu/arrow.gif );
+  background-image: url( resource/widget/rap/menu/arrow-right.gif );
+}
+
+MenuItem-CascadeIcon[RIGHT_TO_LEFT] {
+  background-image: url( resource/widget/rap/menu/arrow-left.gif );
 }
 
 /* ProgressBar default theme */
@@ -985,6 +994,11 @@ Spinner-UpButton {
   cursor: default;
 }
 
+Spinner-UpButton[RIGHT_TO_LEFT] {
+  border: none;
+  border-right: 1px solid #bdbdbd;
+}
+
 Spinner-UpButton:disabled {
   background-image: none;
   background-color: transparent;
@@ -1010,6 +1024,11 @@ Spinner-DownButton {
   border-left: 1px solid #bdbdbd;
   border-radius: 0px 0px 2px 0px;
   cursor: default;
+}
+
+Spinner-DownButton[RIGHT_TO_LEFT] {
+  border: none;
+  border-right: 1px solid #bdbdbd;
 }
 
 Spinner-DownButton:disabled {
@@ -1059,10 +1078,18 @@ TabItem {
   border-bottom: none;
 }
 
+TabItem[RIGHT_TO_LEFT] {
+  margin: 6px 0px 1px 1px;
+}
+
 TabItem:bottom {
   margin: 1px 1px 6px 0px;
   border: 1px solid #bdbdbd;
   border-top: none;
+}
+
+TabItem[RIGHT_TO_LEFT]:bottom {
+  margin: 1px 0px 6px 1px;
 }
 
 TabItem:selected {
@@ -1077,6 +1104,10 @@ TabItem:selected {
   border-bottom: none;
 }
 
+TabItem[RIGHT_TO_LEFT]:selected {
+  margin: 3px -2px 0px -1px;
+}
+
 TabItem:bottom:selected {
   margin: 0px -1px 3px -2px;
   border: 1px solid #bdbdbd;
@@ -1084,12 +1115,24 @@ TabItem:bottom:selected {
   border-bottom: 3px solid #5882b5;
 }
 
+TabItem[RIGHT_TO_LEFT]:bottom:selected {
+  margin: 0px -2px 3px -1px;
+}
+
 TabItem:selected:first {
   margin: 3px -1px 0px 0px;
 }
 
+TabItem[RIGHT_TO_LEFT]:selected:first {
+  margin: 3px 0px 0px -1px;
+}
+
 TabItem:bottom:selected:first {
   margin: 0px -1px 3px 0px;
+}
+
+TabItem[RIGHT_TO_LEFT]:bottom:selected:first {
+  margin: 0px 0px 3px -1px;
 }
 
 /* Table default theme */
@@ -2174,12 +2217,20 @@ Slider-UpButton-Icon[HORIZONTAL] {
   background-image: url( resource/widget/rap/slider/right.png );
 }
 
+Slider-UpButton-Icon[HORIZONTAL][RIGHT_TO_LEFT] {
+  background-image: url( resource/widget/rap/slider/left.png );
+}
+
 Slider-UpButton-Icon[VERTICAL] {
   background-image: url( resource/widget/rap/slider/down.png );
 }
 
 Slider-DownButton-Icon[HORIZONTAL] {
   background-image: url( resource/widget/rap/slider/left.png );
+}
+
+Slider-DownButton-Icon[HORIZONTAL][RIGHT_TO_LEFT] {
+  background-image: url( resource/widget/rap/slider/right.png );
 }
 
 Slider-DownButton-Icon[VERTICAL] {
@@ -2271,6 +2322,11 @@ CCombo-Button {
   border-left: 1px solid #bdbdbd;
   border-radius: 0px 2px 2px 0px;
   width: 30px;
+}
+
+CCombo-Button[RIGHT_TO_LEFT] {
+  border: none;
+  border-right: 1px solid #bdbdbd;
 }
 
 CCombo-Button:disabled {

@@ -55,7 +55,7 @@ import org.eclipse.swt.internal.widgets.MarkupValidator;
  * <dl>
  * <dt><b>Styles:</b>
  * <dd>BORDER</dd>
- * <dd>LEFT_TO_RIGHT <!--, RIGHT_TO_LEFT --></dd>
+ * <dd>LEFT_TO_RIGHT, RIGHT_TO_LEFT</dd>
  * <dt><b>Events:</b>
  * <dd>FocusIn, FocusOut, Help, KeyDown, KeyUp, MouseDoubleClick, MouseDown, <!-- MouseEnter, -->
  *     <!-- MouseExit, MouseHover, --> MouseUp, <!-- MouseMove,--> Move, <!-- Paint, --> Resize, Traverse,
@@ -2194,9 +2194,6 @@ public abstract class Control extends Widget implements Drawable {
   /**
    * Sets the orientation of the receiver, which must be one
    * of the constants <code>SWT.LEFT_TO_RIGHT</code> or <code>SWT.RIGHT_TO_LEFT</code>.
-   * <p>
-   * Note: Currently RWT does not support SWT.RIGHT_TO_LEFT.
-   * </p>
    *
    * @param orientation new orientation style
    *
@@ -2209,14 +2206,19 @@ public abstract class Control extends Widget implements Drawable {
    */
   public void setOrientation( int orientation ) {
     checkWidget();
+    int flags = SWT.RIGHT_TO_LEFT | SWT.LEFT_TO_RIGHT;
+    if( ( orientation & flags ) == 0 || ( orientation & flags ) == flags ) {
+      return;
+    }
+    ControlLCAUtil.preserveOrientation( this, ( style & flags ) );
+    style &= ~flags;
+    style |= orientation & flags;
+    updateOrientation();
   }
 
   /**
    * Returns the orientation of the receiver, which will be one of the
    * constants <code>SWT.LEFT_TO_RIGHT</code> or <code>SWT.RIGHT_TO_LEFT</code>.
-   * <p>
-   * Note: Currently RWT does not support SWT.RIGHT_TO_LEFT.
-   * </p>
    *
    * @return the orientation style
    *
@@ -2229,7 +2231,11 @@ public abstract class Control extends Widget implements Drawable {
    */
   public int getOrientation() {
     checkWidget();
-    return style & (SWT.LEFT_TO_RIGHT /*| SWT.RIGHT_TO_LEFT*/);
+    return style & ( SWT.LEFT_TO_RIGHT | SWT.RIGHT_TO_LEFT );
+  }
+
+  void updateOrientation() {
+    // subclasses may override
   }
 
   ////////////////

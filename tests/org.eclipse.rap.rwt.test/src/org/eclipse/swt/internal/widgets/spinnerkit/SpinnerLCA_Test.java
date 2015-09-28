@@ -67,7 +67,7 @@ public class SpinnerLCA_Test {
     display = new Display();
     shell = new Shell( display, SWT.NONE );
     spinner = new Spinner( shell, SWT.NONE );
-    lca = new SpinnerLCA();
+    lca = SpinnerLCA.INSTANCE;
   }
 
   @After
@@ -180,6 +180,25 @@ public class SpinnerLCA_Test {
     List<String> styles = getStyles( operation );
     assertTrue( styles.contains( "WRAP" ) );
     assertTrue( styles.contains( "READ_ONLY" ) );
+  }
+
+  @Test
+  public void testRenderDirection_default() throws IOException {
+    lca.render( spinner );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    CreateOperation operation = message.findCreateOperation( spinner );
+    assertNull( operation.getProperties().get( "direction" ) );
+  }
+
+  @Test
+  public void testRenderDirection_RTL() throws IOException {
+    spinner = new Spinner( shell, SWT.RIGHT_TO_LEFT );
+
+    lca.render( spinner );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( "rtl", message.findCreateProperty( spinner, "direction" ).asString() );
   }
 
   @Test

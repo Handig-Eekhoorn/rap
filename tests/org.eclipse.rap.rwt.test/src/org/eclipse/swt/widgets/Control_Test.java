@@ -35,11 +35,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.rap.rwt.RWT;
-import org.eclipse.rap.rwt.internal.lifecycle.PhaseId;
 import org.eclipse.rap.rwt.internal.lifecycle.RemoteAdapter;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.theme.ThemeAdapter;
 import org.eclipse.rap.rwt.internal.theme.ThemeTestUtil;
+import org.eclipse.rap.rwt.testfixture.TestContext;
 import org.eclipse.rap.rwt.testfixture.internal.Fixture;
 import org.eclipse.rap.rwt.theme.BoxDimensions;
 import org.eclipse.rap.rwt.theme.ControlThemeAdapter;
@@ -67,28 +67,24 @@ import org.eclipse.swt.internal.widgets.IControlAdapter;
 import org.eclipse.swt.internal.widgets.IShellAdapter;
 import org.eclipse.swt.internal.widgets.MarkupValidator;
 import org.eclipse.swt.layout.FillLayout;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 
 @SuppressWarnings( "deprecation" )
 public class Control_Test {
 
+  @Rule
+  public TestContext context = new TestContext();
+
   private Display display;
   private Shell shell;
 
   @Before
   public void setUp() {
-    Fixture.setUp();
-    Fixture.fakePhase( PhaseId.PROCESS_ACTION );
     display = new Display();
     shell = new Shell( display );
-  }
-
-  @After
-  public void tearDown() {
-    Fixture.tearDown();
   }
 
   @Test
@@ -928,12 +924,8 @@ public class Control_Test {
     }
   }
 
-  /**
-   * each Control has to inherit the orientation from its parent (or sets the
-   * orientation to SWT.LEFT_TO_RIGHT
-   */
   @Test
-  public void testOrientation() {
+  public void testGetOrientation() {
     Composite childDefault = new Composite( shell, SWT.NONE );
     assertTrue( "default orientation: SWT.LEFT_TO_RIGHT",
                 ( shell.getStyle() & SWT.LEFT_TO_RIGHT ) != 0 );
@@ -941,6 +933,15 @@ public class Control_Test {
     assertTrue( "default orientation inherited: SWT.LEFT_TO_RIGHT",
                 ( childDefault.getStyle() & SWT.LEFT_TO_RIGHT ) != 0 );
     assertEquals( SWT.LEFT_TO_RIGHT, childDefault.getOrientation() );
+  }
+
+  @Test
+  public void testSetOrientation() {
+    Control control = new Button( shell, SWT.NONE );
+
+    control.setOrientation( SWT.RIGHT_TO_LEFT );
+
+    assertEquals( SWT.RIGHT_TO_LEFT, control.getOrientation() );
   }
 
   @Test

@@ -11,6 +11,7 @@
  ******************************************************************************/
 package org.eclipse.swt.custom;
 
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.theme.BoxDimensions;
 import org.eclipse.rap.rwt.theme.ControlThemeAdapter;
 import org.eclipse.swt.SWT;
@@ -19,6 +20,7 @@ import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.internal.custom.scrolledcompositekit.ScrolledCompositeLCA;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Layout;
@@ -566,9 +568,7 @@ public class ScrolledComposite extends Composite {
     if( !contains( control ) ) {
       SWT.error( SWT.ERROR_INVALID_ARGUMENT );
     }
-    Rectangle itemRect = getDisplay().map( control.getParent(),
-                                           this,
-                                           control.getBounds() );
+    Rectangle itemRect = getDisplay().map( control.getParent(), this, control.getBounds() );
     Rectangle area = getClientArea();
     Point origin = getOrigin();
     if( itemRect.x < 0 ) {
@@ -600,9 +600,6 @@ public class ScrolledComposite extends Composite {
     return result;
   }
 
-  ///////////
-  // Disposal
-
   @Override
   public void dispose() {
     if( !isDisposed() ) {
@@ -621,8 +618,14 @@ public class ScrolledComposite extends Composite {
     }
   }
 
-  ////////////
-  // Scrolling
+  @Override
+  @SuppressWarnings( "unchecked" )
+  public <T> T getAdapter( Class<T> adapter ) {
+    if( adapter == WidgetLCA.class ) {
+      return ( T )ScrolledCompositeLCA.INSTANCE;
+    }
+    return super.getAdapter( adapter );
+  }
 
   boolean needHScroll( Rectangle contentRect, boolean vVisible ) {
     ScrollBar hBar = getHorizontalBar();
@@ -674,8 +677,9 @@ public class ScrolledComposite extends Composite {
       = SWT.H_SCROLL
       | SWT.V_SCROLL
       | SWT.BORDER
-      | SWT.LEFT_TO_RIGHT;
-//      | SWT.RIGHT_TO_LEFT;
+      | SWT.LEFT_TO_RIGHT
+      | SWT.RIGHT_TO_LEFT;
     return style & mask;
   }
+
 }

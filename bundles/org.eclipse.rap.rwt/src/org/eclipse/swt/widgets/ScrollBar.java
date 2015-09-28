@@ -11,12 +11,14 @@
  ******************************************************************************/
 package org.eclipse.swt.widgets;
 
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.theme.ThemeAdapter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.internal.widgets.scrollbarkit.ScrollBarLCA;
 import org.eclipse.swt.internal.widgets.scrollbarkit.ScrollBarThemeAdapter;
 
 /**
@@ -79,8 +81,8 @@ import org.eclipse.swt.internal.widgets.scrollbarkit.ScrollBarThemeAdapter;
  *
  * <!--@see Slider-->
  * @see Scrollable
- * <!--@see Scrollable#getHorizontalBar-->
- * <!--@see Scrollable#getVerticalBar-->
+ * @see Scrollable#getHorizontalBar
+ * @see Scrollable#getVerticalBar
  *
  * <p>(current) limitations:</p>
  * <ul>
@@ -90,7 +92,6 @@ import org.eclipse.swt.internal.widgets.scrollbarkit.ScrollBarThemeAdapter;
  *
  * @since 1.0
  */
-// TODO [rh] include ScrollBar in widget hierarchy (child of Scrollable)?
 public class ScrollBar extends Widget {
 
   private final Scrollable parent;
@@ -523,6 +524,15 @@ public class ScrollBar extends Widget {
   }
 
   @Override
+  @SuppressWarnings( "unchecked" )
+  public <T> T getAdapter( Class<T> adapter ) {
+    if( adapter == WidgetLCA.class ) {
+      return ( T )ScrollBarLCA.INSTANCE;
+    }
+    return super.getAdapter( adapter );
+  }
+
+  @Override
   void releaseParent() {
     super.releaseParent();
     if( parent.horizontalBar == this ) {
@@ -544,4 +554,5 @@ public class ScrollBar extends Widget {
     ScrollBarThemeAdapter themeAdapter = ( ScrollBarThemeAdapter )getAdapter( ThemeAdapter.class );
     return themeAdapter.getScrollBarWidth( this );
   }
+
 }

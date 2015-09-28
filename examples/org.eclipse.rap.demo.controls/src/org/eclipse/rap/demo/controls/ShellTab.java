@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2002, 2013 Innoopract Informationssysteme GmbH.
+ * Copyright (c) 2002, 2015 Innoopract Informationssysteme GmbH.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -45,6 +45,7 @@ public class ShellTab extends ExampleTab {
   private int shellCounter;
   private final ShellAdapter confirmCloseListener;
   private Image shellImage;
+  private Button createRTLButton;
   private Button createInvisibleButton;
   private Button createAsDialogButton;
   private Button createWithMenuButton;
@@ -84,6 +85,7 @@ public class ShellTab extends ExampleTab {
     createStyleButton( "TOOL", SWT.TOOL );
     createStyleButton( "SHEET", SWT.SHEET );
     createStyleButton( "ON_TOP", SWT.ON_TOP );
+    createRTLButton = createOrientationButton();
     createInvisibleButton = createPropertyButton( "Create invisible" );
     createAsDialogButton = createPropertyButton( "Create as dialog" );
     createWithMenuButton = createPropertyButton( "Add menu" );
@@ -219,6 +221,9 @@ public class ShellTab extends ExampleTab {
       shell = new Shell( getShell(), getStyle() );
     } else {
       shell = new Shell( getShell().getDisplay(), getStyle() );
+    }
+    if( createRTLButton.getSelection() ) {
+      shell.setOrientation( SWT.RIGHT_TO_LEFT );
     }
     shell.setLocation( getNextShellLocation() );
     createShellContents( shell );

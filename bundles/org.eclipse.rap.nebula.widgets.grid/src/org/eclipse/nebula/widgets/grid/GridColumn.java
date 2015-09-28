@@ -14,7 +14,9 @@ import static org.eclipse.swt.internal.widgets.MarkupUtil.isToolTipMarkupEnabled
 import static org.eclipse.swt.internal.widgets.MarkupValidator.isValidationDisabledFor;
 
 import org.eclipse.nebula.widgets.grid.aggregator.IFooterAggregateProvider;
+import org.eclipse.nebula.widgets.grid.internal.gridcolumnkit.GridColumnLCA;
 import org.eclipse.rap.rwt.RWT;
+import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.textsize.TextSizeUtil;
 import org.eclipse.rap.rwt.theme.BoxDimensions;
 import org.eclipse.swt.SWT;
@@ -1114,6 +1116,15 @@ public class GridColumn extends Item {
     if( !RWT.TOOLTIP_MARKUP_ENABLED.equals( key ) || !isToolTipMarkupEnabledFor( this ) ) {
       super.setData( key, value );
     }
+  }
+
+  @Override
+  @SuppressWarnings( "unchecked" )
+  public <T> T getAdapter( Class<T> adapter ) {
+    if( adapter == WidgetLCA.class ) {
+      return ( T )GridColumnLCA.INSTANCE;
+    }
+    return super.getAdapter( adapter );
   }
 
   private void handleFooterSpan( String key, Object value ) {

@@ -13,7 +13,14 @@ package org.eclipse.swt.widgets;
 
 import static org.eclipse.rap.rwt.internal.scripting.ClientListenerUtil.getClientListenerOperations;
 import static org.eclipse.rap.rwt.testfixture.internal.ConcurrencyTestUtil.runInThread;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.inOrder;
@@ -32,6 +39,7 @@ import org.eclipse.rap.rwt.internal.lifecycle.PhaseId;
 import org.eclipse.rap.rwt.internal.lifecycle.RemoteAdapter;
 import org.eclipse.rap.rwt.internal.scripting.ClientListenerOperation;
 import org.eclipse.rap.rwt.scripting.ClientListener;
+import org.eclipse.rap.rwt.testfixture.TestContext;
 import org.eclipse.rap.rwt.testfixture.internal.Fixture;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
@@ -45,8 +53,8 @@ import org.eclipse.swt.internal.SWTEventListener;
 import org.eclipse.swt.internal.events.EventLCAUtil;
 import org.eclipse.swt.internal.events.EventList;
 import org.eclipse.swt.internal.widgets.WidgetRemoteAdapter;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
@@ -55,22 +63,18 @@ import org.mockito.InOrder;
 @SuppressWarnings( "deprecation" )
 public class Widget_Test {
 
+  @Rule
+  public TestContext context = new TestContext();
+
   private Display display;
   private Shell shell;
   private Widget widget;
 
   @Before
   public void setUp() {
-    Fixture.setUp();
-    Fixture.fakePhase( PhaseId.PROCESS_ACTION );
     display = new Display();
     shell = new Shell( display );
     widget = new Widget( shell, SWT.NONE ) {};
-  }
-
-  @After
-  public void tearDown() {
-    Fixture.tearDown();
   }
 
   @Test
@@ -136,6 +140,48 @@ public class Widget_Test {
     int result = Widget.checkBits( style, SWT.VERTICAL, SWT.HORIZONTAL, 0, 0, 0, 0 );
     assertTrue( ( result & SWT.VERTICAL ) != 0 );
     assertFalse( ( result & SWT.HORIZONTAL ) != 0 );
+  }
+
+  @Test
+  public void testCheckOrientation_initial() {
+    widget = new Label( shell, SWT.NONE );
+
+    assertTrue( ( widget.getStyle() & SWT.LEFT_TO_RIGHT ) != 0 );
+    assertFalse( ( widget.getStyle() & SWT.RIGHT_TO_LEFT ) != 0 );
+  }
+
+  @Test
+  public void testCheckOrientation_withParentOrientation_LTR() {
+    shell = new Shell( display, SWT.LEFT_TO_RIGHT );
+    widget = new Label( shell, SWT.NONE );
+
+    assertTrue( ( widget.getStyle() & SWT.LEFT_TO_RIGHT ) != 0 );
+    assertFalse( ( widget.getStyle() & SWT.RIGHT_TO_LEFT ) != 0 );
+  }
+
+  @Test
+  public void testCheckOrientation_withParentOrientation_RTL() {
+    shell = new Shell( display, SWT.RIGHT_TO_LEFT );
+    widget = new Label( shell, SWT.NONE );
+
+    assertFalse( ( widget.getStyle() & SWT.LEFT_TO_RIGHT ) != 0 );
+    assertTrue( ( widget.getStyle() & SWT.RIGHT_TO_LEFT ) != 0 );
+  }
+
+  @Test
+  public void testCheckOrientation_LTR() {
+    widget = new Label( shell, SWT.LEFT_TO_RIGHT );
+
+    assertTrue( ( widget.getStyle() & SWT.LEFT_TO_RIGHT ) != 0 );
+    assertFalse( ( widget.getStyle() & SWT.RIGHT_TO_LEFT ) != 0 );
+  }
+
+  @Test
+  public void testCheckOrientation_RTL() {
+    widget = new Label( shell, SWT.RIGHT_TO_LEFT );
+
+    assertFalse( ( widget.getStyle() & SWT.LEFT_TO_RIGHT ) != 0 );
+    assertTrue( ( widget.getStyle() & SWT.RIGHT_TO_LEFT ) != 0 );
   }
 
   @Test

@@ -51,7 +51,7 @@ public class GroupLCA_Test {
     display = new Display();
     shell = new Shell( display, SWT.NONE );
     group = new Group( shell, SWT.NONE );
-    lca = new GroupLCA();
+    lca = GroupLCA.INSTANCE;
   }
 
   @After
@@ -100,6 +100,25 @@ public class GroupLCA_Test {
     TestMessage message = Fixture.getProtocolMessage();
     CreateOperation operation = message.findCreateOperation( group );
     assertEquals( getId( group.getParent() ), getParent( operation ) );
+  }
+
+  @Test
+  public void testRenderDirection_default() throws IOException {
+    lca.render( group );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    CreateOperation operation = message.findCreateOperation( group );
+    assertNull( operation.getProperties().get( "direction" ) );
+  }
+
+  @Test
+  public void testRenderDirection_RTL() throws IOException {
+    group = new Group( shell, SWT.RIGHT_TO_LEFT );
+
+    lca.render( group );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( "rtl", message.findCreateProperty( group, "direction" ).asString() );
   }
 
   @Test

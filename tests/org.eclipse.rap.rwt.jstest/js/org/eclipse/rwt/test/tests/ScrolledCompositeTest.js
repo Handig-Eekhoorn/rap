@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 EclipseSource and others.
+ * Copyright (c) 2010, 2015 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -14,6 +14,7 @@
 var TestUtil = org.eclipse.rwt.test.fixture.TestUtil;
 var ObjectRegistry = rwt.remote.ObjectRegistry;
 var MessageProcessor = rwt.remote.MessageProcessor;
+var Client = rwt.client.Client;
 
 rwt.qx.Class.define( "org.eclipse.rwt.test.tests.ScrolledCompositeTest", {
 
@@ -223,6 +224,33 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.ScrolledCompositeTest", {
       composite.destroy();
     },
 
+    testBasicLayout_RTL : function() {
+      var composite = this._createComposite();
+      composite.setDirection( "rtl" );
+      TestUtil.flush();
+      var client = composite._clientArea;
+      var hbar = composite._horzScrollBar;
+      var vbar = composite._vertScrollBar;
+      var barWidth = 10;
+      assertIdentical( composite, client.getParent() );
+      assertIdentical( composite, hbar.getParent() );
+      assertIdentical( composite, vbar.getParent() );
+      var clientBounds = TestUtil.getElementBounds( client.getElement() );
+      var hbarBounds = TestUtil.getElementBounds( hbar.getElement() );
+      var vbarBounds = TestUtil.getElementBounds( vbar.getElement() );
+      assertEquals( 0, clientBounds.left );
+      assertEquals( 0, clientBounds.top );
+      assertEquals( 0, clientBounds.right );
+      assertEquals( 0, clientBounds.bottom );
+      assertEquals( 0, hbarBounds.right );
+      assertEquals( barWidth, hbarBounds.left );
+      assertEquals( 0, vbarBounds.top );
+      assertEquals( barWidth, vbarBounds.bottom );
+      assertEquals( clientBounds.width - barWidth, vbarBounds.right );
+      assertEquals( clientBounds.height - barWidth, hbarBounds.top );
+      composite.destroy();
+    },
+
     testHideNativeScrollbars : function() {
       var composite = this._createComposite();
       var client = composite._clientArea;
@@ -232,7 +260,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.ScrolledCompositeTest", {
       assertEquals( "hidden", client.getElement().style.overflow );
       var elementBounds = TestUtil.getElementBounds( client.getElement() );
       var targetBounds = TestUtil.getElementBounds( client._getTargetNode() );
-      if( rwt.client.Client.isTrident() && rwt.client.Client.getMajor() === 9 ) {
+      if( Client.isTrident() && Client.getMajor() === 9 ) {
         assertEquals( elementBounds.width + ( barWidth * 2 ), targetBounds.width );
         assertEquals( elementBounds.height + ( barWidth * 2 ), targetBounds.height );
       } else {
@@ -295,6 +323,23 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.ScrolledCompositeTest", {
       composite.setVBarSelection( 20 );
       var position = this._getScrollPosition( composite );
       assertEquals( [ 10, 20 ], position );
+      composite.destroy();
+    },
+
+    testScrollProgramatically_RTL : function() {
+      var composite = this._createComposite();
+      composite.setDirection( "rtl" );
+      this._setScrollDimension( composite, 200, 200 );
+      composite.setHBarSelection( 10 );
+      composite.setVBarSelection( 20 );
+      var position = this._getScrollPosition( composite );
+      if( Client.isGecko() ) {
+        assertEquals( [ -10, 20 ], position );
+      } else if( Client.isTrident() ) {
+        assertEquals( [ 10, 20 ], position );
+      } else {
+        assertEquals( [ 100, 20 ], position );
+      }
       composite.destroy();
     },
 
@@ -396,9 +441,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.ScrolledCompositeTest", {
     },
 
     testBlockScrolling : function() {
-      if(    !rwt.client.Client.isAndroidBrowser()
-          && !rwt.client.Client.isMobileSafari() )
-      {
+      if( !Client.isAndroidBrowser() && !Client.isMobileSafari() ) {
         var composite = this._createComposite();
         this._setScrollDimension( composite, 200, 200 );
         composite.setHBarSelection( 10 );
@@ -510,7 +553,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.ScrolledCompositeTest", {
       assertEquals( "hidden", client.getElement().style.overflow );
       var elementBounds = TestUtil.getElementBounds( client.getElement() );
       var targetBounds = TestUtil.getElementBounds( client._getTargetNode() );
-      if( rwt.client.Client.isTrident()  && rwt.client.Client.getMajor() === 9 ) {
+      if( Client.isTrident()  && Client.getMajor() === 9 ) {
         assertEquals( elementBounds.width + ( barWidth * 2 ), targetBounds.width );
         assertEquals( elementBounds.height + ( barWidth * 2 ), targetBounds.height );
       } else {
