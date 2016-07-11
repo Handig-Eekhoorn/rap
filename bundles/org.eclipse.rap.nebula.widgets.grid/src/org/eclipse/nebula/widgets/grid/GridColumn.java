@@ -51,12 +51,17 @@ public class GridColumn extends Item {
   /**
    * When aggregating for the footer, consider only the root elements.
    */
-  public static final int FOOTERAGGREGATE_ROOT_ONLY = 1;
+  public static final int FOOTERAGGREGATE_ROOT = 1;
   /**
    * When aggregating for the footer, recursive through the tree but only
    * consider leaves.
    */
-  public static final int FOOTERAGGREGATE_LEAVES_ONLY = 2;
+  public static final int FOOTERAGGREGATE_LEAVES = 2;
+  /**
+   * When aggregating for the footer, consider only elements that
+   * are neither root nor a leaf.
+   */
+  public static final int FOOTERAGGREGATE_MIDNODE = 4;
 
   static final String FOOTER_SPAN = "footerSpan";
   private static final int SORT_INDICATOR_WIDTH = 10;
@@ -1335,10 +1340,11 @@ public class GridColumn extends Item {
   }
 
   /**
-   * Sets the recursion style for the footer aggregate.
+   * Sets the recursion style for the footer aggregate (bitmask)
    * @param footerRecursionStyle .
-   * @see #FOOTERAGGREGATE_LEAVES_ONLY
-   * @see #FOOTERAGGREGATE_ROOT_ONLY
+   * @see #FOOTERAGGREGATE_MIDNODE
+   * @see #FOOTERAGGREGATE_LEAVES
+   * @see #FOOTERAGGREGATE_ROOT
    */
   public void setFooterAggregateRecursionStyle(final int footerRecursionStyle){
       this.footerAggregateRecursionStyle = footerRecursionStyle;

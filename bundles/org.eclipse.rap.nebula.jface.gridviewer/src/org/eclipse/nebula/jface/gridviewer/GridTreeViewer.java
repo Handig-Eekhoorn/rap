@@ -445,7 +445,7 @@ public class GridTreeViewer extends AbstractTreeViewer {
 			cols[c]=col;
 			agg.clear();
 
-			if (col.getFooterAggregateRecursionStyle()!=GridColumn.FOOTERAGGREGATE_ROOT_ONLY)
+			if (col.getFooterAggregateRecursionStyle()!=GridColumn.FOOTERAGGREGATE_ROOT)
 				anyRecursive = true;
 		}
 		for(int r=0; r<rows.length; r++){
@@ -490,11 +490,11 @@ public class GridTreeViewer extends AbstractTreeViewer {
 			final IFooterAggregateProvider agg = col.getFooterAggregate();
 			if (agg==null) continue;
 
-			if (
-					(level==0 && (GridColumn.FOOTERAGGREGATE_ROOT_ONLY & col.getFooterAggregateRecursionStyle())!=0)
-					|| (isLeaf && (GridColumn.FOOTERAGGREGATE_LEAVES_ONLY & col.getFooterAggregateRecursionStyle())!=0)
-
-					){
+			if (( false
+					||  level==0 && (GridColumn.FOOTERAGGREGATE_ROOT & col.getFooterAggregateRecursionStyle())!=0
+					||  isLeaf && (GridColumn.FOOTERAGGREGATE_LEAVES & col.getFooterAggregateRecursionStyle())!=0
+					||  level>0 && (!isLeaf) && (GridColumn.FOOTERAGGREGATE_MIDNODE & col.getFooterAggregateRecursionStyle())!=0
+			)){
 				if (row==null){
 					agg.update(null);
 				}else{
