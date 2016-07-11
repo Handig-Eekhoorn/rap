@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2015 EclipseSource and others.
+ * Copyright (c) 2010, 2016 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -22,6 +22,7 @@ import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.internal.graphics.GCAdapter;
 import org.eclipse.swt.internal.graphics.GCOperation;
 import org.eclipse.swt.internal.graphics.GCOperation.DrawArc;
 import org.eclipse.swt.internal.graphics.GCOperation.DrawImage;
@@ -35,6 +36,7 @@ import org.eclipse.swt.internal.graphics.GCOperation.DrawText;
 import org.eclipse.swt.internal.graphics.GCOperation.FillGradientRectangle;
 import org.eclipse.swt.internal.graphics.GCOperation.SetClipping;
 import org.eclipse.swt.internal.graphics.GCOperation.SetProperty;
+import org.eclipse.swt.internal.graphics.GCOperation.SetTransform;
 import org.eclipse.swt.internal.graphics.ImageFactory;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Widget;
@@ -55,13 +57,15 @@ final class GCOperationWriter {
 
   void initialize() {
     if( !initialized ) {
-      Point size = control.getSize();
       lineWidth = 1;
       foreground = control.getForeground().getRGB();
       background = control.getBackground().getRGB();
+      Rectangle paintRect = getPaintRect();
       JsonObject parameters = new JsonObject()
-        .add( "width", size.x )
-        .add( "height", size.y )
+        .add( "x", paintRect.x )
+        .add( "y", paintRect.y )
+        .add( "width", paintRect.width )
+        .add( "height", paintRect.height )
         .add( "font", toJson( control.getFont() ) )
         .add( "fillStyle", toJson( background ) )
         .add( "strokeStyle", toJson( foreground ) );
@@ -97,6 +101,8 @@ final class GCOperationWriter {
       setProperty( ( SetProperty )operation );
     } else if( operation instanceof SetClipping ) {
       setClipping( ( SetClipping )operation );
+    } else if( operation instanceof SetTransform ) {
+      setTransform( ( SetTransform )operation );
     } else {
       String name = operation.getClass().getName();
       throw new IllegalArgumentException( "Unsupported GCOperation: " + name );
@@ -368,12 +374,17 @@ final class GCOperationWriter {
       addClientOperation( "save" );
       if( operation.isRectangular() ) {
         Rectangle rect = operation.rectangle;
+        addClientOperation( "beginPath" );
         addClientOperation( "rect", rect.x, rect.y, rect.width, rect.height );
       } else {
         renderPath( operation.types, operation.points );
       }
       addClientOperation( "clip" );
     }
+  }
+
+  private void setTransform( SetTransform operation ) {
+    addClientOperation( "setTransform", operation.elements );
   }
 
   private void renderPath( byte[] types, float[] points ) {
@@ -434,6 +445,15 @@ final class GCOperationWriter {
       result = ( float )0.5;
     }
     return result;
+  }
+
+  private Rectangle getPaintRect() {
+    Rectangle paintRect = control.getAdapter( GCAdapter.class ).getPaintRect();
+    if( paintRect == null ) {
+      Point size = control.getSize();
+      paintRect = new Rectangle( 0, 0, size.x, size.y );
+    }
+    return paintRect;
   }
 
   static float round( double value, int decimals ) {

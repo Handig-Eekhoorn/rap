@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2015 EclipseSource and others.
+ * Copyright (c) 2009, 2016 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -129,12 +129,10 @@ org.eclipse.rwt.test.fixture.TestUtil = {
     for( var i=0; i < 4; i++ ) {
       if( !result ) {
         var width = parseInt( node.style[ "border" + edge[ i ] + "Width" ], 10 );
-        var color = node.style[ "border" + edge[ i ] + "Color" ];
         var style = node.style[ "border" + edge[ i ] + "Style" ];
         var hasWidth = !isNaN( width ) && width > 0;
-        var hasColor = color !== "transparent";
         var hasStyle = style !== "" && style !== "none";
-        result = hasWidth && hasColor && hasStyle;
+        result = hasWidth && hasStyle;
       }
     }
     return result;
@@ -302,6 +300,7 @@ org.eclipse.rwt.test.fixture.TestUtil = {
       case "mouseout":
       case "contextmenu":
       case "mousewheel":
+      case "wheel":
       case "DOMMouseScroll":
       case "click":
       case "dblclick":
@@ -396,17 +395,15 @@ org.eclipse.rwt.test.fixture.TestUtil = {
 
   _sendKeyDownOnHold : rwt.util.Functions.returnTrue,
 
-  _sendKeyPress : rwt.util.Variant.select("qx.client", {
-    "gecko" : function( key ) {
-      return !this._isModifier( key );
-    },
-    "default" : function( key, keyDownEvent ) {
-      var wasStopped =   keyDownEvent
-                       ? rwt.event.EventHandlerUtil.wasStopped( keyDownEvent )
-                       : false;
-      return this._isPrintable( key ) && !wasStopped;
+  _sendKeyPress : function( key, keyDownEvent ) {
+    var wasStopped =   keyDownEvent
+                     ? rwt.event.EventHandlerUtil.wasStopped( keyDownEvent )
+                     : false;
+    if( rwt.client.Client.isGecko() ) {
+      return !this._isModifier( key ) && !wasStopped;
     }
-  } ),
+    return this._isPrintable( key ) && !wasStopped;
+  },
 
   createFakeDomKeyEvent : function( target, type, stringOrKeyCode, mod ) {
     var domEvent = this._createFakeDomEvent( target, type, mod );
@@ -605,23 +602,15 @@ org.eclipse.rwt.test.fixture.TestUtil = {
       throw( "Error in TestUtil.fakeMouseEvent: widget is not created" );
     }
     var target = widget._getTargetNode();
-    var type =   rwt.util.Variant.isSet( "qx.client", "gecko" )
-               ? "DOMMouseScroll"
-               : "mousewheel";
     var domEvent =
-    this._createFakeMouseEventDOM( target, type, 0, 0, 0, 0 );
+      this._createFakeMouseEventDOM( target, "wheel", 0, 0, 0, 0 );
     this._addWheelDelta( domEvent, value );
     this.fireFakeDomEvent( domEvent );
   },
 
-  _addWheelDelta : rwt.util.Variant.select( "qx.client", {
-    "default" : function( event, value ) {
-      event.wheelDelta = value * 120;
-    },
-    "gecko" : function( event, value ) {
-      event.detail = value * -3;
-    }
-  } ),
+  _addWheelDelta : function( event, value ) {
+    event.deltaY = value * -120;
+  },
 
   fakeMouseEvent : function( target, type, left, top ) {
     var button = rwt.event.MouseEvent.buttons.left;
@@ -768,7 +757,7 @@ org.eclipse.rwt.test.fixture.TestUtil = {
 
   initErrorPageLog : function() {
     org.eclipse.rwt.test.fixture.TestUtil.clearErrorPage();
-    rwt.runtime.ErrorHandler.showErrorPage = function( content ) {
+    rwt.runtime.ErrorHandler.showErrorBox = function( errorType, freeze, content ) {
       org.eclipse.rwt.test.fixture.TestUtil._errorPage = content;
     };
   },

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2004, 2015 1&1 Internet AG, Germany, http://www.1und1.de,
+ * Copyright (c) 2004, 2016 1&1 Internet AG, Germany, http://www.1und1.de,
  *                          EclipseSource, and others.
  *
  * All rights reserved. This program and the accompanying materials
@@ -1797,6 +1797,7 @@ rwt.qx.Class.define( "rwt.widgets.base.Widget", {
     destroy : function () {
       if( this.getParent() === null || !this.getParent()._isInGlobalDisposeQueue ) {
         if( this.dispatchSimpleEvent( "destroy" ) ) {
+          this._fireBeforeDispose();
           this.setParent( null );
           rwt.widgets.base.Widget.addToGlobalDisposeQueue( this );
         }
@@ -1805,6 +1806,10 @@ rwt.qx.Class.define( "rwt.widgets.base.Widget", {
 
     _markInDispose : function() {
       this._isInGlobalDisposeQueue = true;
+    },
+
+    _fireBeforeDispose : function() {
+      this.dispatchSimpleEvent( "beforeDispose" );
     },
 
     ///////////////////////
@@ -3111,7 +3116,12 @@ rwt.qx.Class.define( "rwt.widgets.base.Widget", {
         if (value) {
           vFocusRoot.setFocusedChild(this);
           this._visualizeFocus();
-          this.scrollIntoView();
+          if( this.getWidth() < rwt.html.Viewport.getWidth() ) {
+            this.scrollIntoViewX();
+          }
+          if( this.getHeight() < rwt.html.Viewport.getHeight() ) {
+            this.scrollIntoViewY();
+          }
         } else {
           if (vFocusRoot.getFocusedChild() == this) {
             vFocusRoot.setFocusedChild(null);
@@ -3197,14 +3207,14 @@ rwt.qx.Class.define( "rwt.widgets.base.Widget", {
       // CSS 3 draft userFocus property
       this.setStyleProperty("userFocus", (value < 0 ? "ignore" : "normal"));
       // Legacy tabIndex property
-      this.setHtmlProperty("tabIndex", value < 0 ? -1 : 1);
+      this.setHtmlProperty("tabIndex", value < 0 ? -1 : value);
     },
 
     /////////////////////
     // SELECTABLE SUPPORT
 
     _applySelectable : function( value ) {
-      rwt.html.Style.setUserSelect( this, value ?  "" : "none" );
+      rwt.html.Style.setUserSelect( this, value ?  "text" : "none" );
     },
 
     //////////////////

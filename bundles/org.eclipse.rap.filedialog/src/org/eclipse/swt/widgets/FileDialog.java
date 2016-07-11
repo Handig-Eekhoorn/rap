@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2000, 2015 IBM Corporation and others.
+ * Copyright (c) 2000, 2016 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -43,7 +43,6 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.internal.widgets.FileDialogAdapter;
 import org.eclipse.swt.internal.widgets.FileUploadRunnable;
 import org.eclipse.swt.internal.widgets.ProgressCollector;
 import org.eclipse.swt.internal.widgets.UploadPanel;
@@ -83,6 +82,8 @@ import org.eclipse.swt.layout.GridLayout;
 @SuppressWarnings( "restriction" )
 public class FileDialog extends Dialog {
 
+  private static final String[] EMPTY_ARRAY = new String[ 0 ];
+
   private final ServerPushSession pushSession;
   private ThreadPoolExecutor singleThreadExecutor;
   private Display display;
@@ -92,7 +93,6 @@ public class FileDialog extends Dialog {
   private UploadPanel placeHolder;
   private ProgressCollector progressCollector;
   private ClientFile[] clientFiles;
-  private FileDialogAdapterImpl fileDialogAdapter;
 
   /**
    * Constructs a new instance of this class given only its parent.
@@ -160,12 +160,43 @@ public class FileDialog extends Dialog {
    * @return the relative paths of the files
    */
   public String[] getFileNames() {
-    return returnCode == SWT.OK ? progressCollector.getCompletedFileNames() : new String[ 0 ];
+    if( returnCode == SWT.OK ) {
+      String[] completedFileNames = getCompletedFileNames();
+      if( isMulti() || completedFileNames.length == 0 ) {
+        return completedFileNames;
+      }
+      return new String[] { completedFileNames[ completedFileNames.length - 1 ] };
+    }
+    return EMPTY_ARRAY;
+  }
+
+  /**
+   * Sets initial client files to be uploaded. The upload of these files will start immediately
+   * after opening the dialog. Hence, this method must be called before opening the dialog.
+   * <p>
+   * A user can drag and drop files from the client operating system on any control with a drop
+   * listener attached. In this case, the client files can be obtained from the
+   * {@link ClientFileTransfer} object. This FileDialog can then be used to handle the upload and
+   * display upload progress.
+   * </p>
+   *
+   * @param files an array of client files to be added to the dialog
+   *
+   * @rwtextension This method is not available in SWT.
+   * @since 3.1
+   */
+  public void setClientFiles( ClientFile[] files ) {
+    clientFiles = files;
   }
 
   /**
    * Makes the dialog visible and brings it to the front
    * of the display.
+   *
+   * <!-- Begin RAP specific -->
+   * <p><strong>RAP Note:</strong> This method is not supported when running the application in
+   * JEE_COMPATIBILITY mode. Use <code>Dialog#open(DialogCallback)</code> instead.</p>
+   * <!-- End RAP specific -->
    *
    * @return a string describing the absolute path of the first selected file,
    *         or null if the dialog was cancelled or an error occurred
@@ -213,9 +244,9 @@ public class FileDialog extends Dialog {
       prefSize.y += 165; // ensure space for five files
     }
     shell.setMinimumSize( prefSize );
-    Rectangle parentSize = getParent().getBounds();
-    int locationX = ( parentSize.width - prefSize.x ) / 2 + parentSize.x;
-    int locationY = ( parentSize.height - prefSize.y ) / 2 + parentSize.y;
+    Rectangle displaySize = getParent().getDisplay().getBounds();
+    int locationX = ( displaySize.width - prefSize.x ) / 2 + displaySize.x;
+    int locationY = ( displaySize.height - prefSize.y ) / 2 + displaySize.y;
     shell.setBounds( locationX, locationY, prefSize.x, prefSize.y );
     // set spacer real layout data after shell prefer size calculation
     spacer.setLayoutData( createHorizontalFillData() );
@@ -290,6 +321,9 @@ public class FileDialog extends Dialog {
 
   private void handleFileDrop( ClientFile[] clientFiles ) {
     placeHolder.dispose();
+    if( !isMulti() ) {
+      clearUploadArea();
+    }
     ClientFile[] files = isMulti() ? clientFiles : new ClientFile[] { clientFiles[ 0 ] };
     UploadPanel uploadPanel = createUploadPanel( getFileNames( files ) );
     updateScrolledComposite();
@@ -363,6 +397,9 @@ public class FileDialog extends Dialog {
 
   private void handleFileUploadSelection( FileUpload fileUpload ) {
     placeHolder.dispose();
+    if( !isMulti() ) {
+      clearUploadArea();
+    }
     UploadPanel uploadPanel = createUploadPanel( fileUpload.getFileNames() );
     updateScrolledComposite();
     updateButtonsArea( fileUpload );
@@ -387,14 +424,11 @@ public class FileDialog extends Dialog {
   }
 
   private void updateButtonsArea( FileUpload fileUpload ) {
-    if( isMulti() ) {
-      Composite buttonsArea = fileUpload.getParent();
-      hideFileUpload( fileUpload );
-      createFileUpload( buttonsArea, SWT.getMessage( "SWT_Add" ) );
-      buttonsArea.layout();
-    } else {
-      fileUpload.setEnabled( false );
-    }
+    Composite buttonsArea = fileUpload.getParent();
+    hideControl( fileUpload );
+    String text = isMulti() ? SWT.getMessage( "SWT_Add" ) : SWT.getMessage( "SWT_Browse" );
+    createFileUpload( buttonsArea, text );
+    buttonsArea.layout();
   }
 
   private UploadPanel createUploadPanel( String[] fileNames ) {
@@ -404,11 +438,19 @@ public class FileDialog extends Dialog {
     return uploadPanel;
   }
 
-  private static void hideFileUpload( FileUpload fileUpload ) {
-    GridData layoutData = createButtonLayoutData( fileUpload );
-    layoutData.exclude = true;
-    fileUpload.setLayoutData( layoutData );
-    fileUpload.setVisible( false );
+  private void clearUploadArea() {
+    Composite parent = ( Composite )uploadsScroller.getContent();
+    for( Control child : parent.getChildren() ) {
+      child.dispose();
+    }
+  }
+
+  private static void hideControl( Control control ) {
+    if( control != null ) {
+      GridData layoutData = ( GridData )control.getLayoutData();
+      layoutData.exclude = true;
+      control.setVisible( false );
+    }
   }
 
   private void setButtonEnabled( final boolean enabled ) {
@@ -487,6 +529,10 @@ public class FileDialog extends Dialog {
     return result;
   }
 
+  String[] getCompletedFileNames() {
+    return progressCollector.getCompletedFileNames();
+  }
+
   ThreadPoolExecutor createSingleThreadExecutor() {
     return new SingleThreadExecutor();
   }
@@ -509,27 +555,6 @@ public class FileDialog extends Dialog {
       }
     }
 
-  }
-
-  private class FileDialogAdapterImpl implements FileDialogAdapter{
-
-    @Override
-    public void setClientFiles( ClientFile[] files ) {
-      clientFiles = files;
-    }
-
-  }
-
-  @Override
-  @SuppressWarnings( "unchecked" )
-  public <T> T getAdapter( Class<T> adapter ) {
-    if( adapter == FileDialogAdapter.class ) {
-      if( fileDialogAdapter == null ) {
-        fileDialogAdapter = new FileDialogAdapterImpl();
-      }
-      return ( T )fileDialogAdapter;
-    }
-    return super.getAdapter( adapter );
   }
 
 }

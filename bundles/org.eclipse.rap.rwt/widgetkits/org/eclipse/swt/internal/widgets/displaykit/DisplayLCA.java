@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2002, 2015 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2002, 2016 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -19,28 +19,38 @@ import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getLCA;
 import static org.eclipse.rap.rwt.internal.protocol.ClientMessageConst.EVENT_RESIZE;
 import static org.eclipse.rap.rwt.internal.protocol.ProtocolUtil.handleOperation;
 import static org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory.getRemoteObject;
+import static org.eclipse.rap.rwt.internal.service.ContextProvider.getRequest;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.rap.rwt.RWT;
+import org.eclipse.rap.rwt.client.WebClient;
 import org.eclipse.rap.rwt.client.service.ExitConfirmation;
+import org.eclipse.rap.rwt.internal.application.ApplicationContextImpl;
 import org.eclipse.rap.rwt.internal.lifecycle.DisposedWidgets;
-import org.eclipse.rap.rwt.internal.lifecycle.UITestUtil;
+import org.eclipse.rap.rwt.internal.lifecycle.EntryPointManager;
+import org.eclipse.rap.rwt.internal.lifecycle.EntryPointRegistration;
 import org.eclipse.rap.rwt.internal.lifecycle.RemoteAdapter;
+import org.eclipse.rap.rwt.internal.lifecycle.ReparentedControls;
+import org.eclipse.rap.rwt.internal.lifecycle.UITestUtil;
 import org.eclipse.rap.rwt.internal.protocol.ClientMessage;
 import org.eclipse.rap.rwt.internal.protocol.Operation;
 import org.eclipse.rap.rwt.internal.protocol.ProtocolUtil;
 import org.eclipse.rap.rwt.internal.protocol.RemoteObjectFactory;
 import org.eclipse.rap.rwt.internal.remote.RemoteObjectLifeCycleAdapter;
+import org.eclipse.rap.rwt.internal.service.ContextProvider;
 import org.eclipse.rap.rwt.internal.textsize.MeasurementUtil;
 import org.eclipse.rap.rwt.internal.util.ActiveKeysUtil;
 import org.eclipse.rap.rwt.remote.OperationHandler;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.internal.widgets.ControlRemoteAdapter;
 import org.eclipse.swt.internal.widgets.IDisplayAdapter;
 import org.eclipse.swt.internal.widgets.WidgetRemoteAdapter;
+import org.eclipse.swt.internal.widgets.WidgetTreeUtil;
 import org.eclipse.swt.internal.widgets.WidgetTreeVisitor;
-import org.eclipse.swt.internal.widgets.WidgetTreeVisitor.AllWidgetTreeVisitor;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -71,9 +81,9 @@ public class DisplayLCA {
     ActiveKeysUtil.preserveMnemonicActivator( display );
     if( adapter.isInitialized() ) {
       for( Shell shell : getShells( display ) ) {
-        WidgetTreeVisitor.accept( shell, new AllWidgetTreeVisitor() {
+        WidgetTreeUtil.accept( shell, new WidgetTreeVisitor() {
           @Override
-          public boolean doVisit( Widget widget ) {
+          public boolean visit( Widget widget ) {
             getLCA( widget ).preserveValues( widget );
             return true;
           }
@@ -83,10 +93,12 @@ public class DisplayLCA {
   }
 
   public void render( Display display ) throws IOException {
+    renderOverflow( display );
+    renderReparentControls();
+    renderDisposeWidgets();
     renderExitConfirmation( display );
     renderEnableUiTests( display );
     renderShells( display );
-    disposeWidgets();
     renderFocus( display );
     renderBeep( display );
     renderResizeListener( display );
@@ -103,9 +115,9 @@ public class DisplayLCA {
   public void clearPreserved( Display display ) {
     ( ( WidgetRemoteAdapter )getAdapter( display ) ).clearPreserved();
     for( Shell shell : getShells( display ) ) {
-      WidgetTreeVisitor.accept( shell, new AllWidgetTreeVisitor() {
+      WidgetTreeUtil.accept( shell, new WidgetTreeVisitor() {
         @Override
-        public boolean doVisit( Widget widget ) {
+        public boolean visit( Widget widget ) {
           ( ( WidgetRemoteAdapter )getAdapter( widget ) ).clearPreserved();
           return true;
         }
@@ -125,22 +137,42 @@ public class DisplayLCA {
   }
 
   private static void visitWidgets( Display display ) {
-    WidgetTreeVisitor visitor = new AllWidgetTreeVisitor() {
+    WidgetTreeVisitor visitor = new WidgetTreeVisitor() {
       @Override
-      public boolean doVisit( Widget widget ) {
+      public boolean visit( Widget widget ) {
         getLCA( widget ).readData( widget );
         return true;
       }
     };
     for( Shell shell : getShells( display ) ) {
-      WidgetTreeVisitor.accept( shell, visitor );
+      WidgetTreeUtil.accept( shell, visitor );
     }
+  }
+
+  private static void renderOverflow( Display display ) {
+    if( !getAdapter( display ).isInitialized() ) {
+      String overflow = getEntryPointProperties().get( WebClient.PAGE_OVERFLOW );
+      if( overflow != null ) {
+        RemoteObjectFactory.getRemoteObject( display ).set( "overflow", overflow );
+      }
+    }
+  }
+
+  private static Map<String, String> getEntryPointProperties() {
+    ApplicationContextImpl applicationContext = ContextProvider.getApplicationContext();
+    EntryPointManager entryPointManager = applicationContext.getEntryPointManager();
+    String servletPath = getRequest().getServletPath();
+    EntryPointRegistration registration = entryPointManager.getRegistrationByPath( servletPath );
+    if( registration != null ) {
+      return registration.getProperties();
+    }
+    return Collections.emptyMap();
   }
 
   private static void renderShells( Display display ) throws IOException {
     RenderVisitor visitor = new RenderVisitor();
     for( Shell shell : getShells( display ) ) {
-      WidgetTreeVisitor.accept( shell, visitor );
+      WidgetTreeUtil.accept( shell, visitor );
       visitor.reThrowProblem();
     }
   }
@@ -162,7 +194,19 @@ public class DisplayLCA {
     return exitConfirmation == null ? null : exitConfirmation.getMessage();
   }
 
-  private static void disposeWidgets() throws IOException {
+  private static void renderReparentControls() {
+    for( Control control : ReparentedControls.getAll() ) {
+      if( !control.isDisposed() ) {
+        getRemoteAdapter( control ).renderParent( control );
+      }
+    }
+  }
+
+  private static ControlRemoteAdapter getRemoteAdapter( Control control ) {
+    return ( ControlRemoteAdapter )control.getAdapter( RemoteAdapter.class );
+  }
+
+  private static void renderDisposeWidgets() throws IOException {
     for( Widget widget : DisposedWidgets.getAll() ) {
       getLCA( widget ).renderDispose( widget );
     }
@@ -242,22 +286,21 @@ public class DisplayLCA {
     return getDisplayAdapter( display ).getShells();
   }
 
-  private static final class RenderVisitor extends AllWidgetTreeVisitor {
+  private static final class RenderVisitor implements WidgetTreeVisitor {
 
     private IOException ioProblem;
 
     @Override
-    public boolean doVisit( Widget widget ) {
+    public boolean visit( Widget widget ) {
       ioProblem = null;
-      boolean result = true;
       try {
         render( widget );
         runRenderRunnables( widget );
       } catch( IOException ioe ) {
         ioProblem = ioe;
-        result = false;
+        return false;
       }
-      return result;
+      return true;
     }
 
     private void reThrowProblem() throws IOException {

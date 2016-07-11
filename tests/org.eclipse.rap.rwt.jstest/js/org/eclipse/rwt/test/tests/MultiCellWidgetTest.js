@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2015 EclipseSource and others.
+ * Copyright (c) 2009, 2016 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -501,6 +501,15 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.MultiCellWidgetTest", {
       widget.destroy();
     },
 
+    testTextDecoration_initialValue : function() {
+      var widget = this.createDefaultWidget();
+      this.initWidget( widget, true );
+
+      var style = widget._getTargetNode().lastChild.style;
+      assertEquals( "inherit", style.textDecoration );
+      widget.destroy();
+    },
+
     testFont : function() {
       var widget = this.createDefaultWidget();
       widget.setFont( new rwt.html.Font( 10, [ "monospace" ] ) );
@@ -629,6 +638,32 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.MultiCellWidgetTest", {
       var lastChild = widget._getTargetNode().lastChild;
       assertEquals( 0, TestUtil.getElementBounds( firstChild ).right );
       assertEquals( 20, TestUtil.getElementBounds( lastChild ).right );
+      this.disposeWidget( widget );
+    },
+
+    testCellsPosition_vertical_LTR : function() {
+      var widget = this.createDefaultWidget();
+      widget.setVertical( true );
+      widget.setDirection( "ltr" );
+      this.initWidget( widget, true );
+
+      var firstChild = widget._getTargetNode().firstChild;
+      var lastChild = widget._getTargetNode().lastChild;
+      assertEquals( 17, TestUtil.getElementBounds( firstChild ).left );
+      assertEquals( 0, TestUtil.getElementBounds( lastChild ).left );
+      this.disposeWidget( widget );
+    },
+
+    testCellsPosition_vertical_RTL : function() {
+      var widget = this.createDefaultWidget();
+      widget.setVertical( true );
+      widget.setDirection( "rtl" );
+      this.initWidget( widget, true );
+
+      var firstChild = widget._getTargetNode().firstChild;
+      var lastChild = widget._getTargetNode().lastChild;
+      assertEquals( 17, TestUtil.getElementBounds( firstChild ).right );
+      assertEquals( 0, TestUtil.getElementBounds( lastChild ).right );
       this.disposeWidget( widget );
     },
 

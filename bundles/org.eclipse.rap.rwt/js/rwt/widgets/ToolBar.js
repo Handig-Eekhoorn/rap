@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2014 EclipseSource and others.
+ * Copyright (c) 2009, 2015 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -38,6 +38,14 @@ rwt.qx.Class.define( "rwt.widgets.ToolBar", {
 
   members : {
 
+    _applyDirection : function( value ) {
+      this.base( arguments, value );
+      this.getLayoutImpl().setMirror( value === "rtl" );
+      this.forEachChild( function() {
+        this.setDirection( value );
+      } );
+    },
+
     _isRelevantEvent : function( event ) {
       var target = event.getTarget();
       return this._isToolItem( target ) || target === this;
@@ -59,7 +67,11 @@ rwt.qx.Class.define( "rwt.widgets.ToolBar", {
 
     _onFocus : function() {
       if( this._hoverItem == null ) {
-        this._hoverItem = this.getFirstChild();
+        var child = this.getFirstChild();
+        while( child != null && !this._isToolItem( child ) ) {
+          child = child.getNextSibling();
+        }
+        this._hoverItem = child;
       }
       if( this._hoverItem != null ) {
         this._hoverItem.addState( "over" );

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2010, 2016 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -325,13 +325,17 @@ rwt.runtime.MobileWebkitSupport = {
     }
     if( this._isDraggableWidget( widgetTarget ) ) {
       result.drag = true;
-    } else if( this._isGridRow( widgetTarget ) ) {
+    } else if( this._isGridRowContainer( widgetTarget ) ) {
       result.virtualScroll = true;
-      result.outerScroll = this._allowNativeScroll && this._isScrollableWidget( widgetTarget );
+      var hasOuterScrollable
+        = this._isScrollableWidget( widgetTarget ) || this._isClientDocumentScrollingEnabled();
+      result.outerScroll = this._allowNativeScroll && hasOuterScrollable;
     } else if( this._allowNativeScroll && this._isScrollableWidget( widgetTarget ) ) {
       result.scroll = true;
     } else if( this._isFocusable( widgetTarget ) ) {
       result.focus = true;
+    } else if( this._allowNativeScroll && this._isClientDocumentScrollingEnabled() ) {
+      result.scroll = true;
     }
     return result;
   },
@@ -341,19 +345,17 @@ rwt.runtime.MobileWebkitSupport = {
 
   _initVirtualScroll : function( widget ) {
     var scrollable;
-    if( widget instanceof rwt.widgets.base.GridRow ) {
-      scrollable = widget.getParent().getParent();
+    if( this._isGridRowContainer( widget ) ) {
+      scrollable = widget.getParent();
     } else {
       scrollable = this._findScrollable( widget );
     }
     var scrollBarV = scrollable._vertScrollBar;
     var scrollBarH = scrollable._horzScrollBar;
     this._touchSession.scrollBarV = scrollBarV;
-    this._touchSession.initScrollY = scrollBarV.getValue();
-    this._touchSession.maxScrollY = scrollBarV.getMaximum();
+    this._touchSession.initScrollY = this._getScrollYOffset( scrollBarV );
     this._touchSession.scrollBarH = scrollBarH;
     this._touchSession.initScrollX = scrollBarH.getValue();
-    this._touchSession.maxScrollX = scrollBarH.getMaximum();
   },
 
   _handleVirtualScroll : function( pos ) {
@@ -362,23 +364,42 @@ rwt.runtime.MobileWebkitSupport = {
     var offsetY = oldPos[ 1 ] - pos[ 1 ];
     var newX = this._touchSession.initScrollX + offsetX;
     var newY = this._touchSession.initScrollY + offsetY;
-    var max =   this._touchSession.scrollBarV.getMaximum()
-              - this._touchSession.scrollBarV._thumbLength;
-    var nudged = newY < 0 || newY > max;
+    var max = this._touchSession.scrollBarV.getMaximum() - this._touchSession.scrollBarV.getThumb();
+    var adaptedNewY = this._adaptScrollYOffset( newY );
+    var nudged = newY < 0 || adaptedNewY > max;
     if( this._touchSession.type.outerScroll && nudged ) {
       var outer = this._findScrollable( this._touchSession.widgetTarget );
-      var outerValue = outer._vertScrollBar.getValue();
-      var outerMax =   outer._vertScrollBar.getMaximum()
-                     - outer._vertScrollBar._thumbLength;
-      if(    ( newY < 0 && outerValue > 0 )
-          || ( newY > max && outerValue < outerMax ) )
-      {
+      if( outer == null ) {
         delete this._touchSession.type.virtualScroll;
         this._touchSession.type.scroll = true;
+      } else {
+        var outerValue = outer._vertScrollBar.getValue();
+        var outerMax = outer._vertScrollBar.getMaximum() - outer._vertScrollBar.getThumb();
+        if( ( newY < 0 && outerValue > 0 ) || ( adaptedNewY > max && outerValue < outerMax ) ) {
+          delete this._touchSession.type.virtualScroll;
+          this._touchSession.type.scroll = true;
+        }
       }
     }
     this._touchSession.scrollBarH.setValue( newX );
-    this._touchSession.scrollBarV.setValue( newY );
+    this._touchSession.scrollBarV.setValue( adaptedNewY );
+  },
+
+  _adaptScrollYOffset : function( scrollY ) {
+    if( this._isGridRowContainer( this._touchSession.widgetTarget ) ) {
+      var grid = this._touchSession.widgetTarget.getParent();
+      var item = grid.getRootItem().findItemByOffset( scrollY );
+      return item ? item.getFlatIndex() : 0;
+    }
+    return scrollY ;
+  },
+
+  _getScrollYOffset : function( scrollBar ) {
+    if( this._isGridRowContainer( this._touchSession.widgetTarget ) ) {
+      var grid = this._touchSession.widgetTarget.getParent();
+      return grid._getTopItem().getOffset();
+    }
+    return scrollBar.getValue();
   },
 
   _finishVirtualScroll : function() {
@@ -398,18 +419,21 @@ rwt.runtime.MobileWebkitSupport = {
     return this._findScrollable( widget ) !== null;
   },
 
-  _isGridRow : function( widgetTarget ) {
-    return widgetTarget instanceof rwt.widgets.base.GridRow;
+  _isGridRowContainer : function( widgetTarget ) {
+    return widgetTarget instanceof rwt.widgets.base.GridRowContainer;
   },
 
   _isSelectableWidget : function( widgetTarget ) {
     var result = false;
-    if(    widgetTarget instanceof rwt.widgets.ListItem
-        || widgetTarget instanceof rwt.widgets.base.GridRow )
-    {
+    if( widgetTarget instanceof rwt.widgets.ListItem || this._isGridRowContainer( widgetTarget ) ) {
       result = true;
     }
     return result;
+  },
+
+  _isClientDocumentScrollingEnabled : function() {
+    var overflow = rwt.widgets.base.ClientDocument.getInstance().getOverflow();
+    return overflow && overflow !== "hidden";
   },
 
   _findScrollable : function( widget ) {

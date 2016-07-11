@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2002, 2015 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2002, 2016 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -74,7 +74,6 @@ public class ControlLCAUtil_Test {
 
   private Display display;
   private Shell shell;
-  private Composite anotherParent;
   private Control control;
   private Color red;
   private Color redAlpha;
@@ -86,7 +85,6 @@ public class ControlLCAUtil_Test {
     red = display.getSystemColor( SWT.COLOR_RED );
     redAlpha = new Color( display, 255, 0, 0, 128 );
     shell = new Shell( display );
-    anotherParent = new Shell( display );
     getRemoteObject( shell ).setHandler( new ShellOperationHandler( shell ) );
     control = new Button( shell, SWT.PUSH );
     Fixture.fakePhase( PhaseId.PROCESS_ACTION );
@@ -96,34 +94,6 @@ public class ControlLCAUtil_Test {
   public void tearDown() {
     display.dispose();
     Fixture.tearDown();
-  }
-
-  @Test
-  public void testRenderParent_initial() {
-    ControlLCAUtil.renderChanges( control );
-
-    assertNull( getProtocolMessage().findSetOperation( control, "parent" ) );
-  }
-
-  @Test
-  public void testRenderParent_unchanged() {
-    Fixture.markInitialized( control );
-
-    ControlLCAUtil.renderChanges( control );
-
-    assertNull( getProtocolMessage().findSetOperation( control, "parent" ) );
-  }
-
-  @Test
-  public void testRenderParent_changed() {
-    Fixture.markInitialized( control );
-    Fixture.clearPreserved();
-
-    control.setParent( anotherParent );
-    ControlLCAUtil.renderChanges( control );
-
-    String actual = getProtocolMessage().findSetProperty( control, "parent" ).asString();
-    assertEquals( getId( control.getParent() ), actual );
   }
 
   @Test
@@ -258,6 +228,16 @@ public class ControlLCAUtil_Test {
     ControlLCAUtil.renderChanges( control );
 
     assertEquals( -1, getProtocolMessage().findSetProperty( control, "tabIndex" ).asInt() );
+  }
+
+  @Test
+  public void testRenderTabIndex_nonFocusableControl() {
+    control = new Composite( shell, SWT.NO_FOCUS );
+
+    ControlLCAUtil.renderChanges( shell );
+    ControlLCAUtil.renderChanges( control );
+
+    assertNull( getProtocolMessage().findSetOperation( control, "tabIndex" ) );
   }
 
   @Test

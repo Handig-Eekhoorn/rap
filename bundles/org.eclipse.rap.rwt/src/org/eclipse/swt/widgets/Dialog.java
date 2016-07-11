@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2002, 2013 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2002, 2016 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -16,7 +16,6 @@ import static org.eclipse.rap.rwt.internal.service.ContextProvider.getApplicatio
 import org.eclipse.rap.rwt.Adaptable;
 import org.eclipse.rap.rwt.internal.lifecycle.SimpleLifeCycle;
 import org.eclipse.rap.rwt.internal.textsize.TextSizeUtil;
-import org.eclipse.rap.rwt.internal.widgets.IDialogAdapter;
 import org.eclipse.rap.rwt.widgets.DialogCallback;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
@@ -62,22 +61,6 @@ import org.eclipse.swt.internal.SerializableCompatibility;
 public abstract class Dialog implements Adaptable, SerializableCompatibility {
 
   private static final int HORIZONTAL_DIALOG_UNIT_PER_CHAR = 4;
-
-  private class DialogAdapter implements IDialogAdapter, SerializableCompatibility {
-    public void openNonBlocking( final DialogCallback dialogCallback ) {
-      prepareOpen();
-      returnCode = SWT.CANCEL;
-      shell.open();
-      shell.addShellListener( new ShellAdapter() {
-        @Override
-        public void shellClosed( ShellEvent event ) {
-          if( dialogCallback != null ) {
-            dialogCallback.dialogClosed( returnCode );
-          }
-        }
-      } );
-    }
-  }
 
   final int style;
   final Shell parent;
@@ -209,6 +192,35 @@ public abstract class Dialog implements Adaptable, SerializableCompatibility {
   }
 
   /**
+   * Opens this dialog in a non-blocking way and brings it to the front of the display. If given,
+   * the <code>dialogCallback</code> is notified when the dialog is closed.
+   * <p>
+   * Use this method instead of the <code>open()</code> method from the respective
+   * <code>Dialog</code> implementation when running in <em>JEE_COMPATIBILTY</em> mode.
+   * </p>
+   *
+   * @param dialogCallback the callback to be notified when the dialog was closed or
+   *          <code>null</code> if no callback should be notified.
+   * @see DialogCallback
+   * @see org.eclipse.rap.rwt.application.Application.OperationMode
+   * @rwtextension This method is not available in SWT.
+   * @since 3.1
+   */
+  public void open( final DialogCallback dialogCallback ) {
+    prepareOpen();
+    returnCode = SWT.CANCEL;
+    shell.open();
+    shell.addShellListener( new ShellAdapter() {
+      @Override
+      public void shellClosed( ShellEvent event ) {
+        if( dialogCallback != null ) {
+          dialogCallback.dialogClosed( returnCode );
+        }
+      }
+    } );
+  }
+
+  /**
    * Implementation of the <code>Adaptable</code> interface.
    * <p><strong>IMPORTANT:</strong> This method is <em>not</em> part of the RWT
    * public API. It is marked public only so that it can be shared
@@ -216,13 +228,9 @@ public abstract class Dialog implements Adaptable, SerializableCompatibility {
    * from application code.
    * </p>
    */
-  @SuppressWarnings("unchecked")
+  @Override
   public <T> T getAdapter( Class<T> adapter ) {
-    T result = null;
-    if( adapter == IDialogAdapter.class ) {
-      result = ( T )new DialogAdapter();
-    }
-    return result;
+    return null;
   }
 
   protected void prepareOpen() {
@@ -279,10 +287,11 @@ public abstract class Dialog implements Adaptable, SerializableCompatibility {
     return result;
   }
 
-  private void checkParent( Shell parent ) {
+  private static void checkParent( Shell parent ) {
     if( parent == null ) {
       SWT.error( SWT.ERROR_NULL_ARGUMENT );
     }
     parent.checkWidget();
   }
+
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2014 EclipseSource and others.
+ * Copyright (c) 2011, 2015 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -19,10 +19,17 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.application.EntryPoint;
@@ -32,6 +39,7 @@ import org.eclipse.rap.rwt.internal.service.UISessionImpl;
 import org.eclipse.rap.rwt.service.UISession;
 import org.eclipse.rap.rwt.service.UISessionEvent;
 import org.eclipse.rap.rwt.service.UISessionListener;
+import org.eclipse.rap.rwt.service.UIThreadListener;
 import org.eclipse.rap.rwt.testfixture.internal.Fixture;
 import org.eclipse.rap.rwt.testfixture.internal.LoggingPhaseListener;
 import org.eclipse.rap.rwt.testfixture.internal.TestRequest;
@@ -40,6 +48,8 @@ import org.eclipse.swt.widgets.Display;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 
 public class SimpleLifeCycle_Test {
@@ -178,37 +188,41 @@ public class SimpleLifeCycle_Test {
 
   @Test
   public void testRequestThreadExecRunsRunnableOnCallingThread() {
-    final Thread[] invocationThread = { null };
+    final AtomicReference<Thread> invocationThread = new AtomicReference<>();
     Runnable runnable = new Runnable() {
+      @Override
       public void run() {
-        invocationThread[ 0 ] = Thread.currentThread();
+        invocationThread.set( Thread.currentThread() );
       }
     };
 
     lifeCycle.requestThreadExec( runnable );
 
-    assertSame( Thread.currentThread(), invocationThread[ 0 ] );
+    assertSame( Thread.currentThread(), invocationThread.get() );
   }
 
   @Test
   public void testGetUIThreadWhileLifeCycleInExecute() throws IOException {
     new Display();
-    final Thread[] uiThread = { null };
+    final AtomicReference<Thread> uiThread = new AtomicReference<>();
     lifeCycle.addPhaseListener( new PhaseListener() {
       private static final long serialVersionUID = 1L;
+      @Override
       public PhaseId getPhaseId() {
         return PhaseId.PREPARE_UI_ROOT;
       }
+      @Override
       public void beforePhase( PhaseEvent event ) {
       }
+      @Override
       public void afterPhase( PhaseEvent event ) {
-        uiThread[ 0 ] = LifeCycleUtil.getUIThread( ContextProvider.getUISession() ).getThread();
+        uiThread.set( LifeCycleUtil.getUIThread( ContextProvider.getUISession() ).getThread() );
       }
     } );
 
     lifeCycle.execute();
 
-    assertSame( Thread.currentThread(), uiThread[ 0 ] );
+    assertSame( Thread.currentThread(), uiThread.get() );
   }
 
   @Test
@@ -228,6 +242,7 @@ public class SimpleLifeCycle_Test {
     lifeCycle.execute();
 
     runInThread( new Runnable() {
+      @Override
       public void run() {
         uiSession.getHttpSession().invalidate();
       }
@@ -258,22 +273,74 @@ public class SimpleLifeCycle_Test {
   }
 
   @Test
+  public void testNotifyUIThreadListeners() throws IOException {
+    UIThreadListener listener = mock( UIThreadListener.class );
+    ContextProvider.getApplicationContext().addUIThreadListener( listener );
+    new Display();
+    ArgumentCaptor<UISessionEvent> captor = ArgumentCaptor.forClass( UISessionEvent.class );
+    InOrder inOrder = inOrder( listener );
+
+    lifeCycle.execute();
+
+    inOrder.verify( listener ).enterUIThread( captor.capture() );
+    inOrder.verify( listener ).leaveUIThread( captor.capture() );
+    inOrder.verifyNoMoreInteractions();
+    for( UISessionEvent event : captor.getAllValues() ) {
+      assertSame( ContextProvider.getUISession(), event.getUISession() );
+    }
+  }
+
+  @Test
+  public void testNotifyUIThreadListeners_twice() throws IOException {
+    UIThreadListener listener = mock( UIThreadListener.class );
+    ContextProvider.getApplicationContext().addUIThreadListener( listener );
+    new Display();
+
+    lifeCycle.execute();
+    lifeCycle.execute();
+
+    verify( listener, times( 2 ) ).enterUIThread( any( UISessionEvent.class ) );
+    verify( listener, times( 2 ) ).leaveUIThread( any( UISessionEvent.class ) );
+  }
+
+  @Test
+  public void testNotifyUIThreadListeners_haveAccessToUISession() throws IOException {
+    UIThreadListener listener = new UIThreadListener() {
+      @Override
+      public void enterUIThread( UISessionEvent event ) {
+        assertNotNull( RWT.getUISession() );
+      }
+      @Override
+      public void leaveUIThread( UISessionEvent event ) {
+        assertNotNull( RWT.getUISession() );
+      }
+    };
+    ContextProvider.getApplicationContext().addUIThreadListener( listener );
+    new Display();
+
+    lifeCycle.execute();
+    lifeCycle.execute();
+  }
+
+  @Test
   public void testContextOnShutdownFromBackgroundThread() throws Exception {
-    final boolean[] log = new boolean[ 1 ];
+    final AtomicBoolean hasContext = new AtomicBoolean();
     // Activate SimpleLifeCycle
     getApplicationContext().getLifeCycleFactory().deactivate();
     getApplicationContext().getLifeCycleFactory().activate();
     registerEntryPoint( TestEntryPoint.class );
     final UISessionImpl uiSession = ( UISessionImpl )RWT.getUISession();
     uiSession.addUISessionListener( new UISessionListener() {
+      @Override
       public void beforeDestroy( UISessionEvent event ) {
-        log[ 0 ] = ContextProvider.hasContext();
+        hasContext.set( ContextProvider.hasContext() );
       }
     } );
     // Initialize shutdown adapter
     getApplicationContext().getLifeCycleFactory().getLifeCycle().execute();
 
     Thread thread = new Thread( new Runnable() {
+      @Override
       public void run() {
         uiSession.getShutdownAdapter().interceptShutdown();
         // Prevents NPE in tearDown
@@ -284,7 +351,7 @@ public class SimpleLifeCycle_Test {
     thread.start();
     thread.join();
 
-    assertTrue( log[ 0 ] );
+    assertTrue( hasContext.get() );
   }
 
   private void assertBeforePhaseEvent( PhaseEventInfo beforePrepareUIRoot, PhaseId phaseId ) {
@@ -318,14 +385,17 @@ public class SimpleLifeCycle_Test {
       threads = new LinkedList<Thread>();
     }
 
+    @Override
     public void beforePhase( PhaseEvent event ) {
       threads.add( Display.getCurrent().getThread() );
     }
 
+    @Override
     public void afterPhase( PhaseEvent event ) {
       threads.add( Display.getCurrent().getThread() );
     }
 
+    @Override
     public PhaseId getPhaseId() {
       return PhaseId.ANY;
     }
@@ -338,6 +408,7 @@ public class SimpleLifeCycle_Test {
   }
 
   private static class TestEntryPoint implements EntryPoint {
+    @Override
     public int createUI() {
       new Display();
       return 0;
@@ -345,6 +416,7 @@ public class SimpleLifeCycle_Test {
   }
 
   private static class DefaultDisplayEntryPoint implements EntryPoint {
+    @Override
     public int createUI() {
       Display.getDefault();
       return 0;

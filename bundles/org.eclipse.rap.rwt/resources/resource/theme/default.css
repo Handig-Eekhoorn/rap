@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 EclipseSource and others.
+ * Copyright (c) 2012, 2016 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -88,6 +88,19 @@ Display {
 SystemMessage-DisplayOverlay {
   background-color: rgba( 128, 128, 128, 0.2 );
   background-image: url( resource/widget/rap/display/loading.gif );
+}
+
+ErrorBox-Titlebar {
+  font: bold 14px Verdana, "Lucida Sans", Arial, Helvetica, sans-serif;
+  color: white;
+  background-color: #406796;
+}
+
+ErrorBox {
+  border: 1px solid #3B5998;
+  font: 14px Verdana, "Lucida Sans", Arial, Helvetica, sans-serif;
+  color: #4a4a4a;
+  background-color: white;
 }
 
 /* Default theme for all controls */
@@ -393,23 +406,11 @@ Combo-List-Item {
 }
 
 Combo-List-Item:hover, Combo-List-Item:even:hover  {
-  color: #4a4a4a;
-  background-color: #b5b5b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #ebebeb ),
-    to( #d5d5d5 )
-  );
+  background-color: #f0f0f0;
 }
 
 Combo-List-Item:selected, Combo-List-Item:even:selected {
-  color: #ffffff;
-  background-color: #5882b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #5882b5 ),
-    to( #416693 )
-  );
+  background-color: #c5dbef;
 }
 
 Combo-Field {
@@ -441,23 +442,11 @@ DropDown-Item {
 }
 
 DropDown-Item:hover {
-  color: #4a4a4a;
-  background-color: #b5b5b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #ebebeb ),
-    to( #d5d5d5 )
-  );
+  background-color: #f0f0f0;
 }
 
 DropDown-Item:selected {
-  color: #ffffff;
-  background-color: #5882b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #5882b5 ),
-    to( #416693 )
-  );
+  background-color: #c5dbef;
 }
 
 /* CoolBar default theme */
@@ -505,6 +494,14 @@ CTabFolder-DropDownButton-Icon {
 
 CTabFolder-DropDownButton-Icon:hover {
   background-image: url( resource/widget/rap/ctabfolder/ctabfolder-dropdown-hover.png );
+}
+
+CTabFolder-DropDownButton-Icon[RIGHT_TO_LEFT] {
+  background-image: url( resource/widget/rap/ctabfolder/ctabfolder-dropdown-left.png );
+}
+
+CTabFolder-DropDownButton-Icon[RIGHT_TO_LEFT]:hover {
+  background-image: url( resource/widget/rap/ctabfolder/ctabfolder-dropdown-left-hover.png );
 }
 
 /* Group default theme */
@@ -626,64 +623,34 @@ List-Item {
 }
 
 List-Item:hover {
-  color: #4a4a4a;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #ebebeb ),
-    to( #d5d5d5 )
-  );
-}
-
-List-Item:selected {
-  color: #ffffff;
-  /* background-color property is used on the server to compute system color with id
-     SWT.COLOR_LIST_SELECTION (see bug https://bugs.eclipse.org/bugs/show_bug.cgi?id=434191) */
-  background-color: #00589f;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #5882b5 ),
-    to( #416693 )
-  );
-}
-
-List-Item:selected:unfocused {
-  color: #ffffff;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #b5b5b5 ),
-    to( #818181 )
-  );
-}
-
-List-Item:even {
   background-color: #f0f0f0;
 }
 
-List-Item:even:hover {
+List-Item:selected {
   color: #4a4a4a;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #ebebeb ),
-    to( #d5d5d5 )
-  );
+  /* background-color property is used on the server to compute system color with id
+     SWT.COLOR_LIST_SELECTION (see bug https://bugs.eclipse.org/bugs/show_bug.cgi?id=434191) */
+  background-color: #c5dbef;
+}
+
+List-Item:selected:unfocused {
+  background-color:#dfe6ee;
+}
+
+List-Item:even {
+  background-color: #f5f5f5;
+}
+
+List-Item:even:hover {
+  background-color: #e8e8e8;
 }
 
 List-Item:even:selected {
-  color: #ffffff;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #5882b5 ),
-    to( #416693 )
-  );
+  background-color: #bdd3e7;
 }
 
 List-Item:even:selected:unfocused {
-  color: #ffffff;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #b5b5b5 ),
-    to( #818181 )
-  );
+  background-color: #dadee6;
 }
 
 List-GridLine {
@@ -1183,7 +1150,7 @@ TableItem:linesvisible:even:rowtemplate {
 }
 
 TableItem:linesvisible:even {
-  background-color: #f0f0f0;
+  background-color: #f5f5f5;
   color: inherit;
 }
 
@@ -1194,63 +1161,21 @@ Table-RowOverlay {
 }
 
 Table-RowOverlay:hover {
-  color: #4a4a4a;
-  background-color: #b5b5b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #ebebeb ),
-    to( #d5d5d5 )
-  );
+  color: inherit;
+  background-color: rgba( 181, 181, 181, 0.2 );
+  background-image: none;
 }
 
 Table-RowOverlay:selected {
-  color: #ffffff;
-  background-color: #5882b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #5882b5 ),
-    to( #416693 )
-  );
+  color: inherit;
+  background-color: rgba(20, 110, 190, 0.25);
+  background-image: none;
 }
 
 Table-RowOverlay:selected:unfocused {
-  color: #ffffff;
-  background-color: #b5b5b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #b5b5b5 ),
-    to( #818181 )
-  );
-}
-
-Table-RowOverlay:linesvisible:even:hover {
-  color: #4a4a4a;
-  background-color: #b5b5b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #ebebeb ),
-    to( #d5d5d5 )
-  );
-}
-
-Table-RowOverlay:linesvisible:even:selected {
-  color: #ffffff;
-  background-color: #5882b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #5882b5 ),
-    to( #416693 )
-  );
-}
-
-Table-RowOverlay:linesvisible:even:selected:unfocused {
-  background-color: #959595;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #b5b5b5 ),
-    to( #818181 )
-  );
-  color: #ffffff;
+  background-color: rgba( 98, 130, 171, 0.2 );
+  background-image: none;
+  color: inherit;
 }
 
 TableColumn-SortIndicator {
@@ -1420,10 +1345,9 @@ ToolItem {
   opacity: 1;
   animation: none;
   text-shadow: 1px 1px 1px #ccc;
+  border: none;
   border-left: 1px solid transparent;
   border-right: 1px solid transparent;
-  border-top: none;
-  border-bottom: none;
 }
 
 ToolItem[FLAT] {
@@ -1431,17 +1355,16 @@ ToolItem[FLAT] {
 }
 
 ToolItem[VERTICAL] {
-  border-left: none;
-  border-right: none;
+  border: none;
   border-top: 1px solid transparent;
   border-bottom: 1px solid transparent;
 }
 
-ToolItem:first {
+ToolItem:first, ToolItem[RIGHT_TO_LEFT]:last {
   border-radius: 3px 0px 0px 3px;
 }
 
-ToolItem:last {
+ToolItem:last, ToolItem[RIGHT_TO_LEFT]:first {
   border-radius: 0px 3px 3px 0px;
 }
 
@@ -1454,12 +1377,14 @@ ToolItem[VERTICAL]:last {
 }
 
 ToolItem:first:last, ToolItem[VERTICAL]:first:last {
+  border: none;
   border-radius: 3px 3px 3px 3px;
 }
 
 ToolItem:hover,
 ToolItem:pressed,
 ToolItem:selected {
+  border: none;
   border-left: 1px solid #bdbdbd;
   border-right: 1px solid #bdbdbd;
 }
@@ -1467,8 +1392,7 @@ ToolItem:selected {
 ToolItem[VERTICAL]:hover,
 ToolItem[VERTICAL]:pressed,
 ToolItem[VERTICAL]:selected {
-  border-left: none;
-  border-right: none;
+  border: none;
   border-top: 1px solid #bdbdbd;
   border-bottom: 1px solid #bdbdbd;
 }
@@ -1518,32 +1442,42 @@ ToolItem[VERTICAL]:pressed, ToolItem[VERTICAL]:selected {
   );
 }
 
-ToolItem:first,
 ToolItem:first:hover,
 ToolItem:first:selected,
-ToolItem:first:pressed {
-  border-left: none;
+ToolItem:first:pressed,
+ToolItem[RIGHT_TO_LEFT]:last:hover,
+ToolItem[RIGHT_TO_LEFT]:last:selected,
+ToolItem[RIGHT_TO_LEFT]:last:pressed {
+  border: none;
+  border-left: 1px solid transparent;
+  border-right: 1px solid #bdbdbd;
 }
 
-ToolItem:last,
 ToolItem:last:hover,
 ToolItem:last:selected,
-ToolItem:last:pressed {
-  border-right: none;
+ToolItem:last:pressed,
+ToolItem[RIGHT_TO_LEFT]:first:hover,
+ToolItem[RIGHT_TO_LEFT]:first:selected,
+ToolItem[RIGHT_TO_LEFT]:first:pressed {
+  border: none;
+  border-left: 1px solid #bdbdbd;
+  border-right: 1px solid transparent;
 }
 
-ToolItem[VERTICAL]:first,
 ToolItem[VERTICAL]:first:hover,
 ToolItem[VERTICAL]:first:selected,
 ToolItem[VERTICAL]:first:pressed {
-  border-top: none;
+  border: none;
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid #bdbdbd;
 }
 
-ToolItem[VERTICAL]:last,
 ToolItem[VERTICAL]:last:hover,
 ToolItem[VERTICAL]:last:selected,
 ToolItem[VERTICAL]:last:pressed {
-  border-bottom: none;
+  border: none;
+  border-top: 1px solid #bdbdbd;
+  border-bottom: 1px solid transparent;
 }
 
 ToolItem[FLAT],
@@ -1601,20 +1535,20 @@ ToolItem-Separator {
   width: 10px;
 }
 
-/* Tree default theme */
+/* Tree/Grid default theme */
 
-Tree {
+Tree, Grid {
   font: 14px Verdana, "Lucida Sans", Arial, Helvetica, sans-serif;
   background-color: #ffffff;
   border: none;
   color: #4a4a4a;
 }
 
-Tree[BORDER] {
+Tree[BORDER], Grid[BORDER] {
   border: 1px solid #bdbdbd;
 }
 
-TreeItem,
+TreeItem, GridItem,
 TreeItem:linesvisible:even:rowtemplate {
   background-color: transparent;
   color: inherit;
@@ -1625,78 +1559,36 @@ TreeItem:linesvisible:even:rowtemplate {
 }
 
 TreeItem:linesvisible:even {
-  background-color: #f0f0f0;
+  background-color: #f5f5f5;
   color: inherit;
   border: none;
 }
 
-Tree-RowOverlay {
+Tree-RowOverlay, Grid-RowOverlay {
   background-color: transparent;
   color: inherit;
   background-image: none;
 }
 
-Tree-RowOverlay:hover {
-  color: #4a4a4a;
-  background-color: #b5b5b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #ebebeb ),
-    to( #d5d5d5 )
-  );
+Tree-RowOverlay:hover, Grid-RowOverlay:hover {
+  color: inherit;
+  background-color: rgba( 181, 181, 181, 0.2 );
+  background-image: none;
 }
 
-Tree-RowOverlay:selected {
-  color: #ffffff;
-  background-color: #5882b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #5882b5 ),
-    to( #416693 )
-  );
+Tree-RowOverlay:selected, Grid-RowOverlay:selected {
+  color: inherit;
+  background-color: rgba( 20, 110, 190, 0.25 );
+  background-image: none;
 }
 
-Tree-RowOverlay:selected:unfocused {
-  color: #ffffff;
-  background-color: #b5b5b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #b5b5b5 ),
-    to( #818181 )
-  );
+Tree-RowOverlay:selected:unfocused, Grid-RowOverlay:selected:unfocused {
+  background-color: rgba( 98, 130, 171, 0.2 );
+  background-image: none;
+  color: inherit;
 }
 
-Tree-RowOverlay:linesvisible:even:hover {
-  color: #4a4a4a;
-  background-color: #b5b5b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #ebebeb ),
-    to( #d5d5d5 )
-  );
-}
-
-Tree-RowOverlay:linesvisible:even:selected {
-  color: #ffffff;
-  background-color: #5882b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #5882b5 ),
-    to( #416693 )
-  );
-}
-
-Tree-RowOverlay:linesvisible:even:selected:unfocused {
-  color: #ffffff;
-  background-color: #b5b5b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #b5b5b5 ),
-    to( #818181 )
-  );
-}
-
-TreeColumn {
+TreeColumn, GridColumn {
   font: 14px Verdana, "Lucida Sans", Arial, Helvetica, sans-serif;
   color: inherit;
   background-color: #f0f0f0;
@@ -1711,7 +1603,7 @@ TreeColumn {
   text-overflow: ellipsis;
 }
 
-TreeColumn:hover {
+TreeColumn:hover, GridColumn:hover {
   background-image: gradient(
     linear, left top, left bottom,
     from( #e4e4e4 ),
@@ -1719,142 +1611,212 @@ TreeColumn:hover {
   );
 }
 
-TreeColumn-SortIndicator {
+TreeColumn-SortIndicator, GridColumn-SortIndicator {
   background-image: none;
 }
 
-TreeColumn-SortIndicator:up {
+TreeColumn-SortIndicator:up, GridColumn-SortIndicator:up {
   background-image: url( resource/widget/rap/column/sort-indicator-up.png );
 }
 
-TreeColumn-SortIndicator:down {
+TreeColumn-SortIndicator:down, GridColumn-SortIndicator:down {
   background-image: url( resource/widget/rap/column/sort-indicator-down.png );
 }
 
-Tree-Cell {
+Tree-Cell, Grid-Cell {
   spacing: 3px;
   padding: 5px 3px 5px 3px;
 }
 
 Tree-GridLine,
-Tree-GridLine:vertical:rowtemplate {
+Tree-GridLine:vertical:rowtemplate, Grid-GridLine:vertical:rowtemplate {
   color: transparent;
 }
 
 Tree-GridLine:vertical,
 Tree-GridLine:header,
 Tree-GridLine:horizontal:rowtemplate {
+  color: #dedede;
+}
+
+Grid-GridLine {
   color: #d0d0d0;
 }
 
-Tree-Checkbox {
+Tree-Checkbox, Grid-Checkbox {
   margin: 0px 2px 0px 0px;
   background-image: url( resource/widget/rap/button/check-unselected.png );
 }
 
-Tree-Checkbox:hover {
+Tree-Checkbox:hover, Grid-Checkbox:hover {
   background-image: url( resource/widget/rap/button/check-unselected-hover.png );
 }
 
-Tree-Checkbox:checked {
+Tree-Checkbox:checked, Grid-Checkbox:checked {
   background-image: url( resource/widget/rap/button/check-selected.png );
 }
 
-Tree-Checkbox:checked:hover {
+Tree-Checkbox:checked:hover, Grid-Checkbox:checked:hover {
   background-image: url( resource/widget/rap/button/check-selected-hover.png );
 }
 
-Tree-Checkbox:checked:grayed {
+Tree-Checkbox:checked:grayed, Grid-Checkbox:checked:grayed {
   background-image: url( resource/widget/rap/button/check-grayed.png );
 }
 
-Tree-Checkbox:checked:grayed:hover {
+Tree-Checkbox:checked:grayed:hover, Grid-Checkbox:checked:grayed:hover {
   background-image: url( resource/widget/rap/button/check-grayed-hover.png );
 }
 
-Tree-Indent {
+Tree-Indent, Grid-Indent {
   width: 16px;
   background-image: none;
 }
 
-Tree-Indent:collapsed {
+Tree-Indent:collapsed, Grid-Indent:collapsed {
   background-image: url( resource/widget/rap/tree/tree-collapsed.png );
 }
 
-Tree-Indent:collapsed:hover {
+Tree-Indent:collapsed:hover, Grid-Indent:collapsed:hover {
   background-image: url( resource/widget/rap/tree/tree-collapsed-hover.png );
 }
 
-Tree-Indent:expanded {
+Tree-Indent:expanded, Grid-Indent:expanded {
   background-image: url( resource/widget/rap/tree/tree-expanded.png );
 }
 
-Tree-Indent:expanded:hover {
+Tree-Indent:expanded:hover, Grid-Indent:expanded:hover {
   background-image: url( resource/widget/rap/tree/tree-expanded-hover.png );
 }
 
-Tree-Indent:line {
+Tree-Indent:line, Grid-Indent:line {
   background-image: none;
 }
 
-Tree-Indent:first {
+Tree-Indent:first, Grid-Indent:first {
   background-image: none;
 }
 
-Tree-Indent:first:collapsed {
+Tree-Indent:first:collapsed, Grid-Indent:first:collapsed {
   background-image: url( resource/widget/rap/tree/tree-collapsed.png );
 }
 
-Tree-Indent:first:collapsed:hover {
+Tree-Indent:first:collapsed:hover, Grid-Indent:first:collapsed:hover {
   background-image: url( resource/widget/rap/tree/tree-collapsed-hover.png );
 }
 
-Tree-Indent:first:expanded {
+Tree-Indent:first:expanded, Grid-Indent:first:expanded {
   background-image: url( resource/widget/rap/tree/tree-expanded.png );
 }
 
-Tree-Indent:first:expanded:hover {
+Tree-Indent:first:expanded:hover, Grid-Indent:first:expanded:hover {
   background-image: url( resource/widget/rap/tree/tree-expanded-hover.png );
 }
 
-Tree-Indent:last {
+Tree-Indent:last, Grid-Indent:last {
   background-image: none;
 }
 
-Tree-Indent:last:collapsed {
+Tree-Indent:last:collapsed, Grid-Indent:last:collapsed {
   background-image: url( resource/widget/rap/tree/tree-collapsed.png );
 }
 
-Tree-Indent:last:collapsed:hover {
+Tree-Indent:last:collapsed:hover, Grid-Indent:last:collapsed:hover {
   background-image: url( resource/widget/rap/tree/tree-collapsed-hover.png );
 }
 
-Tree-Indent:last:expanded {
+Tree-Indent:last:expanded, Grid-Indent:last:expanded {
   background-image: url( resource/widget/rap/tree/tree-expanded.png );
 }
 
-Tree-Indent:last:expanded:hover {
+Tree-Indent:last:expanded:hover, Grid-Indent:last:expanded:hover {
   background-image: url( resource/widget/rap/tree/tree-expanded-hover.png );
 }
 
-Tree-Indent:first:last {
+Tree-Indent:first:last, Grid-Indent:first:last {
   background-image: none;
 }
 
-Tree-Indent:first:last:collapsed {
+Tree-Indent:first:last:collapsed, Grid-Indent:first:last:collapsed {
   background-image: url( resource/widget/rap/tree/tree-collapsed.png );
 }
 
-Tree-Indent:first:last:collapsed:hover {
+Tree-Indent:first:last:collapsed:hover, Grid-Indent:first:last:collapsed:hover {
   background-image: url( resource/widget/rap/tree/tree-collapsed-hover.png );
 }
 
-Tree-Indent:first:last:expanded {
+Tree-Indent:first:last:expanded, Grid-Indent:first:last:expanded {
   background-image: url( resource/widget/rap/tree/tree-expanded.png );
 }
 
-Tree-Indent:first:last:expanded:hover {
+Tree-Indent:first:last:expanded:hover, Grid-Indent:first:last:expanded:hover {
   background-image: url( resource/widget/rap/tree/tree-expanded-hover.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:collapsed, Grid-Indent[RIGHT_TO_LEFT]:collapsed {
+  background-image: url( resource/widget/rap/tree/tree-collapsed-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:collapsed:hover, Grid-Indent[RIGHT_TO_LEFT]:collapsed:hover {
+  background-image: url( resource/widget/rap/tree/tree-collapsed-hover-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:expanded, Grid-Indent[RIGHT_TO_LEFT]:expanded {
+  background-image: url( resource/widget/rap/tree/tree-expanded-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:expanded:hover, Grid-Indent[RIGHT_TO_LEFT]:expanded:hover {
+  background-image: url( resource/widget/rap/tree/tree-expanded-hover-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:first:collapsed, Grid-Indent[RIGHT_TO_LEFT]:first:collapsed {
+  background-image: url( resource/widget/rap/tree/tree-collapsed-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:first:collapsed:hover, Grid-Indent[RIGHT_TO_LEFT]:first:collapsed:hover {
+  background-image: url( resource/widget/rap/tree/tree-collapsed-hover-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:first:expanded, Grid-Indent[RIGHT_TO_LEFT]:first:expanded {
+  background-image: url( resource/widget/rap/tree/tree-expanded-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:first:expanded:hover, Grid-Indent[RIGHT_TO_LEFT]:first:expanded:hover {
+  background-image: url( resource/widget/rap/tree/tree-expanded-hover-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:last:collapsed, Grid-Indent[RIGHT_TO_LEFT]:last:collapsed {
+  background-image: url( resource/widget/rap/tree/tree-collapsed-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:last:collapsed:hover, Grid-Indent[RIGHT_TO_LEFT]:last:collapsed:hover {
+  background-image: url( resource/widget/rap/tree/tree-collapsed-hover-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:last:expanded, Grid-Indent[RIGHT_TO_LEFT]:last:expanded {
+  background-image: url( resource/widget/rap/tree/tree-expanded-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:last:expanded:hover, Grid-Indent[RIGHT_TO_LEFT]:last:expanded:hover {
+  background-image: url( resource/widget/rap/tree/tree-expanded-hover-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:first:last:collapsed, Grid-Indent[RIGHT_TO_LEFT]:first:last:collapsed {
+  background-image: url( resource/widget/rap/tree/tree-collapsed-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:first:last:collapsed:hover,
+Grid-Indent[RIGHT_TO_LEFT]:first:last:collapsed:hover {
+  background-image: url( resource/widget/rap/tree/tree-collapsed-hover-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:first:last:expanded, Grid-Indent[RIGHT_TO_LEFT]:first:last:expanded {
+  background-image: url( resource/widget/rap/tree/tree-expanded-left.png );
+}
+
+Tree-Indent[RIGHT_TO_LEFT]:first:last:expanded:hover,
+Grid-Indent[RIGHT_TO_LEFT]:first:last:expanded:hover {
+  background-image: url( resource/widget/rap/tree/tree-expanded-hover-left.png );
 }
 
 /* Scale default theme */
@@ -1995,6 +1957,38 @@ DateTime-Calendar-NextYearButton:hover {
   background-image: url( resource/widget/rap/calendar/nextYear-hover.png );
 }
 
+DateTime-Calendar-PreviousMonthButton[RIGHT_TO_LEFT] {
+  background-image: url( resource/widget/rap/calendar/nextMonth.png );
+}
+
+DateTime-Calendar-PreviousMonthButton[RIGHT_TO_LEFT]:hover {
+  background-image: url( resource/widget/rap/calendar/nextMonth-hover.png );
+}
+
+DateTime-Calendar-NextMonthButton[RIGHT_TO_LEFT] {
+  background-image: url( resource/widget/rap/calendar/lastMonth.png );
+}
+
+DateTime-Calendar-NextMonthButton[RIGHT_TO_LEFT]:hover {
+  background-image: url( resource/widget/rap/calendar/lastMonth-hover.png );
+}
+
+DateTime-Calendar-PreviousYearButton[RIGHT_TO_LEFT] {
+  background-image: url( resource/widget/rap/calendar/nextYear.png );
+}
+
+DateTime-Calendar-PreviousYearButton[RIGHT_TO_LEFT]:hover {
+  background-image: url( resource/widget/rap/calendar/nextYear-hover.png );
+}
+
+DateTime-Calendar-NextYearButton[RIGHT_TO_LEFT] {
+  background-image: url( resource/widget/rap/calendar/lastYear.png );
+}
+
+DateTime-Calendar-NextYearButton[RIGHT_TO_LEFT]:hover {
+  background-image: url( resource/widget/rap/calendar/lastYear-hover.png );
+}
+
 DateTime-UpButton {
   background-color: #f0f0f0;
   background-image: gradient(
@@ -2007,6 +2001,11 @@ DateTime-UpButton {
   border-left: 1px solid #bdbdbd;
   border-radius: 0px 2px 0px 0px;
   cursor: default;
+}
+
+DateTime-UpButton[RIGHT_TO_LEFT] {
+  border: none;
+  border-right: 1px solid #bdbdbd;
 }
 
 DateTime-UpButton-Icon {
@@ -2031,6 +2030,11 @@ DateTime-DownButton {
   cursor: default;
 }
 
+DateTime-DownButton[RIGHT_TO_LEFT] {
+  border: none;
+  border-right: 1px solid #bdbdbd;
+}
+
 DateTime-DownButton-Icon {
   background-image: url( resource/widget/rap/datetime/down.png );
 }
@@ -2053,6 +2057,11 @@ DateTime-DropDownButton {
   width: 30px;
 }
 
+DateTime-DropDownButton[RIGHT_TO_LEFT] {
+  border: none;
+  border-right: 1px solid #bdbdbd;
+}
+
 DateTime-DropDownButton:disabled,
 DateTime-UpButton:disabled,
 DateTime-DownButton:disabled {
@@ -2069,7 +2078,7 @@ DateTime-DropDownButton-Icon:hover {
 }
 
 DateTime-DropDownCalendar {
-  border: 1px #a7a6aa;
+  border: 1px #a7a6aa solid;
 }
 
 /* ExpandBar default theme */
@@ -2358,23 +2367,11 @@ CCombo-List-Item {
 }
 
 CCombo-List-Item:hover, CCombo-List-Item:even:hover {
-  color: #4a4a4a;
-  background-color: #b5b5b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #ebebeb ),
-    to( #d5d5d5 )
-  );
+  background-color: #f0f0f0;
 }
 
 CCombo-List-Item:selected, CCombo-List-Item:even:selected {
-  color: #ffffff;
-  background-color: #5882b5;
-  background-image: gradient(
-    linear, left top, left bottom,
-    from( #5882b5 ),
-    to( #416693 )
-  );
+  background-color: #c5dbef;
 }
 
 CCombo-Field {

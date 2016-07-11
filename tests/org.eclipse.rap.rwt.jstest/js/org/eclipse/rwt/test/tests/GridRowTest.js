@@ -122,7 +122,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
     },
 
     testRenderNoItem : function() {
-      row.renderItem( null, {}, false, null );
+      row.renderItem( null, tree._config, false, null );
       assertEquals( 0, row.$el.get( 0 ).childNodes.length );
     },
 
@@ -160,12 +160,13 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       var item = new rwt.widgets.GridItem( tree.getRootItem() );
       item.setTexts( [ "Test" ] );
       tree.setItemMetrics( 0, 10, 50, 12, 13, 30, 8 );
-      assertEquals( 10, row._getItemLeft( item, 0, tree._config) );
-      assertEquals( 50, row._getItemWidth( item, 0, tree._config ) );
-      assertEquals( 28, row._getItemImageLeft( item, 0, tree._config ) );
-      assertEquals( 13, row._getItemImageWidth( item, 0, tree._config ) );
-      assertEquals( 46, row._getItemTextLeft( item, 0, tree._config ) );
-      assertEquals( 8, row._getItemTextWidth( item, 0, tree._config ) );
+      var layout = this._getRowLayout( tree, item );
+      assertEquals( 10, layout.cellLeft[ 0 ] );
+      assertEquals( 50, layout.cellWidth[ 0 ] );
+      assertEquals( 28, layout.cellImageLeft[ 0 ] );
+      assertEquals( 13, layout.cellImageWidth[ 0 ] );
+      assertEquals( 46, layout.cellTextLeft[ 0 ] );
+      assertEquals( 8, layout.cellTextWidth[ 0 ] );
     },
 
     testFirstColumnMetricsImageOverflow : function() {
@@ -176,8 +177,9 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       var item = new rwt.widgets.GridItem( tree.getRootItem() );
       item.setTexts( [ "Test" ] );
       tree.setItemMetrics( 0, 0, 15, 0, 10, 10, 40 );
-      assertEquals( 5, row._getItemImageWidth( item, 0, tree._config ) );
-      assertEquals( 0, row._getItemTextWidth( item, 0, tree._config ) );
+      var layout = this._getRowLayout( tree, item );
+      assertEquals( 5, layout.cellImageWidth[ 0 ] );
+      assertEquals( 0, layout.cellTextWidth[ 0 ] );
     },
 
     testSecondColumnAsTreeColumn : function() {
@@ -187,23 +189,26 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       } );
       var item = new rwt.widgets.GridItem( tree.getRootItem() );
       item.setTexts( [ "Test", "Test2" ] );
-      tree.setItemMetrics( 0, 64, 40, 66, 13, 69, 8 );
       tree.setItemMetrics( 1, 34, 40, 36, 13, 49, 8 );
+      tree.setItemMetrics( 0, 64, 40, 66, 13, 69, 8 );
+      tree.setColumnCount( 2 );
+      tree.getRenderConfig().cellOrder = [ 1, 0 ];
       tree.setTreeColumn( 1 );
+      var layout = this._getRowLayout( tree, item );
       // first column is unchanged:
-      assertEquals( 64, row._getItemLeft( item, 0, tree._config ) );
-      assertEquals( 40, row._getItemWidth( item, 0, tree._config) );
-      assertEquals( 66, row._getItemImageLeft( item, 0, tree._config ) );
-      assertEquals( 13, row._getItemImageWidth( item, 0, tree._config ) );
-      assertEquals( 69, row._getItemTextLeft( item, 0, tree._config ) );
-      assertEquals( 8,  row._getItemTextWidth( item, 0, tree._config ) );
+      assertEquals( 64, layout.cellLeft[ 0 ] );
+      assertEquals( 40, layout.cellWidth[ 0 ] );
+      assertEquals( 66, layout.cellImageLeft[ 0 ] );
+      assertEquals( 13, layout.cellImageWidth[ 0 ] );
+      assertEquals( 69, layout.cellTextLeft[ 0 ] );
+      assertEquals( 8,  layout.cellTextWidth[ 0 ] );
       // second column
-      assertEquals( 34, row._getItemLeft( item, 1, tree._config ) );
-      assertEquals( 40, row._getItemWidth( item, 1, tree._config ) );
-      assertEquals( 52, row._getItemImageLeft( item, 1, tree._config ) );
-      assertEquals( 13, row._getItemImageWidth( item, 1, tree._config ) );
-      assertEquals( 65, row._getItemTextLeft( item, 1, tree._config ) );
-      assertEquals( 8,  row._getItemTextWidth( item, 1, tree._config ) );
+      assertEquals( 34, layout.cellLeft[ 1 ] );
+      assertEquals( 40, layout.cellWidth[ 1 ] );
+      assertEquals( 52, layout.cellImageLeft[ 1 ] );
+      assertEquals( 13, layout.cellImageWidth[ 1 ] );
+      assertEquals( 65, layout.cellTextLeft[ 1 ] );
+      assertEquals( 8,  layout.cellTextWidth[ 1 ] );
     },
 
     testGetCheckBoxMetrics : function() {
@@ -214,8 +219,9 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
         "indentionWidth" : 16
       } );
       var item = new rwt.widgets.GridItem( tree.getRootItem() );
-      assertEquals( 21, row._getCheckBoxLeft( item, tree._config ) );
-      assertEquals( 20, row._getCheckBoxWidth( item, tree._config ) );
+      var layout = this._getRowLayout( tree, item );
+      assertEquals( 21, layout.checkBoxLeft );
+      assertEquals( 20, layout.checkBoxWidth );
     },
 
     testSetCheckBoxMetricsOverflow : function() {
@@ -227,8 +233,9 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       } );
       var item = new rwt.widgets.GridItem( tree.getRootItem() );
       tree.setItemMetrics( 0, 0, 25, 0, 10, 10, 40 );
-      assertEquals( 15, row._getCheckBoxLeft( item, tree._config ) );
-      assertEquals( 10, row._getCheckBoxWidth( item, tree._config ) );
+      var layout = this._getRowLayout( tree, item );
+      assertEquals( 15, layout.checkBoxLeft );
+      assertEquals( 10, layout.checkBoxWidth );
     },
 
     testRenderHeight : function() {
@@ -259,6 +266,21 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       assertEquals( 45, node.childNodes[ 1 ].offsetWidth );
     },
 
+    testLabelBoundsTree_RTL : function() {
+      row.setMirror( true );
+      var item = this._createItem( tree );
+      item.setTexts( [ "Test" ] );
+
+      row.renderItem( item, tree._config, false, null );
+
+      var node = row.$el.get( 0 );
+      assertEquals( 2, node.childNodes.length );
+      assertEquals( 6, node.childNodes[ 1 ].offsetTop );
+      assertEquals( 334, node.childNodes[ 1 ].offsetLeft );
+      assertEquals( "auto", node.childNodes[ 1 ].style.height );
+      assertEquals( 45, node.childNodes[ 1 ].offsetWidth );
+    },
+
     testLabelBoundsTable : function() {
       tree.setTreeColumn( -1 );
       var item = this._createItem( tree );
@@ -270,6 +292,48 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       assertEquals( 1, node.childNodes.length );
       assertEquals( 6, node.childNodes[ 0 ].offsetTop );
       assertEquals( 5, node.childNodes[ 0 ].offsetLeft );
+      assertEquals( "auto", node.childNodes[ 0 ].style.height );
+      assertEquals( 45, node.childNodes[ 0 ].offsetWidth );
+    },
+
+    testLabelBoundsTable_withColSpan : function() {
+      tree.setTreeColumn( -1 );
+      var item = this._createItem( tree );
+      item.setTexts( [ "Test0", "Test1", "Test2", "Test3" ] );
+      tree.setItemMetrics( 0, 4, 66, 5, 0, 5, 50 );
+      tree.setItemMetrics( 2, 80, 20, 86, 0, 85, 10 );
+      tree.setItemMetrics( 1, 110, 20, 5, 45, 115, 10 );
+      tree.setItemMetrics( 3, 140, 20, 5, 45, 140, 10 );
+      tree.setItemHeight( 15 );
+      tree.getRenderConfig().cellOrder = [ 0, 2, 1, 3 ];
+      tree.setColumnCount( 4 );
+      row.renderItem( item, tree._config, false, null );
+      var nodes = row.$el.get( 0 ).childNodes;
+      assertEquals( 4, nodes.length );
+      item.setColumnSpans( [ 2, 0, 0, 0 ] );
+
+      row.renderItem( item, tree._config, false, null );
+
+      var node = row.$el.get( 0 );
+      assertEquals( 2, node.childNodes.length );
+      assertEquals( 6, node.childNodes[ 0 ].offsetTop );
+      assertEquals( 5, node.childNodes[ 0 ].offsetLeft );
+      assertEquals( "auto", node.childNodes[ 0 ].style.height );
+      assertEquals( 119, node.childNodes[ 0 ].offsetWidth );
+    },
+
+    testLabelBoundsTable_RTL : function() {
+      row.setMirror( true );
+      tree.setTreeColumn( -1 );
+      var item = this._createItem( tree );
+      item.setTexts( [ "Test" ] );
+
+      row.renderItem( item, tree._config, false, null );
+
+      var node = row.$el.get( 0 );
+      assertEquals( 1, node.childNodes.length );
+      assertEquals( 6, node.childNodes[ 0 ].offsetTop );
+      assertEquals( 350, node.childNodes[ 0 ].offsetLeft );
       assertEquals( "auto", node.childNodes[ 0 ].style.height );
       assertEquals( 45, node.childNodes[ 0 ].offsetWidth );
     },
@@ -302,6 +366,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       item.setTexts( [ "foo", "LongTextWithNoWhiteSpaces TextThatIsOnANewLine" ] );
       row.renderItem( item, tree._config, false, null ); // force label creation
       tree.setColumnCount( 1 );
+      tree.getRenderConfig().cellOrder = [ 0 ];
 
       row.renderItem( item, tree._config, false, null );
 
@@ -465,6 +530,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       tree.setItemMetrics( 1, 50, 40, 50, 12, 65, 12 );
       tree.setItemMetrics( 2, 50, 40, 50, 12, 65, 12 );
       tree.setColumnCount( 3 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2 ];
       var item = this._createItem( tree );
       item.setTexts( [ "Test1", "Test2", "Test3" ] );
       row.renderItem( item, tree._config, false, null );
@@ -478,6 +544,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       tree.setItemMetrics( 1, 50, 0, 50, 12, 65, 12 );
       tree.setItemMetrics( 2, 50, 40, 50, 12, 65, 12 );
       tree.setColumnCount( 3 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2 ];
       var item = this._createItem( tree );
       item.setTexts( [ "Test1", "Test2", "Test3" ] );
       row.renderItem( item, tree._config, false, null );
@@ -490,6 +557,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       tree.setItemMetrics( 1, 50, 40, 50, 12, 65, 12 );
       tree.setItemMetrics( 2, 50, 40, 50, 12, 65, 12 );
       tree.setColumnCount( 3 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2 ];
       var item = this._createItem( tree );
       item.setTexts( [ "Test1", "Test2", "Test3" ] );
       row.renderItem( item, tree._config, false, null );
@@ -507,12 +575,14 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       tree.setItemMetrics( 1, 50, 40, 50, 12, 65, 12 );
       tree.setItemMetrics( 2, 50, 40, 50, 12, 65, 12 );
       tree.setColumnCount( 3 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2 ];
       var item = this._createItem( tree );
       item.setTexts( [ "Test1", "Test2", "Test3" ] );
       row.renderItem( item, tree._config, false, null );
       assertEquals( 4, row.$el.get( 0 ).childNodes.length );
 
       tree.setColumnCount( 2 );
+      tree.getRenderConfig().cellOrder = [ 0, 1 ];
       row.renderItem( item, tree._config, false, null );
 
       assertEquals( 3, row.$el.get( 0 ).childNodes.length );
@@ -668,7 +738,9 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       var parent3 = this._createItem( parent2, false, true );
       var item = this._createItem( parent3, true, false );
       item.setTexts( [ "Test" ] );
+
       row.renderItem( item, tree._config, false, null );
+
       var nodes = row.$el.get( 0 ).childNodes;
       assertEquals( 0, nodes[ 2 ].offsetTop );
       assertEquals( 0, nodes[ 1 ].offsetTop );
@@ -676,6 +748,25 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       assertEquals( 0, nodes[ 2 ].offsetLeft );
       assertEquals( 32, nodes[ 1 ].offsetLeft );
       assertEquals( 48, nodes[ 0 ].offsetLeft );
+    },
+
+    testIndentSymbolsPosition_RTL : function() {
+      row.setMirror( true );
+      var parent1 = this._createItem( tree, false, true );
+      var parent2 = this._createItem( parent1, false, false );
+      var parent3 = this._createItem( parent2, false, true );
+      var item = this._createItem( parent3, true, false );
+      item.setTexts( [ "Test" ] );
+
+      row.renderItem( item, tree._config, false, null );
+
+      var nodes = row.$el.get( 0 ).childNodes;
+      assertEquals( 0, nodes[ 2 ].offsetTop );
+      assertEquals( 0, nodes[ 1 ].offsetTop );
+      assertEquals( 0, nodes[ 0 ].offsetTop );
+      assertEquals( 384, nodes[ 2 ].offsetLeft );
+      assertEquals( 352, nodes[ 1 ].offsetLeft );
+      assertEquals( 336, nodes[ 0 ].offsetLeft );
     },
 
     testIndentSymbolsNotEnoughSpace : function() {
@@ -834,6 +925,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       tree.setItemMetrics( 1, 50, 40, 50, 12, 65, 12 );
       tree.setItemMetrics( 2, 50, 40, 50, 12, 65, 12 );
       tree.setColumnCount( 3 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2 ];
       var item = this._createItem( tree );
       item.setFont( "7px Curier New" );
       item.setTexts( [ "Test1", "Test2", "Test3" ] );
@@ -957,11 +1049,83 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       var item = this._createItem( tree );
       item.setTexts( [ "Test" ] );
       item.setCellBackgrounds( [ "red" ] );
+
       row.renderItem( item, tree._config, false, null );
+
       var node = row.$el.get( 0 ).childNodes[ 1 ];
       assertEquals( "red", node.style.backgroundColor );
       var bounds = getElementBounds( node );
       assertEquals( 4, bounds.left );
+      assertEquals( 15, bounds.height );
+      assertEquals( 66, bounds.width );
+      assertEquals( 0, bounds.top );
+    },
+
+    testRenderCellBackgroundBounds_withColSpan : function() {
+      row.setHeight( 15 );
+      var item = this._createItem( tree );
+      item.setCellBackgrounds( [ "red", "green", "blue", "yellow" ] );
+      tree.setItemMetrics( 0, 4, 66, 24, 10, 5, 45 );
+      tree.setItemMetrics( 2, 80, 20, 24, 10, 5, 45 );
+      tree.setItemMetrics( 1, 110, 20, 24, 10, 5, 45 );
+      tree.setItemMetrics( 3, 140, 20, 24, 10, 5, 45 );
+      tree.setItemHeight( 15 );
+      tree.getRenderConfig().cellOrder = [ 0, 2, 1, 3 ];
+      tree.setColumnCount( 4 );
+      row.renderItem( item, tree._config, false, null );
+      var nodes = row.$el.get( 0 ).childNodes;
+      assertEquals( 5, nodes.length );
+      item.setColumnSpans( [ 2, 0, 0, 0 ] );
+
+      row.renderItem( item, tree._config, false, null );
+
+      var bounds = getElementBounds( nodes[ 1 ] );
+      assertEquals( 4, bounds.left );
+      assertEquals( 15, bounds.height );
+      assertEquals( 126, bounds.width );
+      assertEquals( 0, bounds.top );
+      assertEquals( 3, nodes.length );
+    },
+
+    testRenderCellBackgroundBounds_withColSpanOverflow : function() {
+      row.setHeight( 15 );
+      var item = this._createItem( tree );
+      item.setCellBackgrounds( [ "red", "green", "blue", "yellow" ] );
+      tree.setItemMetrics( 0, 4, 66, 24, 10, 5, 45 );
+      tree.setItemMetrics( 2, 80, 20, 24, 10, 5, 45 );
+      tree.setItemMetrics( 1, 110, 20, 24, 10, 5, 45 );
+      tree.setItemMetrics( 3, 140, 20, 24, 10, 5, 45 );
+      tree.setItemHeight( 15 );
+      tree.getRenderConfig().cellOrder = [ 0, 2, 1, 3 ];
+      tree.setColumnCount( 4 );
+      row.renderItem( item, tree._config, false, null );
+      var nodes = row.$el.get( 0 ).childNodes;
+      assertEquals( 5, nodes.length );
+      item.setColumnSpans( [ 0, 2, 0, 0 ] );
+
+      row.renderItem( item, tree._config, false, null );
+
+      var bounds = getElementBounds( nodes[ 2 ] );
+      assertEquals( 110, bounds.left );
+      assertEquals( 15, bounds.height );
+      assertEquals( 50, bounds.width );
+      assertEquals( 0, bounds.top );
+      assertEquals( 4, nodes.length );
+    },
+
+    testRenderCellBackgroundBounds_RTL : function() {
+      row.setMirror( true );
+      row.setHeight( 15 );
+      var item = this._createItem( tree );
+      item.setTexts( [ "Test" ] );
+      item.setCellBackgrounds( [ "red" ] );
+
+      row.renderItem( item, tree._config, false, null );
+
+      var node = row.$el.get( 0 ).childNodes[ 1 ];
+      assertEquals( "red", node.style.backgroundColor );
+      var bounds = getElementBounds( node );
+      assertEquals( 330, bounds.left );
       assertEquals( 15, bounds.height );
       assertEquals( 66, bounds.width );
       assertEquals( 0, bounds.top );
@@ -984,11 +1148,112 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       assertEquals( 0, bounds.top );
     },
 
+    testGridLinesHorizontalDisabled : function() {
+      assertFalse( TestUtil.hasCssBorder( row.$el.get( 0 ) ) );
+    },
+
+    testGridLinesHorizontalEnabled : function() {
+      row.setGridLines( { vertical: null, horizontal: "#010203" } );
+      TestUtil.flush();
+
+      var element = row.$el.get( 0 );
+      assertEquals( 0, parseInt( element.style.borderLeftWidth || 0, 10 ) );
+      assertEquals( 0, parseInt( element.style.borderRightWidth || 0, 10 ) );
+      assertEquals( 0, parseInt( element.style.borderTopWidth || 0, 10 ) );
+      assertEquals( 1, parseInt( element.style.borderBottomWidth || 0, 10 ) );
+      assertEquals( "solid", element.style.borderBottomStyle );
+      var color = element.style.borderBottomColor;
+      assertTrue( color === "#010203" || color === "rgb(1, 2, 3)" );
+    },
+
+    testGridLinesVerticalEnabled : function() {
+      var item = this._createItem( tree );
+
+      row.setGridLines( { horizontal: null, vertical: "#010203" } );
+      row.renderItem( item, tree._config, false, null );
+
+      var node = row.$el.get( 0 ).childNodes[ 1 ];
+      var color = node.style.borderRightColor;
+      var bounds = getElementBounds( node );
+      assertEquals( "", node.style.backgroundColor );
+      assertEquals( 4, bounds.left );
+      assertEquals( 15, bounds.height );
+      assertEquals( 66, bounds.width );
+      assertEquals( 0, bounds.top );
+      assertEquals( "solid", node.style.borderRightStyle );
+      assertEquals( 0, parseInt( node.style.borderLeftWidth || 0 ) );
+      assertEquals( 1, parseInt( node.style.borderRightWidth || 0 ) );
+      assertTrue( color === "#010203" || color === "rgb(1, 2, 3)" );
+    },
+
+    testGridLinesVerticalEnabledWithCellBackground : function() {
+      var item = this._createItem( tree );
+      item.setCellBackgrounds( [ "red" ] );
+
+      row.setGridLines( { horizontal: null, vertical: "#010203" } );
+      row.renderItem( item, tree._config, false, null );
+
+      var node = row.$el.get( 0 ).childNodes[ 1 ];
+      var color = node.style.borderRightColor;
+      var bounds = getElementBounds( node );
+      assertEquals( "red", node.style.backgroundColor );
+      assertEquals( 4, bounds.left );
+      assertEquals( 15, bounds.height );
+      assertEquals( 66, bounds.width );
+      assertEquals( 0, bounds.top );
+      assertEquals( "solid", node.style.borderRightStyle );
+      assertEquals( 0, parseInt( node.style.borderLeftWidth || 0 ) );
+      assertEquals( 1, parseInt( node.style.borderRightWidth || 0 ) );
+      assertTrue( color === "#010203" || color === "rgb(1, 2, 3)" );
+    },
+
+    testGridLinesVerticalEnabled_RTL : function() {
+      var item = this._createItem( tree );
+      row.setMirror( true );
+      row.setGridLines( { horizontal: null, vertical: "#010203" } );
+      row.renderItem( item, tree._config, false, null );
+
+      var node = row.$el.get( 0 ).childNodes[ 1 ];
+      var color = node.style.borderRightColor;
+      var bounds = getElementBounds( node );
+      assertEquals( "", node.style.backgroundColor );
+      assertEquals( 330, bounds.left );
+      assertEquals( 15, bounds.height );
+      assertEquals( 66, bounds.width );
+      assertEquals( 0, bounds.top );
+      assertEquals( "solid", node.style.borderLeftStyle );
+      assertEquals( 0, parseInt( node.style.borderRightWidth || 0 ) );
+      assertEquals( 1, parseInt( node.style.borderLeftWidth || 0 ) );
+      assertTrue( color === "#010203" || color === "rgb(1, 2, 3)" );
+    },
+
+    testGridLinesVerticalEnabled_SetRTLAfterFirstRender : function() {
+      var item = this._createItem( tree );
+      row.setGridLines( { horizontal: null, vertical: "#010203" } );
+      row.renderItem( item, tree._config, false, null );
+      row.setMirror( true );
+      row.renderItem( item, tree._config, false, null );
+
+      var node = row.$el.get( 0 ).childNodes[ 1 ];
+      var color = node.style.borderRightColor;
+      var bounds = getElementBounds( node );
+      assertEquals( "", node.style.backgroundColor );
+      assertEquals( 330, bounds.left );
+      assertEquals( 15, bounds.height );
+      assertEquals( 66, bounds.width );
+      assertEquals( 0, bounds.top );
+      assertEquals( "solid", node.style.borderLeftStyle );
+      assertEquals( 0, parseInt( node.style.borderRightWidth || 0 ) );
+      assertEquals( 1, parseInt( node.style.borderLeftWidth || 0 ) );
+      assertTrue( color === "#010203" || color === "rgb(1, 2, 3)" );
+    },
+
     testRenderImagesOnly : function() {
       tree.setItemMetrics( 1, 50, 40, 50, 12, 65, 12 );
       tree.setItemMetrics( 2, 50, 40, 50, 12, 65, 12 );
       var item = this._createItem( tree );
       tree.setColumnCount( 3 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2 ];
 
       item.setTexts( [ "", "", "" ] );
       item.setImages( [ [ "test1.jpg", 10, 10 ], null, [ "test3.jpg", 10, 10 ] ] );
@@ -1010,6 +1275,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       tree.setItemMetrics( 2, 50, 40, 50, 12, 65, 12 );
       var item = this._createItem( tree );
       tree.setColumnCount( 3 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2 ];
       item.setTexts( [ "", "", "" ] );
       item.setImages( [ [ "test1.jpg", 10, 10 ], null, [ "test3.jpg", 10, 10 ] ] );
       row.renderItem( item, tree._config, false, null );
@@ -1025,12 +1291,32 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       var item = this._createItem( tree );
       item.setTexts( [ "" ] );
       item.setImages( [ [ "bla.jpg", 10, 10 ] ] );
+
       row.renderItem( item, tree._config, false, null );
+
       var node = row.$el.get( 0 );
       assertEquals( 2, node.childNodes.length );
       var style = node.childNodes[ 1 ].style;
       assertEquals( 0, parseInt( style.top, 10 ) );
       assertEquals( 40, parseInt( style.left, 10 ) );
+      assertEquals( "100%", style.height );
+      assertEquals( 10, parseInt( style.width, 10 ) );
+    },
+
+    testImageBounds_RTL : function() {
+      row.setMirror( true );
+      row.setHeight( 15 );
+      var item = this._createItem( tree );
+      item.setTexts( [ "" ] );
+      item.setImages( [ [ "bla.jpg", 10, 10 ] ] );
+
+      row.renderItem( item, tree._config, false, null );
+
+      var node = row.$el.get( 0 );
+      assertEquals( 2, node.childNodes.length );
+      var style = node.childNodes[ 1 ].style;
+      assertEquals( 0, parseInt( style.top, 10 ) );
+      assertEquals( 40, parseInt( style.right, 10 ) );
       assertEquals( "100%", style.height );
       assertEquals( 10, parseInt( style.width, 10 ) );
     },
@@ -1326,6 +1612,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       tree.setItemMetrics( 3, 70, 40, 70, 20, 90, 20 );
       var item = this._createItem( tree );
       tree.setColumnCount( 4 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2, 3 ];
       item.setTexts( [ "Test1", "Test2" ] );
       item.setImages( [ [ "bla1.jpg", 10, 10 ] ] );
       row.renderItem( item, tree._config, false, null );
@@ -1421,6 +1708,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
     testRenderCellCheckBox : function() {
       tree.setColumnCount( 3 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2 ];
       tree.setItemMetrics( 0, 0, 20, 10, 0, 10, 10, 2, 8 );
       tree.setItemMetrics( 1, 20, 20, 30, 0, 30, 10, 22, 8 );
       tree.setItemMetrics( 2, 40, 20, 50, 0, 50, 10, 42, 8 );
@@ -1443,6 +1731,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
     testRenderCellCheckBoxChecked : function() {
       tree.setColumnCount( 1 );
+      tree.getRenderConfig().cellOrder = [ 0 ];
       tree.setItemMetrics( 0, 0, 20, 10, 0, 10, 10, 2, 8 );
       tree.setCellCheck( 0, true );
       var item = this._createItem( tree );
@@ -1458,6 +1747,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
     testRenderCellCheckBoxGrayed : function() {
       tree.setColumnCount( 1 );
+      tree.getRenderConfig().cellOrder = [ 0 ];
       tree.setItemMetrics( 0, 0, 20, 10, 0, 10, 10, 2, 8 );
       tree.setCellCheck( 0, true );
       var item = this._createItem( tree );
@@ -1473,6 +1763,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
     testRenderCellCheckBoxDisabled : function() {
       tree.setColumnCount( 1 );
+      tree.getRenderConfig().cellOrder = [ 0 ];
       tree.setItemMetrics( 0, 0, 20, 10, 0, 10, 10, 2, 8 );
       tree.setCellCheck( 0, true );
       var item = this._createItem( tree );
@@ -1489,6 +1780,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
     testRenderCellCheckBoxDisabled_withoutBackgroundImage : function() {
       tree.setColumnCount( 1 );
+      tree.getRenderConfig().cellOrder = [ 0 ];
       tree.setItemMetrics( 0, 0, 20, 10, 0, 10, 10, 2, 8 );
       tree.setCellCheck( 0, true );
       var item = this._createItem( tree );
@@ -1509,6 +1801,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
     testRenderCellCheckBoxHoveredItem : function() {
       tree.setColumnCount( 1 );
+      tree.getRenderConfig().cellOrder = [ 0 ];
       tree.setItemMetrics( 0, 0, 20, 10, 0, 10, 10, 2, 8 );
       tree.setCellCheck( 0, true );
       var item = this._createItem( tree );
@@ -1526,6 +1819,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
     testRenderCellCheckBoxHoveredBox : function() {
       tree.setColumnCount( 1 );
+      tree.getRenderConfig().cellOrder = [ 0 ];
       tree.setItemMetrics( 0, 0, 20, 10, 0, 10, 10, 2, 8 );
       tree.setCellCheck( 0, true );
       var item = this._createItem( tree );
@@ -1543,6 +1837,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
     testCellCheckBoxIdentifier : function() {
       tree.setColumnCount( 1 );
+      tree.getRenderConfig().cellOrder = [ 0 ];
       tree.setItemMetrics( 0, 0, 20, 10, 0, 10, 10, 2, 8 );
       tree.setCellCheck( 0, true );
       var item = this._createItem( tree );
@@ -1556,6 +1851,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
     testRenderCellCheckBoxBounds : function() {
       tree.setColumnCount( 3 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2 ];
       tree.setItemMetrics( 0, 0, 30, 20, 0, 20, 10, 2, 8 );
       tree.setItemMetrics( 1, 30, 10, 30, 0, 30, 10, -1, -1 );
       tree.setItemMetrics( 2, 40, 20, 50, 0, 50, 10, 42, 8 );
@@ -1577,8 +1873,34 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       assertEquals( 8, bounds2.width );
     },
 
+    testRenderCellCheckBoxBounds_RTL : function() {
+      row.setMirror( true );
+      tree.setColumnCount( 3 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2 ];
+      tree.setItemMetrics( 0, 0, 30, 20, 0, 20, 10, 2, 8 );
+      tree.setItemMetrics( 1, 30, 10, 30, 0, 30, 10, -1, -1 );
+      tree.setItemMetrics( 2, 40, 20, 50, 0, 50, 10, 42, 8 );
+      tree.setCellCheck( 0, true );
+      tree.setCellCheck( 2, true );
+      var item = this._createItem( tree );
+      this._setCheckBox( "mycheckbox.gif" );
+
+      row.renderItem( item, tree._config, false, null );
+
+      assertEquals( 3, row.$el.get( 0 ).childNodes.length );
+      var node1 = row.$el.get( 0 ).childNodes[ 1 ];
+      var node2 = row.$el.get( 0 ).childNodes[ 2 ];
+      var bounds1 = getElementBounds( node1 );
+      var bounds2 = getElementBounds( node2 );
+      assertEquals( 374, bounds1.left );
+      assertEquals( 8, bounds1.width );
+      assertEquals( 350, bounds2.left );
+      assertEquals( 8, bounds2.width );
+    },
+
     testRenderCellCheckBoxCutOff : function() {
       tree.setColumnCount( 3 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2 ];
       tree.setItemMetrics( 0, 0, 20, 10, 0, 10, 10, 2, 8 );
       tree.setCellCheck( 0, true );
       var item = this._createItem( tree );
@@ -1595,6 +1917,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
     testRenderCellCheckBoxClear : function() {
       tree.setColumnCount( 3 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2 ];
       tree.setItemMetrics( 0, 0, 20, 10, 0, 10, 10, 2, 8 );
       tree.setCellCheck( 0, true );
       var item = this._createItem( tree );
@@ -1609,6 +1932,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
     testRenderCellCheckBoxHidden : function() {
       tree.setColumnCount( 3 );
+      tree.getRenderConfig().cellOrder = [ 0, 1, 2 ];
       tree.setItemMetrics( 0, 0, 20, 10, 0, 10, 10, 2, 8 );
       tree.setCellCheck( 0, true );
       var item = this._createItem( tree );
@@ -2358,7 +2682,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
     testRenderNoItemNoThemingBackground: function() {
       this._setItemBackground( "blue" );
-      row.renderItem( null, {}, false, null );
+      row.renderItem( null, tree._config, false, null );
       assertEquals( "transparent", row.$el.css( "backgroundColor" ) );
     },
 
@@ -2379,12 +2703,30 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       var item = this._createItem( tree );
       item.setTexts( [ "Test", "Test" ] );
       tree.setAlignment( 0, "center" );
+
       row.renderItem( item, tree._config, false, null );
+
       var node = row.$el.get( 0 ).childNodes[ 0 ];
       assertEquals( "center", node.style.textAlign );
       tree.setAlignment( 0, "right" );
       row.renderItem( item, tree._config, false, null );
       assertEquals( "right", node.style.textAlign );
+    },
+
+    testRenderLabelAlignment_RTL : function() {
+      row.setMirror( true );
+      tree.setTreeColumn( 1 );
+      var item = this._createItem( tree );
+      item.setTexts( [ "Test", "Test" ] );
+      tree.setAlignment( 0, "center" );
+
+      row.renderItem( item, tree._config, false, null );
+
+      var node = row.$el.get( 0 ).childNodes[ 0 ];
+      assertEquals( "center", node.style.textAlign );
+      tree.setAlignment( 0, "right" );
+      row.renderItem( item, tree._config, false, null );
+      assertEquals( "left", node.style.textAlign );
     },
 
     testSelectionBackgroundLayout : function() {
@@ -2425,7 +2767,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       var overlay = this._getOverlayElement( row );
       var color = overlay.style.backgroundColor;
       assertEquals( "blue", color );
-      var textWidth = row._getVisualTextWidth( item, 0, tree._config );
+      var textWidth = row._computeVisualTextWidth( 0 );
       var selectionWidth = parseInt( overlay.style.width, 10 );
       assertEquals( textWidth + selectionPadding, selectionWidth );
     },
@@ -2678,7 +3020,6 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
     },
 
     testRenderTemplate_CallRenderWithIndention : function() {
-      tree.setTreeColumn( 0 );
       var itemParent = this._createItem( tree );
       var item = this._createItem( itemParent );
       row.setHeight( 15 );
@@ -2695,6 +3036,26 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
       var options = log[ 0 ][ 0 ];
       assertEquals( [ 32, 0, 368, 15 ], options.bounds );
+    },
+
+    testRenderTemplate_CallRenderWithVerticalScrollBar : function() {
+      tree.setTreeColumn( -1 );
+      var item = this._createItem( tree );
+      row.setHeight( 15 );
+      var template = mockTemplate( [ 0, "text", 10, 20 ] );
+      var log = [];
+      var render = template._render;
+      template._render = function() {
+        log.push( rwt.util.Arrays.fromArguments( arguments ) );
+        render.apply( this, arguments );
+      };
+      tree.getRenderConfig().rowTemplate = template;
+      tree.setScrollBarsVisible( false, true );
+
+      row.renderItem( item, tree._config, false, null );
+
+      var options = log[ 0 ][ 0 ];
+      assertEquals( [ 0, 0, 390, 15 ], options.bounds );
     },
 
     testRenderTemplate_RenderIndentSymbol : function() {
@@ -3156,6 +3517,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
       result.setItemMetrics( 0, 4, 66, 24, 10, 5, 45 );
       result.setItemHeight( 15 );
       result.setColumnCount( 1 );
+      result.getRenderConfig().cellOrder = [ 0, 1, 2 ];
       if( isTable ) {
         result.setTreeColumn( -1 );
       }
@@ -3305,6 +3667,10 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridRowTest", {
 
     _getOverlayElement : function( row ) {
       return row.$overlay.get( 0 );
+    },
+
+    _getRowLayout : function( tree, item ) {
+      return new rwt.widgets.util.GridRowLayout( tree.getRenderConfig(), item );
     }
 
   }

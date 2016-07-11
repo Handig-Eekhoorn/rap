@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 EclipseSource and others.
+ * Copyright (c) 2010, 2015 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -143,6 +143,38 @@ DateTime-Calendar-NextYearButton:hover {
   background-image: url( resource/widget/rap/calendar/nextYear-hover.png );
 }
 
+DateTime-Calendar-PreviousMonthButton[RIGHT_TO_LEFT] {
+  background-image: url( resource/widget/rap/calendar/nextMonth.png );
+}
+
+DateTime-Calendar-PreviousMonthButton[RIGHT_TO_LEFT]:hover {
+  background-image: url( resource/widget/rap/calendar/nextMonth-hover.png );
+}
+
+DateTime-Calendar-NextMonthButton[RIGHT_TO_LEFT] {
+  background-image: url( resource/widget/rap/calendar/lastMonth.png );
+}
+
+DateTime-Calendar-NextMonthButton[RIGHT_TO_LEFT]:hover {
+  background-image: url( resource/widget/rap/calendar/lastMonth-hover.png );
+}
+
+DateTime-Calendar-PreviousYearButton[RIGHT_TO_LEFT] {
+  background-image: url( resource/widget/rap/calendar/nextYear.png );
+}
+
+DateTime-Calendar-PreviousYearButton[RIGHT_TO_LEFT]:hover {
+  background-image: url( resource/widget/rap/calendar/nextYear-hover.png );
+}
+
+DateTime-Calendar-NextYearButton[RIGHT_TO_LEFT] {
+  background-image: url( resource/widget/rap/calendar/lastYear.png );
+}
+
+DateTime-Calendar-NextYearButton[RIGHT_TO_LEFT]:hover {
+  background-image: url( resource/widget/rap/calendar/lastYear-hover.png );
+}
+
 DateTime-UpButton {
   background-color: #f0f0f0;
   background-image: gradient(
@@ -157,6 +189,11 @@ DateTime-UpButton {
   border-left: 1px solid #bdbdbd;
   border-radius: 0px 2px 0px 0px;
   cursor: default;
+}
+
+DateTime-UpButton[RIGHT_TO_LEFT] {
+  border: none;
+  border-right: 1px solid #bdbdbd;
 }
 
 DateTime-DownButton-Icon {
@@ -183,6 +220,11 @@ DateTime-DownButton {
   cursor: default;
 }
 
+DateTime-DownButton[RIGHT_TO_LEFT] {
+  border: none;
+  border-right: 1px solid #bdbdbd;
+}
+
 DateTime-DropDownButton {
   cursor: default;
   background-color: #f0f0f0;
@@ -197,6 +239,11 @@ DateTime-DropDownButton {
     to( #e4e4e4 )
   );
   width: 30px;
+}
+
+DateTime-DropDownButton[RIGHT_TO_LEFT] {
+  border: none;
+  border-right: 1px solid #bdbdbd;
 }
 
 DateTime-DropDownButton:disabled,
@@ -215,5 +262,5 @@ DateTime-DropDownButton-Icon:hover {
 }
 
 DateTime-DropDownCalendar {
-  border: 1px #a7a6aa;
+  border: 1px #a7a6aa solid;
 }

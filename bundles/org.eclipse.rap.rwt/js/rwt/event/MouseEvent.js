@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright: 2004, 2014 1&1 Internet AG, Germany, http://www.1und1.de,
+ *  Copyright: 2004, 2016 1&1 Internet AG, Germany, http://www.1und1.de,
  *                        and EclipseSource
  *
  * This program and the accompanying materials are made available under the
@@ -204,11 +204,13 @@ rwt.qx.Class.define("rwt.event.MouseEvent",
     */
 
     getPageX : function() {
-      return Math.round( this.getDomEvent().pageX );
+      // Note: In FF the event.pageX property does not include scrollX offset
+      return Math.round( this.getDomEvent().clientX + rwt.html.Viewport.getScrollLeft() );
     },
 
     getPageY : function() {
-      return Math.round( this.getDomEvent().pageY );
+      // Note: In FF the event.pageY property does not include scrollY offset
+      return Math.round( this.getDomEvent().clientY + rwt.html.Viewport.getScrollTop() );
     },
 
     /*
@@ -331,15 +333,13 @@ rwt.qx.Class.define("rwt.event.MouseEvent",
      * @return {var} TODOC
      * @signature function()
      */
-    _computeWheelDelta : rwt.util.Variant.select("qx.client",
-    {
-      "default" : function() {
-        return this.getDomEvent().wheelDelta / 120;
-      },
-
-      "gecko" : function() {
-        return -(this.getDomEvent().detail / 3);
+    _computeWheelDelta : function() {
+      var event = this.getDomEvent();
+      if ( "deltaY" in event ) {
+        return event.deltaY / -120;
       }
-    })
+      return event.wheelDelta / 120;
+    }
+
   }
 });

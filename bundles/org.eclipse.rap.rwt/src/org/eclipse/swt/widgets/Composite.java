@@ -14,14 +14,15 @@ package org.eclipse.swt.widgets;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.ProcessActionRunner;
+import org.eclipse.rap.rwt.internal.lifecycle.RemoteAdapter;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.internal.SerializableCompatibility;
+import org.eclipse.swt.internal.widgets.ControlRemoteAdapter;
 import org.eclipse.swt.internal.widgets.ICompositeAdapter;
 import org.eclipse.swt.internal.widgets.compositekit.CompositeLCA;
 
@@ -250,6 +251,14 @@ public class Composite extends Scrollable {
    * (that is, set the size and location of) the receiver's children.
    * If the receiver does not have a layout, do nothing.
    * <p>
+   * Use of this method is discouraged since it is the least-efficient
+   * way to trigger a layout. The use of <code>layout(true)</code>
+   * discards all cached layout information, even from controls which
+   * have not changed. It is much more efficient to invoke
+   * {@link Control#requestLayout()} on every control which has changed
+   * in the layout than it is to invoke this method on the layout itself.
+   * </p>
+   * <p>
    * This is equivalent to calling <code>layout(true)</code>.
    * </p>
    * <p>
@@ -278,6 +287,13 @@ public class Composite extends Scrollable {
    * work it is doing by assuming that none of the receiver's
    * children has changed state since the last layout.
    * If the receiver does not have a layout, do nothing.
+   * <p>
+   * It is normally more efficient to invoke {@link Control#requestLayout()}
+   * on every control which has changed in the layout than it is to invoke
+   * this method on the layout itself. Clients are encouraged to use
+   * {@link Control#requestLayout()} where possible instead of calling
+   * this method.
+   * </p>
    * <p>
    * If a child is resized as a result of a call to layout, the
    * resize event will invoke the layout of the child.  The layout
@@ -326,6 +342,13 @@ public class Composite extends Scrollable {
    * (same as <code>layout(false)</code>).
    * </p>
    * <p>
+   * It is normally more efficient to invoke {@link Control#requestLayout()}
+   * on every control which has changed in the layout than it is to invoke
+   * this method on the layout itself. Clients are encouraged to use
+   * {@link Control#requestLayout()} where possible instead of calling
+   * this method.
+   * </p>
+   * <p>
    * Note: Layout is different from painting. If a child is
    * moved or resized such that an area in the parent is
    * exposed, then the parent will paint. If no child is
@@ -356,6 +379,13 @@ public class Composite extends Scrollable {
    * (potentially) optimize the work it is doing by assuming that none of the
    * peers of the changed control have changed state since the last layout.
    * If an ancestor does not have a layout, skip it.
+   * <p>
+   * It is normally more efficient to invoke {@link Control#requestLayout()}
+   * on every control which has changed in the layout than it is to invoke
+   * this method on the layout itself. Clients are encouraged to use
+   * {@link Control#requestLayout()} where possible instead of calling
+   * this method.
+   * </p>
    * <p>
    * Note: Layout is different from painting. If a child is
    * moved or resized such that an area in the parent is
@@ -845,24 +875,24 @@ public class Composite extends Scrollable {
   }
 
   void addChild( Control control ) {
-    ControlLCAUtil.preserveChildren( this, children.toArray( new Control[ 0 ] ) );
+    getRemoteAdapter().preserveChildren( children.toArray( new Control[ 0 ] ) );
     children.add( control );
   }
 
   void removeChild( Control control ) {
-    ControlLCAUtil.preserveChildren( this, children.toArray( new Control[ 0 ] ) );
+    getRemoteAdapter().preserveChildren( children.toArray( new Control[ 0 ] ) );
     children.remove( control );
   }
 
   void moveAbove( Control control1, Control control2 ) {
-    ControlLCAUtil.preserveChildren( this, children.toArray( new Control[ 0 ] ) );
+    getRemoteAdapter().preserveChildren( children.toArray( new Control[ 0 ] ) );
     children.remove( control1 );
     int index = control2 != null ? children.indexOf( control2 ) : 0;
     children.add( index, control1 );
   }
 
   void moveBelow( Control control1, Control control2 ) {
-    ControlLCAUtil.preserveChildren( this, children.toArray( new Control[ 0 ] ) );
+    getRemoteAdapter().preserveChildren( children.toArray( new Control[ 0 ] ) );
     children.remove( control1 );
     int index = control2 != null ? children.indexOf( control2 ) + 1 : children.size();
     children.add( index, control1 );
@@ -898,6 +928,10 @@ public class Composite extends Scrollable {
         child.reskin( flags );
       }
     }
+  }
+
+  private ControlRemoteAdapter getRemoteAdapter() {
+    return ( ControlRemoteAdapter )getAdapter( RemoteAdapter.class );
   }
 
   private final class CompositeAdapter implements ICompositeAdapter, SerializableCompatibility {

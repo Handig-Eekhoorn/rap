@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2015 EclipseSource and others.
+ * Copyright (c) 2010, 2016 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -119,6 +119,24 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.CompositeTest", {
       composite.destroy();
     },
 
+    testMouseOver_onChild : function() {
+      var composite = new rwt.widgets.Composite();
+      composite.setDimension( 200, 200 );
+      composite.addToDocument();
+      var child = new rwt.widgets.base.Terminator();
+      child.setSpace( 50, 100, 50, 100 );
+      child.setParent( composite );
+      TestUtil.flush();
+
+      TestUtil.mouseOver( child );
+      assertTrue( composite.hasState( "over" ) );
+
+      TestUtil.mouseFromTo( child, composite );
+      assertTrue( composite.hasState( "over" ) );
+
+      composite.destroy();
+    },
+
     testSetDirection_mirrorsChildControlPosition : function() {
       var composite = new rwt.widgets.Composite();
       composite.addToDocument();
@@ -129,6 +147,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.CompositeTest", {
       composite.setDirection( "rtl" );
       TestUtil.flush();
 
+      assertEquals( "", child.getElement().style.left );
       assertEquals( "1px", child.getElement().style.right );
       composite.destroy();
     },
@@ -145,6 +164,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.CompositeTest", {
       TestUtil.flush();
 
       var child = ObjectRegistry.getObject( "w3" );
+      assertEquals( "", child.getElement().style.left );
       assertEquals( "1px", child.getElement().style.right );
       parent.destroy();
     },
@@ -162,6 +182,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.CompositeTest", {
 
       var child = ObjectRegistry.getObject( "w3" );
       assertEquals( "1px", child.getElement().style.left );
+      assertEquals( "", child.getElement().style.right );
       parent.destroy();
     }
 

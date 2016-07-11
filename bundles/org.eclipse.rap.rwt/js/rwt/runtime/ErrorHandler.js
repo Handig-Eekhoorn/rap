@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2015 EclipseSource and others.
+ * Copyright (c) 2011, 2016 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -21,7 +21,7 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
     processJavaScriptErrorInResponse : function( script, error, currentRequest ) {
       var content = this._getErrorPageHeader();
       content += "<pre>" + this._gatherErrorDetails( error, script, currentRequest ) + "</pre>";
-      this.showErrorPage( content );
+      this.showErrorBox( "client error", true, content );
     },
 
     processJavaScriptError : function( error ) {
@@ -48,7 +48,7 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
       if( debug ) {
         var content = this._getErrorPageHeader();
         content += "<pre>" + this._gatherErrorDetails( error ) + "</pre>";
-        this.showErrorPage( content );
+        this.showErrorBox( "client error", true, content );
         throw error;
       }
     },
@@ -60,7 +60,7 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
       this._createErrorPageArea().innerHTML = content;
     },
 
-    showErrorBox : function( errorType, freeze ) {
+    showErrorBox : function( errorType, freeze, errorDetails ) {
       if( freeze ) {
         this._freezeApplication();
       }
@@ -69,8 +69,10 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
       }
       this._overlay = this._createOverlay();
       this._box = this._createErrorBoxArea( 450, 150 );
+      var themeStore = rwt.theme.ThemeStore.getInstance();
+      var border = themeStore.getBorder( "ErrorBox", {}, "border" );
+      border.renderElement( this._box );
       this._box.style.padding = "0px";
-      this._box.style.border = "1px solid #3B5998";
       this._box.style.overflow = "hidden";
       var errorBoxData = this._getErrorBoxData( errorType );
       this._title = this._createErrorBoxTitleArea( this._box );
@@ -78,14 +80,29 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
       this._description = this._createErrorBoxDescriptionArea( this._box );
       this._description.innerHTML = errorBoxData.description;
       this._action = this._createErrorBoxActionArea( this._box );
-      if( errorBoxData.action ) {
-        this._action.innerHTML = errorBoxData.action;
+      var actions = errorBoxData.action;
+      if( errorDetails && errorDetails.trim().length > 0 ) {
+        actions += this._getDetailsAction();
+      }
+      if( actions ) {
+        this._action.innerHTML = actions;
       }
       var hyperlink = this._action.getElementsByTagName( "a" )[ 0 ];
       if( hyperlink ) {
         this._styleHyperlinkAsButton( hyperlink );
         hyperlink.focus();
       }
+      var detailsHyperlink = document.getElementById( "rwt_detailsActionHyperlink" );
+      if( detailsHyperlink ) {
+        this._styleHyperlinkAsButton( detailsHyperlink );
+        var self = this;
+        detailsHyperlink.addEventListener( "click", function() { self.showErrorPage( errorDetails ); } );
+      }
+    },
+
+    _getDetailsAction : function() {
+      var detailsMessage = rwt.client.ClientMessages.getInstance().getMessage( "Details" );
+      return "<a id=\"rwt_detailsActionHyperlink\" href=\"javascript:void(0)\">" + detailsMessage + "</a>";
     },
 
     showWaitHint : function() {
@@ -117,7 +134,7 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
     _getErrorPageHeader : function() {
        var errorBoxData = this._getErrorBoxData( "client error" );
        var result = "<h2>" + errorBoxData.title + "</h2>";
-       result += "<h3>" + errorBoxData.action + "</h3>";
+       result += "<h3>" + errorBoxData.details + "</h3>";
        result += "<hr/>";
        return result;
     },
@@ -157,7 +174,7 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
       var color = themeStore.getColor( "SystemMessage-DisplayOverlay", {}, "background-color" );
       var alpha = themeStore.getAlpha( "SystemMessage-DisplayOverlay", {}, "background-color" );
       var style = element.style;
-      style.position = "absolute";
+      style.position = "fixed";
       style.width = "100%";
       style.height = "100%";
       style.backgroundColor = color === "undefined" ? "transparent" : color;
@@ -185,7 +202,7 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
     _createErrorBoxArea : function( width, height ) {
       var element = document.createElement( "div" );
       var style = element.style;
-      style.position = "absolute";
+      style.position = "fixed";
       style.width = width + "px";
       style.height = height + "px";
       var doc = rwt.widgets.base.ClientDocument.getInstance();
@@ -206,6 +223,11 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
 
     _createErrorBoxTitleArea : function( parentElement ) {
       var element = document.createElement( "div" );
+      var themeStore = rwt.theme.ThemeStore.getInstance();
+      var cssElement = "ErrorBox-Titlebar";
+      var color = themeStore.getColor( cssElement, {}, "color" );
+      var font = themeStore.getFont( cssElement, {}, "font" );
+      var backgroundColor = themeStore.getColor( cssElement, {}, "background-color" );
       var style = element.style;
       style.position = "absolute";
       style.left = "0px";
@@ -214,16 +236,20 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
       style.height = "40px";
       style.padding = "10px";
       style.textAlign = "left";
-      style.backgroundColor = "#406796";
-      style.color = "white";
-      style.fontSize = "14px";
-      style.fontWeight = "bold";
+      style.color = color;
+      style.font = font.toCss();
+      style.backgroundColor = backgroundColor;
       parentElement.appendChild( element );
       return element;
     },
 
     _createErrorBoxDescriptionArea : function( parentElement ) {
       var element = document.createElement( "div" );
+      var themeStore = rwt.theme.ThemeStore.getInstance();
+      var cssElement = "ErrorBox";
+      var color = themeStore.getColor( cssElement, {}, "color" );
+      var font = themeStore.getFont( cssElement, {}, "font" );
+      var backgroundColor = themeStore.getColor( cssElement, {}, "background-color" );
       var style = element.style;
       style.position = "absolute";
       style.left = "0px";
@@ -233,9 +259,9 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
       style.padding = "10px";
       style.overflow = "auto";
       style.textAlign = "left";
-      style.backgroundColor = "white";
-      style.color = "#4a4a4a";
-      style.fontSize = "14px";
+      style.font = font.toCss();
+      style.color = color;
+      style.backgroundColor = backgroundColor;
       parentElement.appendChild( element );
       return element;
     },
@@ -295,7 +321,9 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
     _getErrorBoxData : function( errorType ) {
       var result = {
         title : "",
-        description : ""
+        description : "",
+        details : "",
+        action : ""
       };
       var messages = rwt.client.ClientMessages.getInstance();
       switch( errorType ) {
@@ -320,10 +348,14 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
           break;
         case "client error":
           result.title = messages.getMessage( "ClientError" );
-          result.action = messages.getMessage( "Details" );
+          result.description = messages.getMessage( "ClientErrorDescription" );
+          result.details = messages.getMessage( "Details" );
+          result.action = "<a href=\"" + this._getRestartURL() + "\">"
+                        + messages.getMessage( "Restart" ) + "</a>";
           break;
         default:
           result.title = messages.getMessage( "ServerError" );
+          result.description = messages.getMessage( "ServerErrorDescription" );
           result.action = "<a href=\"" + this._getRestartURL() + "\">"
                         + messages.getMessage( "Restart" ) + "</a>";
       }
@@ -348,6 +380,7 @@ rwt.qx.Class.define( "rwt.runtime.ErrorHandler", {
       style.backgroundColor = "#E8E8E8";
       style.color = "#4a4a4a";
       style.padding = "5px 15px";
+      style.margin = "5px";
       style.borderTop = "1px solid #CCCCCC";
       style.borderRight = "1px solid #333333";
       style.borderBottom = "1px solid #333333";

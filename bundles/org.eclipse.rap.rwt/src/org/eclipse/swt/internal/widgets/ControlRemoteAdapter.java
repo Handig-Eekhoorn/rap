@@ -10,15 +10,23 @@
  ******************************************************************************/
 package org.eclipse.swt.internal.widgets;
 
+import static org.eclipse.rap.rwt.internal.util.MnemonicUtil.removeAmpersandControlCharacters;
+import static org.eclipse.rap.rwt.remote.JsonMapping.toJson;
+import static org.eclipse.swt.internal.widgets.MarkupUtil.isToolTipMarkupEnabledFor;
+
+import java.util.Arrays;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.Shell;
 
 
 public class ControlRemoteAdapter extends WidgetRemoteAdapter {
@@ -39,6 +47,21 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   private static final int CANCEL_KEYS = 24;
   private static final int TAB_INDEX = 25;
   private static final int ORIENTATION = 26;
+
+  private static final String PROP_PARENT = "parent";
+  private static final String PROP_BOUNDS = "bounds";
+  private static final String PROP_CHILDREN = "children";
+  private static final String PROP_TAB_INDEX = "tabIndex";
+  private static final String PROP_TOOLTIP_TEXT = "toolTip";
+  private static final String PROP_MENU = "menu";
+  private static final String PROP_VISIBLE = "visibility";
+  private static final String PROP_ENABLED = "enabled";
+  private static final String PROP_ORIENTATION = "direction";
+  private static final String PROP_FOREGROUND = "foreground";
+  private static final String PROP_BACKGROUND = "background";
+  private static final String PROP_BACKGROUND_IMAGE = "backgroundImage";
+  private static final String PROP_FONT = "font";
+  private static final String PROP_CURSOR = "cursor";
 
   private transient Composite parent;
   private transient Control[] children;
@@ -63,194 +86,247 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   }
 
   public void preserveParent( Composite parent ) {
-    markPreserved( PARENT );
-    this.parent = parent;
+    if( !hasPreserved( PARENT ) ) {
+      markPreserved( PARENT );
+      this.parent = parent;
+    }
   }
 
-  public boolean hasPreservedParent() {
-    return hasPreserved( PARENT );
-  }
-
-  public Composite getPreservedParent() {
-    return parent;
+  public void renderParent( Control control ) {
+    if( isInitialized() && hasPreserved( PARENT )  ) {
+      Composite actual = control.getParent();
+      if( changed( actual, parent, null ) ) {
+        getRemoteObject().set( PROP_PARENT, toJson( actual ) );
+      }
+    }
   }
 
   public void preserveChildren( Control[] children ) {
-    markPreserved( CHILDREN );
-    this.children = children;
+    if( !hasPreserved( CHILDREN ) ) {
+      markPreserved( CHILDREN );
+      this.children = children;
+    }
   }
 
-  public boolean hasPreservedChildren() {
-    return hasPreserved( CHILDREN );
-  }
-
-  public Control[] getPreservedChildren() {
-    return children;
+  public void renderChildren( Composite composite ) {
+    if( !isInitialized() || hasPreserved( CHILDREN ) ) {
+      Control[] actual = composite.getChildren();
+      if( changed( actual, children, null ) ) {
+        getRemoteObject().set( PROP_CHILDREN, toJson( actual ) );
+      }
+    }
   }
 
   public void preserveBounds( Rectangle bounds ) {
-    markPreserved( BOUNDS );
-    this.bounds = bounds;
+    if( !hasPreserved( BOUNDS ) ) {
+      markPreserved( BOUNDS );
+      this.bounds = bounds;
+    }
   }
 
-  public boolean hasPreservedBounds() {
-    return hasPreserved( BOUNDS );
-  }
-
-  public Rectangle getPreservedBounds() {
-    return bounds;
+  public void renderBounds( IControlAdapter controlAdapter ) {
+    if( !isInitialized() || hasPreserved( BOUNDS ) ) {
+      Rectangle actual = controlAdapter.getBounds();
+      if( changed( actual, bounds, null ) ) {
+        getRemoteObject().set( PROP_BOUNDS, toJson( actual ) );
+      }
+    }
   }
 
   public void preserveTabIndex( int tabIndex ) {
-    markPreserved( TAB_INDEX );
-    this.tabIndex = tabIndex;
+    if( !hasPreserved( TAB_INDEX ) ) {
+      markPreserved( TAB_INDEX );
+      this.tabIndex = tabIndex;
+    }
   }
 
-  public boolean hasPreservedTabIndex() {
-    return hasPreserved( TAB_INDEX );
-  }
-
-  public int getPreservedTabIndex() {
-    return tabIndex;
+  public void renderTabIndex( Control control ) {
+    if( hasPreserved( TAB_INDEX ) ) {
+      int actual = ControlUtil.getControlAdapter( control ).getTabIndex();
+      if( !isInitialized() || actual != tabIndex ) {
+        getRemoteObject().set( PROP_TAB_INDEX, actual );
+      }
+    }
   }
 
   public void preserveToolTipText( String toolTipText ) {
-    markPreserved( TOOL_TIP_TEXT );
-    this.toolTipText = toolTipText;
+    if( !hasPreserved( TOOL_TIP_TEXT ) ) {
+      markPreserved( TOOL_TIP_TEXT );
+      this.toolTipText = toolTipText;
+    }
   }
 
-  public boolean hasPreservedToolTipText() {
-    return hasPreserved( TOOL_TIP_TEXT );
-  }
-
-  public String getPreservedToolTipText() {
-    return toolTipText;
+  public void renderToolTipText( Control control ) {
+    if( hasPreserved( TOOL_TIP_TEXT ) ) {
+      String actual = control.getToolTipText();
+      if( changed( actual, toolTipText, null ) ) {
+        String text = actual == null ? "" : actual;
+        if( !isToolTipMarkupEnabledFor( control ) ) {
+          text = removeAmpersandControlCharacters( text );
+        }
+        getRemoteObject().set( PROP_TOOLTIP_TEXT, text );
+      }
+    }
   }
 
   public void preserveMenu( Menu menu ) {
-    markPreserved( MENU );
-    this.menu = menu;
+    if( !hasPreserved( MENU ) ) {
+      markPreserved( MENU );
+      this.menu = menu;
+    }
   }
 
-  public boolean hasPreservedMenu() {
-    return hasPreserved( MENU );
-  }
-
-  public Menu getPreservedMenu() {
-    return menu;
+  public void renderMenu( Control control ) {
+    if( hasPreserved( MENU )  ) {
+      Menu actual = control.getMenu();
+      if( changed( actual, menu, null ) ) {
+        getRemoteObject().set( PROP_MENU, toJson( actual ) );
+      }
+    }
   }
 
   public void preserveVisible( boolean visible ) {
-    markPreserved( VISIBLE );
-    this.visible = visible;
+    if( !hasPreserved( VISIBLE ) ) {
+      markPreserved( VISIBLE );
+      this.visible = visible;
+    }
   }
 
-  public boolean hasPreservedVisible() {
-    return hasPreserved( VISIBLE );
-  }
-
-  public boolean getPreservedVisible() {
-    return visible;
+  public void renderVisible( Control control ) {
+    if( hasPreserved( VISIBLE ) ) {
+      boolean actual = control.getVisible();
+      if( changed( actual, visible, control instanceof Shell ? false : true ) ) {
+        getRemoteObject().set( PROP_VISIBLE, actual );
+      }
+    }
   }
 
   public void preserveEnabled( boolean enabled ) {
-    markPreserved( ENABLED );
-    this.enabled = enabled;
+    if( !hasPreserved( ENABLED ) ) {
+      markPreserved( ENABLED );
+      this.enabled = enabled;
+    }
   }
 
-  public boolean hasPreservedEnabled() {
-    return hasPreserved( ENABLED );
-  }
-
-  public boolean getPreservedEnabled() {
-    return enabled;
+  public void renderEnabled( Control control ) {
+    // Using isEnabled() would result in unnecessarily updating child widgets of
+    // enabled/disabled controls.
+    if( hasPreserved( ENABLED ) ) {
+      boolean actual = control.getEnabled();
+      if( changed( actual, enabled, true ) ) {
+        getRemoteObject().set( PROP_ENABLED, actual );
+      }
+    }
   }
 
   public void preserveOrientation( int orientation ) {
-    markPreserved( ORIENTATION );
-    this.rtl = orientation == SWT.RIGHT_TO_LEFT;
+    if( !hasPreserved( ORIENTATION ) ) {
+      markPreserved( ORIENTATION );
+      rtl = orientation == SWT.RIGHT_TO_LEFT;
+    }
   }
 
-  public boolean hasPreservedOrientation() {
-    return hasPreserved( ORIENTATION );
-  }
-
-  public int getPreservedOrientation() {
-    return rtl ? SWT.RIGHT_TO_LEFT : SWT.LEFT_TO_RIGHT;
+  public void renderOrientation( Control control ) {
+    if( !isInitialized() || hasPreserved( ORIENTATION ) ) {
+      // [if] Don't use control.getOrientation() as some controls (like SashForm) override this
+      // method to return vertical/horizontal orientation only
+      boolean actual = ( control.getStyle() & SWT.RIGHT_TO_LEFT ) == SWT.RIGHT_TO_LEFT;
+      if( changed( actual, rtl, false ) ) {
+        getRemoteObject().set( PROP_ORIENTATION, actual ? "rtl" : "ltr" );
+      }
+    }
   }
 
   public void preserveForeground( Color foreground ) {
-    markPreserved( FOREGROUND );
-    this.foreground = foreground;
+    if( !hasPreserved( FOREGROUND ) ) {
+      markPreserved( FOREGROUND );
+      this.foreground = foreground;
+    }
   }
 
-  public boolean hasPreservedForeground() {
-    return hasPreserved( FOREGROUND );
+  public void renderForeground( IControlAdapter controlAdapter ) {
+    if( hasPreserved( FOREGROUND ) ) {
+      Color actual = controlAdapter.getUserForeground();
+      if( changed( actual, foreground, null ) ) {
+        getRemoteObject().set( PROP_FOREGROUND, toJson( actual ) );
+      }
+    }
   }
 
-  public Color getPreservedForeground() {
-    return foreground;
+  public void preserveBackground( Color background, boolean transparency ) {
+    if( !hasPreserved( BACKGROUND ) ) {
+      markPreserved( BACKGROUND );
+      this.background = background;
+      backgroundTransparency = transparency;
+    }
   }
 
-  public void preserveBackground( Color background ) {
-    markPreserved( BACKGROUND );
-    this.background = background;
-  }
-
-  public boolean hasPreservedBackground() {
-    return hasPreserved( BACKGROUND );
-  }
-
-  public Color getPreservedBackground() {
-    return background;
-  }
-
-  public void preserveBackgroundTransparency( boolean transparency ) {
-    markPreserved( BACKGROUND );
-    backgroundTransparency = transparency;
-  }
-
-  public boolean getPreservedBackgroundTransparency() {
-    return backgroundTransparency;
+  public void renderBackground( IControlAdapter controlAdapter ) {
+    if( hasPreserved( BACKGROUND ) ) {
+      Color actualBackground = controlAdapter.getUserBackground();
+      boolean actualTransparency = controlAdapter.getBackgroundTransparency();
+      boolean colorChanged = changed( actualBackground, background, null );
+      boolean transparencyChanged = changed( actualTransparency, backgroundTransparency, false );
+      if( transparencyChanged || colorChanged ) {
+        RGB rgb = null;
+        int alpha = 0;
+        if( actualBackground != null ) {
+          rgb = actualBackground.getRGB();
+          alpha = actualTransparency ? 0 : actualBackground.getAlpha();
+        } else if( actualTransparency ) {
+          rgb = new RGB( 0, 0, 0 );
+        }
+        getRemoteObject().set( PROP_BACKGROUND, toJson( rgb, alpha ) );
+      }
+    }
   }
 
   public void preserveBackgroundImage( Image backgroundImage ) {
-    markPreserved( BACKGROUND_IMAGE );
-    this.backgroundImage = backgroundImage;
+    if( !hasPreserved( BACKGROUND_IMAGE ) ) {
+      markPreserved( BACKGROUND_IMAGE );
+      this.backgroundImage = backgroundImage;
+    }
   }
 
-  public boolean hasPreservedBackgroundImage() {
-    return hasPreserved( BACKGROUND_IMAGE );
-  }
-
-  public Image getPreservedBackgroundImage() {
-    return backgroundImage;
+  public void renderBackgroundImage( IControlAdapter controlAdapter ) {
+    if( hasPreserved( BACKGROUND_IMAGE ) ) {
+      Image actual = controlAdapter.getUserBackgroundImage();
+      if( changed( actual, backgroundImage, null ) ) {
+        getRemoteObject().set( PROP_BACKGROUND_IMAGE, toJson( actual ) );
+      }
+    }
   }
 
   public void preserveFont( Font font ) {
-    markPreserved( FONT );
-    this.font = font;
+    if( !hasPreserved( FONT ) ) {
+      markPreserved( FONT );
+      this.font = font;
+    }
   }
 
-  public boolean hasPreservedFont() {
-    return hasPreserved( FONT );
-  }
-
-  public Font getPreservedFont() {
-    return font;
+  public void renderFont( IControlAdapter controlAdapter ) {
+    if( hasPreserved( FONT ) ) {
+      Font actual = controlAdapter.getUserFont();
+      if( changed( actual, font, null ) ) {
+        getRemoteObject().set( PROP_FONT, toJson( actual ) );
+      }
+    }
   }
 
   public void preserveCursor( Cursor cursor ) {
-    markPreserved( CURSOR );
-    this.cursor = cursor;
+    if( !hasPreserved( CURSOR ) ) {
+      markPreserved( CURSOR );
+      this.cursor = cursor;
+    }
   }
 
-  public boolean hasPreservedCursor() {
-    return hasPreserved( CURSOR );
-  }
-
-  public Cursor getPreservedCursor() {
-    return cursor;
+  public void renderCursor( Control control ) {
+    if( hasPreserved( CURSOR ) ) {
+      Cursor actual = control.getCursor();
+      if( changed( actual, cursor, null ) ) {
+        getRemoteObject().set( PROP_CURSOR, toJson( actual ) );
+      }
+    }
   }
 
   public void preserveActiveKeys( String[] activeKeys ) {
@@ -304,6 +380,22 @@ public class ControlRemoteAdapter extends WidgetRemoteAdapter {
   private Object readResolve() {
     initialize();
     return this;
+  }
+
+  private boolean changed( boolean actualValue, boolean preservedValue, boolean defaultValue ) {
+    return actualValue != ( isInitialized() ? preservedValue : defaultValue );
+  }
+
+  private boolean changed( Object actualValue, Object preservedValue, Object defaultValue ) {
+    return !equals( actualValue, isInitialized() ? preservedValue : defaultValue );
+  }
+
+  private boolean changed( Object[] actualValue, Object[] preservedValue, Object[] defaultValue ) {
+    return !Arrays.equals( actualValue, isInitialized() ? preservedValue : defaultValue );
+  }
+
+  private static boolean equals( Object o1, Object o2 ) {
+    return o1 == o2 || o1 != null && o1.equals( o2 );
   }
 
 }
