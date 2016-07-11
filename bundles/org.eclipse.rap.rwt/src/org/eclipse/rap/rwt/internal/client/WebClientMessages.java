@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2015 EclipseSource and others.
+ * Copyright (c) 2013, 2016 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -31,6 +31,7 @@ public class WebClientMessages implements ClientMessages {
     RWTMessages.SESSION_TIMEOUT,
     RWTMessages.SESSION_TIMEOUT_DESCRIPTION,
     RWTMessages.CLIENT_ERROR,
+    RWTMessages.CLIENT_ERROR_DESCRIPTION,
     RWTMessages.RETRY,
     RWTMessages.RESTART,
     RWTMessages.DETAILS
@@ -49,7 +50,7 @@ public class WebClientMessages implements ClientMessages {
   public void update( Locale locale ) {
     JsonObject messagesObject = new JsonObject();
     for( int i = 0; i < MESSAGE_IDS.length; i++ ) {
-      String newMessage = getMessage( MESSAGE_IDS[ i ] );
+      String newMessage = getMessage( MESSAGE_IDS[ i ], locale );
       if( !newMessage.equals( messages[ i ] ) ) {
         messages[ i ] = newMessage;
         messagesObject.add( MESSAGE_IDS[ i ], newMessage );
@@ -60,8 +61,8 @@ public class WebClientMessages implements ClientMessages {
     }
   }
 
-  String getMessage( String messageId ) {
-    return RWTMessages.getMessage( messageId );
+  String getMessage( String messageId, Locale locale ) {
+    return RWTMessages.getMessage( messageId, locale );
   }
 
 }

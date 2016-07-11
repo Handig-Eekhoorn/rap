@@ -281,7 +281,7 @@ rwt.event.EventHandler = {
     var vDomTarget = EventHandlerUtil.getDomTarget( vDomEvent );
     var vType = vDomEvent.type;
     switch(vType) {
-      case "DOMMouseScroll":
+      case "wheel":
         vType = "mousewheel";
       break;
       case "click":
@@ -342,7 +342,7 @@ rwt.event.EventHandler = {
     if( vType !== "contextmenu" ) {
       rwt.event.MouseEvent.storeEventState( vEventObject );
     }
-    if( !eventConsumed && !( vType === "mousewheel" && vEventObject.getWheelDelta() === 0 ) ) {
+    if( !eventConsumed && !( vType === "mousewheel" && !vEventObject.getWheelDelta() ) ) {
       this._dispatchMouseEvent( vDispatchTarget, vEventObject );
       if( vDispatchTarget.getEnabled() ) {
         this._onmouseevent_special_post( vType,
@@ -521,7 +521,7 @@ rwt.event.EventHandler = {
     "click",
     "dblclick",
     "contextmenu",
-    rwt.client.Client.isGecko() ? "DOMMouseScroll" : "mousewheel"
+    "onwheel" in document ? "wheel" : "mousewheel"
   ],
 
   _keyEventTypes : [ "keydown", "keypress", "keyup" ],

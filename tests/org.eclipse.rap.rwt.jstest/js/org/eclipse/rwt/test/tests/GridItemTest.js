@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 EclipseSource and others.
+ * Copyright (c) 2010, 2016 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -270,6 +270,30 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridItemTest", {
       tree.destroy();
     },
 
+    testResetCellBackgroundsByProtocol : function() {
+      var shell = TestUtil.createShellByProtocol( "w2" );
+      var tree = this._createTreeByProtocol( "w3", "w2", [] );
+      MessageProcessor.processOperation( {
+        "target" : "w4",
+        "action" : "create",
+        "type" : "rwt.widgets.GridItem",
+        "properties" : {
+          "parent" : "w3",
+          "index": 0,
+          "cellBackgrounds" : [ null, [ 0, 255, 0, 255 ], null ]
+        }
+      } );
+
+      TestUtil.protocolSet( "w4", { "cellBackgrounds" : null } );
+
+      var item = ObjectRegistry.getObject( "w4" );
+      assertNull( item.getCellBackground( 0 ) );
+      assertNull( item.getCellBackground( 1 ) );
+      assertNull( item.getCellBackground( 2 ) );
+      shell.destroy();
+      tree.destroy();
+    },
+
     testSetCellForegroundsByProtocol : function() {
       var shell = TestUtil.createShellByProtocol( "w2" );
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
@@ -291,6 +315,30 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridItemTest", {
       tree.destroy();
     },
 
+    testResetCellForegroundsByProtocol : function() {
+      var shell = TestUtil.createShellByProtocol( "w2" );
+      var tree = this._createTreeByProtocol( "w3", "w2", [] );
+      MessageProcessor.processOperation( {
+        "target" : "w4",
+        "action" : "create",
+        "type" : "rwt.widgets.GridItem",
+        "properties" : {
+          "parent" : "w3",
+          "index": 0,
+          "cellForegrounds" : [ null, [ 0, 255, 0, 255 ], null ]
+        }
+      } );
+
+      TestUtil.protocolSet( "w4", { "cellForegrounds" : null } );
+
+      var item = ObjectRegistry.getObject( "w4" );
+      assertNull( item.getCellForeground( 0 ) );
+      assertNull( item.getCellForeground( 1 ) );
+      assertNull( item.getCellForeground( 2 ) );
+      shell.destroy();
+      tree.destroy();
+    },
+
     testSetCellFontsByProtocol : function() {
       var shell = TestUtil.createShellByProtocol( "w2" );
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
@@ -307,6 +355,30 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridItemTest", {
       var item = ObjectRegistry.getObject( "w4" );
       assertNull( item.getCellFont( 0 ) );
       assertEquals( "bold 20px Arial", item.getCellFont( 1 ) );
+      assertNull( item.getCellFont( 2 ) );
+      shell.destroy();
+      tree.destroy();
+    },
+
+    testResetCellFontsByProtocol : function() {
+      var shell = TestUtil.createShellByProtocol( "w2" );
+      var tree = this._createTreeByProtocol( "w3", "w2", [] );
+      MessageProcessor.processOperation( {
+        "target" : "w4",
+        "action" : "create",
+        "type" : "rwt.widgets.GridItem",
+        "properties" : {
+          "parent" : "w3",
+          "index": 0,
+          "cellFonts" : [ null, [ ["Arial"], 20, true, false ], null ]
+        }
+      } );
+
+      TestUtil.protocolSet( "w4", { "cellFonts" : null } );
+
+      var item = ObjectRegistry.getObject( "w4" );
+      assertNull( item.getCellFont( 0 ) );
+      assertNull( item.getCellFont( 1 ) );
       assertNull( item.getCellFont( 2 ) );
       shell.destroy();
       tree.destroy();
@@ -601,11 +673,19 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridItemTest", {
       assertEquals( "red", item.getBackground() );
     },
 
-    testCellBackgrounds: function() {
+    testCellBackgrounds : function() {
       var item = new rwt.widgets.GridItem();
       item.setCellBackgrounds( [ "red", "green" ] );
       assertEquals( "red", item.getCellBackground( 0 ) );
       assertEquals( "green", item.getCellBackground( 1 ) );
+    },
+
+    testColumnSpan : function() {
+      var item = new rwt.widgets.GridItem();
+      item.setColumnSpans( [ 0, 1, 2 ] );
+      assertEquals( 0, item.getColumnSpan( 0 ) );
+      assertEquals( 1, item.getColumnSpan( 1 ) );
+      assertEquals( 2, item.getColumnSpan( 2 ) );
     },
 
     testSomeCellBackgroundsSet : function() {
@@ -628,9 +708,10 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridItemTest", {
       var item = new rwt.widgets.GridItem();
       item.setImages( [ [ "test1.jpg", 10, 10 ], [ "test2.jpg", 10, 10 ] ] );
       item.setTexts( [ "bla", "blubg" ] );
-      item.setCellFonts( "arial", "windings" ) ;
-      item.setCellForegrounds( "red", "blue" );
-      item.setCellBackgrounds( "red", "blue" );
+      item.setCellFonts( [ "arial", "windings" ] ) ;
+      item.setCellForegrounds( [ "red", "blue" ] );
+      item.setCellBackgrounds( [ "red", "blue" ] );
+      item.setColumnSpans( [ 1, 2 ] );
       item.setFont( "arial" );
       item.setForeground( "green" );
       item.setBackground( "yellow" );
@@ -645,6 +726,8 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridItemTest", {
       assertEquals( null, item.getImage( 0 ) );
       assertEquals( null, item.getImage( 1 ) );
       assertEquals( null, item.getVariant() );
+      assertEquals( 0, item.getColumnSpan( 0 ) );
+      assertEquals( 0, item.getColumnSpan( 1 ) );
     },
 
     testParent : function() {

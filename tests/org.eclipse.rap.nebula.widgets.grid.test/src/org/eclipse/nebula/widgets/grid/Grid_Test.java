@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 EclipseSource and others.
+ * Copyright (c) 2012, 2016 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -48,15 +48,16 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.internal.widgets.ICellToolTipAdapter;
-import org.eclipse.swt.internal.widgets.IItemHolderAdapter;
-import org.eclipse.swt.internal.widgets.ItemHolder;
+import org.eclipse.swt.internal.widgets.ItemProvider;
 import org.eclipse.swt.internal.widgets.MarkupValidator;
+import org.eclipse.swt.internal.widgets.WidgetTreeVisitor;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Item;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.ScrollBar;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Widget;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -2567,21 +2568,19 @@ public class Grid_Test {
   }
 
   @Test
-  public void testGetAdapter_IItemHolderAdapter() {
-    assertNotNull( grid.getAdapter( IItemHolderAdapter.class ) );
+  public void testGetAdapter_ItemProvider() {
+    assertNotNull( grid.getAdapter( ItemProvider.class ) );
   }
 
   @Test
-  public void testIItemHolderAdapter_GetItems() {
+  public void testItemProvider_visitedItems() {
     GridColumnGroup group = new GridColumnGroup( grid, SWT.NONE );
     GridColumn column = new GridColumn( group, SWT.NONE );
     GridItem item = new GridItem( grid, SWT.NONE );
 
-    Item[] items = grid.getAdapter( IItemHolderAdapter.class ).getItems();
+    List<Item> items = getVisitedItems();
 
-    assertSame( group, items[ 0 ] );
-    assertSame( column, items[ 1 ] );
-    assertSame( item, items[ 2 ] );
+    assertEquals( Arrays.asList( group, column, item ), items );
   }
 
   @Test
@@ -2977,15 +2976,56 @@ public class Grid_Test {
     assertSame( grid.getAdapter( WidgetLCA.class ), grid.getAdapter( WidgetLCA.class ) );
   }
 
+  @Test
+  public void testRedraw_onVirtual_withoutItems() {
+    grid = new Grid( shell, SWT.H_SCROLL | SWT.V_SCROLL | SWT.VIRTUAL );
+
+    try {
+      doFakeRedraw();
+    } catch( Exception notExpected ) {
+      fail();
+    }
+  }
+
+  @Test
+  public void testGetIndentionWidth_asTable() {
+    createGridItems( grid, 3, 0 );
+
+    int indentationWidth = grid.getAdapter( IGridAdapter.class ).getIndentationWidth();
+
+    assertEquals( 0, indentationWidth );
+  }
+
+  @Test
+  public void testGetIndentionWidth_asTree() {
+    createGridItems( grid, 3, 3 );
+
+    int indentationWidth = grid.getAdapter( IGridAdapter.class ).getIndentationWidth();
+
+    assertEquals( 16, indentationWidth );
+
+  }
+
   private int countResolvedGridItems() {
     int counter = 0;
-    Item[] items = ItemHolder.getItemHolder( grid ).getItems();
-    for( Item item : items ) {
+    for( Item item : getVisitedItems() ) {
       if( item instanceof GridItem ) {
         counter++;
       }
     }
     return counter;
+  }
+
+  private List<Item> getVisitedItems() {
+    final List<Item> items = new ArrayList<>();
+    grid.getAdapter( ItemProvider.class ).provideItems( new WidgetTreeVisitor() {
+      @Override
+      public boolean visit( Widget widget ) {
+        items.add( ( Item )widget );
+        return true;
+      }
+    });
+    return items;
   }
 
   private void doFakeRedraw() {

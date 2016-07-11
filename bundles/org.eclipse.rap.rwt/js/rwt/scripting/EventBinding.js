@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2014 EclipseSource and others.
+ * Copyright (c) 2012, 2015 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -13,7 +13,7 @@
 
 rwt.define( "rwt.scripting", {} );
 
-var wrapperRegistry = {};
+var WRAPPER_REGISTRY = "rwt.scripting.EventBinding.WrapperRegistry";
 
 // TODO : better name?
 // TODO [rst] Define directly using rwt.define, remove surrounding function scope
@@ -21,8 +21,7 @@ rwt.scripting.EventBinding = {
 
   addListener : function( widget, eventType, targetFunction ) {
     this._checkEventType( eventType );
-    var wrapperKey = this._getWrapperKey( widget, eventType, targetFunction );
-    var wrapperList = this._getWrapperList( wrapperKey );
+    var wrapperList = this._getWrapperList( widget, eventType, targetFunction );
     var nativeType = this._getNativeEventType( widget, eventType );
     var nativeSource = this._getNativeEventSource( widget, eventType );
     var wrappedListener = this._wrapListener( widget, eventType, targetFunction );
@@ -31,8 +30,7 @@ rwt.scripting.EventBinding = {
   },
 
   removeListener : function( widget, eventType, targetFunction ) {
-    var wrapperKey = this._getWrapperKey( widget, eventType, targetFunction );
-    var wrapperList = this._getWrapperList( wrapperKey );
+    var wrapperList = this._getWrapperList( widget, eventType, targetFunction );
     var nativeType = this._getNativeEventType( widget, eventType );
     var nativeSource = this._getNativeEventSource( widget, eventType );
     var wrappedListener = wrapperList.pop();
@@ -54,20 +52,17 @@ rwt.scripting.EventBinding = {
     };
   },
 
-  _getWrapperKey : function( widget, eventType, targetFunction ) {
-    var result = [
-      rwt.qx.Object.toHashCode( widget ),
-      eventType,
-      rwt.qx.Object.toHashCode( targetFunction )
-    ];
-    return result.join( ":" );
-  },
-
-  _getWrapperList : function( wrapperKey ) {
-    if( wrapperRegistry[ wrapperKey ] == null ) {
-      wrapperRegistry[ wrapperKey ] = [];
+  _getWrapperList : function( widget, eventType, targetFunction ) {
+    var wrapperRegistry = widget.getUserData( WRAPPER_REGISTRY );
+    if( !wrapperRegistry ) {
+      wrapperRegistry = {};
+      widget.setUserData( WRAPPER_REGISTRY, wrapperRegistry );
     }
-    return wrapperRegistry[ wrapperKey ];
+    var key = eventType + ":" + rwt.qx.Object.toHashCode( targetFunction );
+    if( wrapperRegistry[ key ] == null ) {
+      wrapperRegistry[ key ] = [];
+    }
+    return wrapperRegistry[ key ];
   },
 
   _getNativeEventSource : function( source, eventType ) {
@@ -218,7 +213,16 @@ rwt.scripting.EventBinding = {
        * @param {Event} event
        * @see SWT.Hide
        */
-      "Hide" : "disappear"
+      "Hide" : "disappear",
+      /**
+       * @event
+       * @description Sent when the widget is disposed. The event is fired before widget is
+       * detached from the widget hierarchy and removed from DOM
+       * @name Control#Dispose
+       * @param {Event} event
+       * @see SWT.Dispose
+       */
+      "Dispose" : "beforeDispose"
     },
     "rwt.widgets.Scale" : {
       /**

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 EclipseSource and others.
+ * Copyright (c) 2010, 2016 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,6 +11,7 @@
 package org.eclipse.swt.widgets;
 
 import org.eclipse.rap.rwt.internal.RWTMessages;
+import org.eclipse.rap.rwt.widgets.DialogCallback;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.events.ModifyEvent;
@@ -70,6 +71,7 @@ public class ColorDialog extends Dialog {
       this.colorIndex = colorIndex;
     }
 
+    @Override
     public void modifyText( ModifyEvent event ) {
       setColorFomSpinner( colorIndex, spinner.getSelection() );
     }
@@ -186,8 +188,8 @@ public class ColorDialog extends Dialog {
    * Makes the receiver visible and brings it to the front of the display.
    *
    * <!-- Begin RAP specific -->
-   * <p>This method is not supported when running the application in JEE_COMPATIBILITY mode.
-   * Use DialogUtil#open instead.</p>
+   * <p><strong>RAP Note:</strong> This method is not supported when running the application in
+   * JEE_COMPATIBILITY mode. Use <code>Dialog#open(DialogCallback)</code> instead.</p>
    * <!-- End RAP specific -->
    *
    * @return the selected color, or null if the dialog was cancelled, no color
@@ -200,6 +202,7 @@ public class ColorDialog extends Dialog {
    * @exception UnsupportedOperationException when running the application in JEE_COMPATIBILITY mode
    *
    * @see org.eclipse.rap.rwt.application.Application.OperationMode
+   * @see #open(DialogCallback)
    */
   public RGB open() {
     checkOperationMode();
@@ -322,11 +325,11 @@ public class ColorDialog extends Dialog {
 
   private void configureShell() {
     shell.setText( title );
-    Rectangle parentSize = parent.getBounds();
+    Rectangle displaySize = parent.getDisplay().getBounds();
     Point prefSize = shell.computeSize( SWT.DEFAULT, SWT.DEFAULT );
     shell.setSize( prefSize );
-    int locationX = ( parentSize.width - prefSize.x ) / 2 + parentSize.x;
-    int locationY = ( parentSize.height - prefSize.y ) / 2 + parentSize.y;
+    int locationX = ( displaySize.width - prefSize.x ) / 2 + displaySize.x;
+    int locationY = ( displaySize.height - prefSize.y ) / 2 + displaySize.y;
     shell.setLocation( new Point( locationX, locationY ) );
     shell.pack();
   }

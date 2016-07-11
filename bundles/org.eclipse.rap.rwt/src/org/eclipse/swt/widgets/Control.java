@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2002, 2015 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2002, 2016 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -15,8 +15,8 @@ import static org.eclipse.swt.internal.widgets.MarkupUtil.isToolTipMarkupEnabled
 import static org.eclipse.swt.internal.widgets.MarkupValidator.isValidationDisabledFor;
 
 import org.eclipse.rap.rwt.RWT;
-import org.eclipse.rap.rwt.internal.lifecycle.ControlLCAUtil;
 import org.eclipse.rap.rwt.internal.lifecycle.RemoteAdapter;
+import org.eclipse.rap.rwt.internal.lifecycle.ReparentedControls;
 import org.eclipse.rap.rwt.internal.theme.ThemeAdapter;
 import org.eclipse.rap.rwt.internal.util.ActiveKeysUtil;
 import org.eclipse.rap.rwt.theme.BoxDimensions;
@@ -85,7 +85,7 @@ public abstract class Control extends Widget implements Drawable {
     @Override
     public void setTabIndex( int index ) {
       if( takesFocus() ) {
-        ControlLCAUtil.preserveTabIndex( Control.this, tabIndex );
+        getRemoteAdapter().preserveTabIndex( tabIndex );
         tabIndex = index;
       }
     }
@@ -125,6 +125,11 @@ public abstract class Control extends Widget implements Drawable {
     @Override
     public boolean isPacked() {
       return packed;
+    }
+
+    @Override
+    public void clearPacked() {
+      packed = false;
     }
 
     @Override
@@ -203,6 +208,7 @@ public abstract class Control extends Widget implements Drawable {
   void createWidget () {
     initState();
     checkOrientation( parent );
+    checkMirrored();
     checkBackground();
     updateBackground();
   }
@@ -459,7 +465,7 @@ public abstract class Control extends Widget implements Drawable {
     if( color != null && color.isDisposed() ) {
       error( SWT.ERROR_INVALID_ARGUMENT );
     }
-    ControlLCAUtil.preserveBackground( this, background, backgroundTransparency );
+    getRemoteAdapter().preserveBackground( background, backgroundTransparency );
     background = color;
     updateBackground();
   }
@@ -526,7 +532,7 @@ public abstract class Control extends Widget implements Drawable {
       error( SWT.ERROR_INVALID_ARGUMENT );
     }
     if( backgroundImage != image ) {
-      ControlLCAUtil.preserveBackgroundImage( this, backgroundImage );
+      getRemoteAdapter().preserveBackgroundImage( backgroundImage );
       backgroundImage = image;
     }
   }
@@ -572,7 +578,7 @@ public abstract class Control extends Widget implements Drawable {
     if( color != null && color.isDisposed() ) {
       error( SWT.ERROR_INVALID_ARGUMENT );
     }
-    ControlLCAUtil.preserveForeground( this, foreground );
+    getRemoteAdapter().preserveForeground( foreground );
     foreground = color;
   }
 
@@ -646,7 +652,7 @@ public abstract class Control extends Widget implements Drawable {
    * Applies the background according to PARENT_BACKGROUND state.
    */
   private void updateBackground() {
-    ControlLCAUtil.preserveBackground( this, background, backgroundTransparency );
+    getRemoteAdapter().preserveBackground( background, backgroundTransparency );
     backgroundTransparency =    background == null
                              && backgroundImage == null
                              && hasState( PARENT_BACKGROUND );
@@ -660,6 +666,12 @@ public abstract class Control extends Widget implements Drawable {
       result = parent.findBackgroundControl();
     }
     return result;
+  }
+
+  void checkMirrored() {
+    if( ( style & SWT.RIGHT_TO_LEFT ) != 0 ) {
+      style |= SWT.MIRRORED;
+    }
   }
 
   /////////
@@ -685,7 +697,7 @@ public abstract class Control extends Widget implements Drawable {
     if( font != null && font.isDisposed() ) {
       error( SWT.ERROR_INVALID_ARGUMENT );
     }
-    ControlLCAUtil.preserveFont( this, this.font );
+    getRemoteAdapter().preserveFont( this.font );
     this.font = font;
   }
 
@@ -737,7 +749,7 @@ public abstract class Control extends Widget implements Drawable {
     if( cursor != null && cursor.isDisposed() ) {
       error( SWT.ERROR_INVALID_ARGUMENT );
     }
-    ControlLCAUtil.preserveCursor( this, this.cursor );
+    getRemoteAdapter().preserveCursor( this.cursor );
     this.cursor = cursor;
   }
 
@@ -1351,7 +1363,7 @@ public abstract class Control extends Widget implements Drawable {
     {
       MarkupValidator.getInstance().validate( toolTipText );
     }
-    ControlLCAUtil.preserveToolTipText( this, this.toolTipText );
+    getRemoteAdapter().preserveToolTipText( this.toolTipText );
     this.toolTipText = toolTipText;
   }
 
@@ -2010,6 +2022,25 @@ public abstract class Control extends Widget implements Drawable {
     removeListener( SWT.MenuDetect, listener );
   }
 
+  /**
+   * Requests that this control and all of its ancestors be repositioned
+   * their layouts at the earliest opportunity. This should be invoked after
+   * modifying the control in order to inform any dependent layouts of
+   * the change.
+   * <p>
+   * The control will not be repositioned synchronously. This method is
+   * fast-running and only marks the control for future participation in
+   * a deferred layout.
+   * <p>
+   * Invoking this method multiple times before the layout occurs is an
+   * inexpensive no-op.
+   *
+   * @since 3.1
+   */
+  public void requestLayout() {
+    getShell().layout( new Control[] { this }, SWT.DEFER );
+  }
+
   ////////////////
   // drawing (Note that we can't really force a redraw. This is just a
   // fake for event notifications that come on OS systems with redraws)
@@ -2098,11 +2129,16 @@ public abstract class Control extends Widget implements Drawable {
   public void redraw( int x, int y, int width, int height, boolean all ) {
     checkWidget();
     if( width > 0 && height > 0 ) {
-      internalSetRedraw( true );
+      internalSetRedraw( true, x, y, width, height );
     }
   }
 
   void internalSetRedraw( boolean redraw ) {
+    display.redrawControl( this, redraw );
+  }
+
+  @SuppressWarnings( "unused" )
+  void internalSetRedraw( boolean redraw, int x, int y, int width, int height ) {
     display.redrawControl( this, redraw );
   }
 
@@ -2166,7 +2202,8 @@ public abstract class Control extends Widget implements Drawable {
       if( oldShell != newShell || oldDecorations != newDecorations ) {
         fixChildren( newShell, oldShell, newDecorations, oldDecorations );
       }
-      ControlLCAUtil.preserveParent( this, this.parent );
+      getRemoteAdapter().preserveParent( this.parent );
+      ReparentedControls.add( this );
       this.parent = parent;
       parent.addChild( this );
     }
@@ -2210,10 +2247,12 @@ public abstract class Control extends Widget implements Drawable {
     if( ( orientation & flags ) == 0 || ( orientation & flags ) == flags ) {
       return;
     }
-    ControlLCAUtil.preserveOrientation( this, ( style & flags ) );
+    getRemoteAdapter().preserveOrientation( style & flags );
+    style &= ~SWT.MIRRORED;
     style &= ~flags;
     style |= orientation & flags;
     updateOrientation();
+    checkMirrored();
   }
 
   /**
@@ -2504,14 +2543,14 @@ public abstract class Control extends Widget implements Drawable {
   }
 
   void _setBounds( Rectangle rectangle ) {
-    ControlLCAUtil.preserveBounds( this, bounds );
+    getRemoteAdapter().preserveBounds( bounds );
     bounds = rectangle;
     bounds.width = Math.max( 0, bounds.width );
     bounds.height = Math.max( 0, bounds.height );
   }
 
   private void _setMenu( Menu menu ) {
-    ControlLCAUtil.preserveMenu( this, this.menu );
+    getRemoteAdapter().preserveMenu( this.menu );
     this.menu = menu;
   }
 
@@ -2648,10 +2687,10 @@ public abstract class Control extends Widget implements Drawable {
 
   private void preserveState( int flag ) {
     if( ( flag & DISABLED ) != 0 ) {
-      ControlLCAUtil.preserveEnabled( this, !hasState( DISABLED ) );
+      getRemoteAdapter().preserveEnabled( !hasState( DISABLED ) );
     }
     if( ( flag & HIDDEN ) != 0 ) {
-      ControlLCAUtil.preserveVisible( this, !hasState( HIDDEN ) );
+      getRemoteAdapter().preserveVisible( !hasState( HIDDEN ) );
     }
   }
 
@@ -2673,6 +2712,10 @@ public abstract class Control extends Widget implements Drawable {
     if( menu != null ) {
       menu.removeListener( SWT.Dispose, menuDisposeListener );
     }
+  }
+
+  private ControlRemoteAdapter getRemoteAdapter() {
+    return ( ControlRemoteAdapter )getAdapter( RemoteAdapter.class );
   }
 
 }

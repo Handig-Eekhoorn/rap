@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 EclipseSource and others.
+ * Copyright (c) 2012, 2016 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -17,6 +17,7 @@ import org.eclipse.rap.rwt.SingletonUtil;
 import org.eclipse.rap.rwt.application.Application;
 import org.eclipse.rap.rwt.application.EntryPointFactory;
 import org.eclipse.rap.rwt.client.service.BrowserNavigation;
+import org.eclipse.rap.rwt.client.service.ClientFileLoader;
 import org.eclipse.rap.rwt.client.service.ClientFileUploader;
 import org.eclipse.rap.rwt.client.service.ClientInfo;
 import org.eclipse.rap.rwt.client.service.ClientService;
@@ -26,6 +27,7 @@ import org.eclipse.rap.rwt.client.service.JavaScriptLoader;
 import org.eclipse.rap.rwt.client.service.StartupParameters;
 import org.eclipse.rap.rwt.client.service.UrlLauncher;
 import org.eclipse.rap.rwt.internal.client.BrowserNavigationImpl;
+import org.eclipse.rap.rwt.internal.client.ClientFileLoaderImpl;
 import org.eclipse.rap.rwt.internal.client.ClientFileUploaderImpl;
 import org.eclipse.rap.rwt.internal.client.ClientInfoImpl;
 import org.eclipse.rap.rwt.internal.client.ClientMessages;
@@ -47,6 +49,7 @@ import org.eclipse.rap.rwt.service.ResourceLoader;
  *
  * @since 2.0
  */
+@SuppressWarnings( "deprecation" )
 public class WebClient implements Client {
 
   private static final String PREFIX = "org.eclipse.rap.rwt.webclient";
@@ -106,6 +109,18 @@ public class WebClient implements Client {
   public static final String PAGE_TITLE = PREFIX + ".pageTitle";
 
   /**
+   * Entrypoint property name for the page overflow behavior. The value must be one of the
+   * "scroll", "scrollX", "scrollY". If this property is not set the page overflow is
+   * disabled.
+   *
+   * @see Application#addEntryPoint(String, Class, Map)
+   * @see Application#addEntryPoint(String, EntryPointFactory, Map)
+   *
+   * @since 3.1
+   */
+  public static final String PAGE_OVERFLOW = PREFIX + ".pageOverflow";
+
+  /**
    * Entrypoint property name for the website icon (a.k.a favicon or shortcut icon) that will be
    * displayed by the web browser. The value must contain a valid path where the image can be
    * accessed on the server.
@@ -148,6 +163,8 @@ public class WebClient implements Client {
       result = ( T )getServiceImpl( ClientInfoImpl.class );
     } else if( type == ClientMessages.class ) {
       result = ( T )getServiceImpl( WebClientMessages.class );
+    } else if( type == ClientFileLoader.class ) {
+      result = ( T )getServiceImpl( ClientFileLoaderImpl.class );
     } else if( type == ClientFileUploader.class ) {
       result = ( T )getServiceImpl( ClientFileUploaderImpl.class );
     } else if( type == StartupParameters.class ) {

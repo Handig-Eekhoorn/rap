@@ -78,6 +78,26 @@ public class WidgetRemoteAdapter_Test {
   }
 
   @Test
+  public void testMarkPreserved() {
+    adapter.markPreserved( 3 );
+
+    // bit logic does not affect other properties
+    assertFalse( adapter.hasPreserved( 0 ) );
+    assertFalse( adapter.hasPreserved( 1 ) );
+    assertFalse( adapter.hasPreserved( 2 ) );
+    assertTrue( adapter.hasPreserved( 3 ) );
+  }
+
+  @Test
+  public void testMarkPreserved_isCleared() {
+    adapter.markPreserved( 3 );
+
+    adapter.clearPreserved();
+
+    assertFalse( adapter.hasPreserved( 3 ) );
+  }
+
+  @Test
   public void testPreserveProperty() {
     Object value = new Object();
 
@@ -149,7 +169,7 @@ public class WidgetRemoteAdapter_Test {
     Widget widget = new Shell( display );
     widget.dispose();
     assertTrue( widget.isDisposed() );
-    assertEquals( 0, DisposedWidgets.getAll().length );
+    assertEquals( 0, DisposedWidgets.getAll().size() );
 
     // dispose initialized widget: must be present in list of disposed widgets
     widget = new Shell( display );
@@ -158,7 +178,7 @@ public class WidgetRemoteAdapter_Test {
     widget.dispose();
 
     assertTrue( widget.isDisposed() );
-    assertEquals( 1, DisposedWidgets.getAll().length );
+    assertEquals( 1, DisposedWidgets.getAll().size() );
   }
 
   @Test

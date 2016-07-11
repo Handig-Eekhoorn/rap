@@ -36,6 +36,7 @@ import java.util.List;
 
 import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.internal.lifecycle.RemoteAdapter;
+import org.eclipse.rap.rwt.internal.lifecycle.ReparentedControls;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.theme.ThemeAdapter;
 import org.eclipse.rap.rwt.internal.theme.ThemeTestUtil;
@@ -945,6 +946,38 @@ public class Control_Test {
   }
 
   @Test
+  public void testMirrored_inital() {
+    Control control = new Button( shell, SWT.NONE );
+
+    assertTrue( ( control.getStyle() & SWT.MIRRORED ) == 0 );
+  }
+
+  @Test
+  public void testMirrored_RTL() {
+    Control control = new Button( shell, SWT.RIGHT_TO_LEFT );
+
+    assertTrue( ( control.getStyle() & SWT.MIRRORED ) != 0 );
+  }
+
+  @Test
+  public void testMirrored_afterOrientationChangeToRTL() {
+    Control control = new Button( shell, SWT.NONE );
+
+    control.setOrientation( SWT.RIGHT_TO_LEFT );
+
+    assertTrue( ( control.getStyle() & SWT.MIRRORED ) != 0 );
+  }
+
+  @Test
+  public void testMirrored_afterOrientationChangeToLTR() {
+    Control control = new Button( shell, SWT.RIGHT_TO_LEFT );
+
+    control.setOrientation( SWT.LEFT_TO_RIGHT );
+
+    assertTrue( ( control.getStyle() & SWT.MIRRORED ) == 0 );
+  }
+
+  @Test
   public void testShowEvent() {
     final java.util.List<Event> log = new ArrayList<Event>();
     Listener showListener = new Listener() {
@@ -1637,6 +1670,18 @@ public class Control_Test {
     control.setParent( parent );
 
     assertNull( shell.getSavedFocus() );
+  }
+
+  @Test
+  public void testSetParent_addsControlToReparentedList() {
+    Control control = new Button( shell, SWT.NONE );
+    shell.open();
+    control.setFocus();
+    Shell parent = new Shell( display );
+
+    control.setParent( parent );
+
+    assertSame( control, ReparentedControls.getAll().get( 0 ) );
   }
 
   @Test

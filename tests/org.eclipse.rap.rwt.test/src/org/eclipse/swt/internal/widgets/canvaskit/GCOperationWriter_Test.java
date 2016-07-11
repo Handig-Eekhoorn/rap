@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2015 EclipseSource and others.
+ * Copyright (c) 2010, 2016 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -19,6 +19,7 @@ import static org.junit.Assert.fail;
 import java.io.IOException;
 
 import org.eclipse.rap.json.JsonArray;
+import org.eclipse.rap.json.JsonObject;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil;
 import org.eclipse.rap.rwt.internal.protocol.Operation.CallOperation;
 import org.eclipse.rap.rwt.testfixture.internal.Fixture;
@@ -31,8 +32,9 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Path;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.graphics.Transform;
+import org.eclipse.swt.internal.graphics.GCAdapter;
 import org.eclipse.swt.internal.graphics.GCOperation;
-import org.eclipse.swt.internal.graphics.IGCAdapter;
 import org.eclipse.swt.internal.graphics.ImageFactory;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Display;
@@ -54,12 +56,34 @@ public class GCOperationWriter_Test {
     display = new Display();
     Shell control = new Shell( display );
     canvas = new Canvas( control, SWT.NONE );
+    canvas.setSize( 100, 200 );
     gc = new GC( canvas );
   }
 
   @After
   public void tearDown() {
     Fixture.tearDown();
+  }
+
+  @Test
+  public void testInit() {
+    canvas.setForeground( new Color( display, 1, 2, 3 ) );
+    canvas.setBackground( new Color( display, 4, 5, 6 ) );
+    canvas.setFont( new Font( display, "Arial", 12, SWT.BOLD ) );
+
+    GCOperationWriter operationWriter = new GCOperationWriter( canvas );
+    operationWriter.initialize();
+
+    TestMessage message = Fixture.getProtocolMessage();
+    CallOperation init = message.findCallOperation( getGcId( canvas ), "init" );
+    JsonObject parameters = init.getParameters();
+    assertEquals( 0, parameters.get( "x" ).asInt() );
+    assertEquals( 0, parameters.get( "y" ).asInt() );
+    assertEquals( 100, parameters.get( "width" ).asInt() );
+    assertEquals( 200, parameters.get( "height" ).asInt() );
+    assertEquals( "[[\"Arial\"],12,true,false]", parameters.get( "font" ).asArray().toString() );
+    assertEquals( "[1,2,3,255]", parameters.get( "strokeStyle" ).asArray().toString() );
+    assertEquals( "[4,5,6,255]", parameters.get( "fillStyle" ).asArray().toString() );
   }
 
   @Test
@@ -619,8 +643,9 @@ public class GCOperationWriter_Test {
 
     JsonArray ops = getGCOperations( canvas );
     assertEquals( "[\"save\"]", getOperation( 0, ops ) );
-    assertEquals( "[\"rect\",1,2,3,4]", getOperation( 1, ops ) );
-    assertEquals( "[\"clip\"]", getOperation( 2, ops ) );
+    assertEquals( "[\"beginPath\"]", getOperation( 1, ops ) );
+    assertEquals( "[\"rect\",1,2,3,4]", getOperation( 2, ops ) );
+    assertEquals( "[\"clip\"]", getOperation( 3, ops ) );
   }
 
   @Test
@@ -661,6 +686,14 @@ public class GCOperationWriter_Test {
     assertEquals( WidgetUtil.getId( canvas ) + ".gc", gcId );
   }
 
+  @Test
+  public void testSetTransform() {
+    gc.setTransform( new Transform( display, 1, 2, 3, 4, 5, 6 ) );
+
+    JsonArray ops = getGCOperations( canvas );
+    assertEquals( "[\"setTransform\",1,2,3,4,5,6]", getOperation( 0, ops ) );
+  }
+
   private static JsonArray getGCOperations( Canvas canvas ) {
     writeGCOperations( canvas );
     TestMessage message = Fixture.getProtocolMessage();
@@ -687,8 +720,8 @@ public class GCOperationWriter_Test {
     operationWriter.render();
   }
 
-  private static IGCAdapter getGCAdapter( Canvas canvas ) {
-    return canvas.getAdapter( IGCAdapter.class );
+  private static GCAdapter getGCAdapter( Canvas canvas ) {
+    return canvas.getAdapter( GCAdapter.class );
   }
 
 }

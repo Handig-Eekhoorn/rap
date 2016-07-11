@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2002, 2015 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2002, 2016 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,6 +11,14 @@
  ******************************************************************************/
 package org.eclipse.swt;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
+
+import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.internal.RWTMessages;
 import org.eclipse.swt.graphics.Cursor;
 
@@ -1857,6 +1865,17 @@ public class SWT {
   public static final int RIGHT_TO_LEFT = 1 << 26;
 
   /**
+   * Style constant to indicate coordinate mirroring (value is 1&lt;&lt;27).
+   * <p><b>Used By:</b><ul>
+   * <li><code>Control</code></li>
+   * <li><code>Menu</code></li>
+   * </ul></p>
+   *
+   * @since 3.1
+   */
+  public static final int MIRRORED = 1 << 27;
+
+  /**
    * Style constant for horizontal scrollbar behavior (value is 1&lt;&lt;8).
    * <p><b>Used By:</b><ul>
    * <li><code>Scrollable</code> and subclasses</li>
@@ -3557,7 +3576,7 @@ public class SWT {
    */
   public static final int ID_QUIT = -6;
 
-  private static final int RWT_VERSION = getVersion( 1, 500 );
+  private static final int RWT_VERSION = readVersion();
 
   static {
     /*
@@ -3853,8 +3872,32 @@ public class SWT {
     return RWTMessages.getMessage( key, "org.eclipse.swt.internal.SWTMessages" );
   }
 
-  private static int getVersion( int major, int minor ) {
-      return major * 1000 + minor;
+  private static int readVersion() {
+    return Integer.parseInt( readBundleVersion().replaceAll( "\\.", "" ) );
+  }
+
+  private static String readBundleVersion() {
+    try {
+      Enumeration<URL> manifests = RWT.class.getClassLoader().getResources( "META-INF/MANIFEST.MF" );
+      while( manifests.hasMoreElements() ) {
+        InputStream stream = manifests.nextElement().openStream();
+        try {
+          Manifest manifest = new Manifest( stream );
+          Attributes attributes = manifest.getMainAttributes();
+          if( "org.eclipse.rap.rwt".equals( attributes.getValue( "Bundle-SymbolicName" ) ) ) {
+            String version = attributes.getValue( "Bundle-Version" );
+            int beginIndex = version.indexOf( ":" ) + 1;
+            int endIndex = version.lastIndexOf( "." );
+            return version.substring( beginIndex, endIndex ).trim();
+          }
+        } finally {
+          stream.close();
+        }
+      }
+    } catch( IOException ioe ) {
+      throw new RuntimeException( "Failed to read RWT bundle MANIFEST.MF", ioe );
+    }
+    return "0.0.0";
   }
 
 }

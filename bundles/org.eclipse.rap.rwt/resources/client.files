@@ -119,6 +119,7 @@ rwt/widgets/util/CellRendererRegistry.js
 rwt/widgets/base/GridRowContainer.js
 rwt/widgets/util/GridRowContainerWrapper.js
 rwt/widgets/util/GridUtil.js
+rwt/widgets/util/GridRowLayout.js
 rwt/widgets/util/GridSynchronizer.js
 rwt/widgets/base/GridRow.js
 rwt/widgets/Menu.js
@@ -246,6 +247,8 @@ rwt/client/UrlLauncher.js
 rwt/remote/handler/UrlLauncherHandler.js
 rwt/client/JavaScriptLoader.js
 rwt/remote/handler/JavaScriptLoaderHandler.js
+rwt/client/ClientFileLoader.js
+rwt/remote/handler/ClientFileLoaderHandler.js
 rwt/runtime/System.js
 rwt/widgets/util/MnemonicHandler.js
 rap.js

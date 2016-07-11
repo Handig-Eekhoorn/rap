@@ -64,7 +64,6 @@ public class GridItemLCA_Test {
     grid = new Grid( shell, SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL );
     item = new GridItem( grid, SWT.NONE );
     lca = new GridItemLCA();
-    Fixture.fakeNewRequest();
   }
 
   @After
@@ -328,6 +327,21 @@ public class GridItemLCA_Test {
   }
 
   @Test
+  public void testRenderTextsReset() throws IOException {
+    createGridColumns( grid, 2, SWT.NONE );
+    Fixture.markInitialized( display );
+    Fixture.markInitialized( item );
+    item.setText( 1, "item 0.1" );
+    Fixture.preserveWidgets();
+
+    item.setText( 1, "" );
+    lca.renderChanges( item );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( JsonValue.NULL, message.findSetProperty( item, "texts" ) );
+  }
+
+  @Test
   public void testRenderInitialImages() throws IOException {
     createGridColumns( grid, 2, SWT.NONE );
 
@@ -365,6 +379,22 @@ public class GridItemLCA_Test {
 
     TestMessage message = Fixture.getProtocolMessage();
     assertNull( message.findSetOperation( item, "images" ) );
+  }
+
+  @Test
+  public void testRenderImagesReset() throws IOException {
+    createGridColumns( grid, 2, SWT.NONE );
+    Fixture.markInitialized( display );
+    Fixture.markInitialized( item );
+    Image image = loadImage( display, Fixture.IMAGE1 );
+    item.setImage( 1, image );
+    Fixture.preserveWidgets();
+
+    item.setImage( 1, null );
+    lca.renderChanges( item );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( JsonValue.NULL, message.findSetProperty( item, "images" ) );
   }
 
   @Test
@@ -501,6 +531,21 @@ public class GridItemLCA_Test {
   }
 
   @Test
+  public void testRenderCellBackgroundsReset() throws IOException {
+    createGridColumns( grid, 2, SWT.NONE );
+    Fixture.markInitialized( display );
+    Fixture.markInitialized( item );
+    item.setBackground( 1, display.getSystemColor( SWT.COLOR_GREEN ) );
+    Fixture.preserveWidgets();
+
+    item.setBackground( 1, null );
+    lca.renderChanges( item );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( JsonValue.NULL, message.findSetProperty( item, "cellBackgrounds" ) );
+  }
+
+  @Test
   public void testRenderInitialCellForegrounds() throws IOException {
     createGridColumns( grid, 2, SWT.NONE );
 
@@ -538,6 +583,21 @@ public class GridItemLCA_Test {
   }
 
   @Test
+  public void testRenderCellForegroundsReset() throws IOException {
+    createGridColumns( grid, 2, SWT.NONE );
+    Fixture.markInitialized( display );
+    Fixture.markInitialized( item );
+    item.setForeground( 1, display.getSystemColor( SWT.COLOR_GREEN ) );
+    Fixture.preserveWidgets();
+
+    item.setForeground( 1, null );
+    lca.renderChanges( item );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( JsonValue.NULL, message.findSetProperty( item, "cellForegrounds" ) );
+  }
+
+  @Test
   public void testRenderInitialCellFonts() throws IOException {
     createGridColumns( grid, 2, SWT.NONE );
 
@@ -572,6 +632,21 @@ public class GridItemLCA_Test {
 
     TestMessage message = Fixture.getProtocolMessage();
     assertNull( message.findSetOperation( item, "cellFonts" ) );
+  }
+
+  @Test
+  public void testRenderCellFontsReset() throws IOException {
+    createGridColumns( grid, 2, SWT.NONE );
+    Fixture.markInitialized( display );
+    Fixture.markInitialized( item );
+    item.setFont( 1, new Font( display, "Arial", 20, SWT.BOLD ) );
+    Fixture.preserveWidgets();
+
+    item.setFont( 1, null );
+    lca.renderChanges( item );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( JsonValue.NULL, message.findSetProperty( item, "cellFonts" ) );
   }
 
   @Test
@@ -652,6 +727,23 @@ public class GridItemLCA_Test {
   }
 
   @Test
+  public void testRenderCellCheckedReset() throws IOException {
+    grid = new Grid( shell, SWT.CHECK );
+    createGridColumns( grid, 2, SWT.NONE );
+    item = new GridItem( grid, SWT.NONE );
+    Fixture.markInitialized( display );
+    Fixture.markInitialized( item );
+    item.setChecked( 1, true );
+    Fixture.preserveWidgets();
+
+    item.setChecked( 1, false );
+    lca.renderChanges( item );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( JsonValue.NULL, message.findSetProperty( item, "cellChecked" ) );
+  }
+
+  @Test
   public void testRenderInitialCellGrayed() throws IOException {
     grid = new Grid( shell, SWT.CHECK );
     createGridColumns( grid, 2, SWT.NONE );
@@ -695,6 +787,23 @@ public class GridItemLCA_Test {
   }
 
   @Test
+  public void testRenderGrayedReset() throws IOException {
+    grid = new Grid( shell, SWT.CHECK );
+    createGridColumns( grid, 2, SWT.NONE );
+    item = new GridItem( grid, SWT.NONE );
+    Fixture.markInitialized( display );
+    Fixture.markInitialized( item );
+    item.setGrayed( 1, true );
+    Fixture.preserveWidgets();
+
+    item.setGrayed( 1, false );
+    lca.renderChanges( item );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( JsonValue.NULL, message.findSetProperty( item, "cellGrayed" ) );
+  }
+
+  @Test
   public void testRenderInitialCellCheckable() throws IOException {
     grid = new Grid( shell, SWT.CHECK );
     createGridColumns( grid, 2, SWT.NONE );
@@ -735,6 +844,75 @@ public class GridItemLCA_Test {
 
     TestMessage message = Fixture.getProtocolMessage();
     assertNull( message.findSetOperation( item, "cellCheckable" ) );
+  }
+
+  @Test
+  public void testRenderCellCheckableReset() throws IOException {
+    grid = new Grid( shell, SWT.CHECK );
+    createGridColumns( grid, 2, SWT.NONE );
+    item = new GridItem( grid, SWT.NONE );
+    Fixture.markInitialized( display );
+    Fixture.markInitialized( item );
+    item.setCheckable( 1, false );
+    Fixture.preserveWidgets();
+
+    item.setCheckable( 1, true );
+    lca.renderChanges( item );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( JsonValue.NULL, message.findSetProperty( item, "cellCheckable" ) );
+  }
+
+  @Test
+  public void testRenderInitialColumnSpans() throws IOException {
+    createGridColumns( grid, 3, SWT.NONE );
+
+    lca.render( item );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    CreateOperation operation = message.findCreateOperation( item );
+    assertTrue( operation.getProperties().names().indexOf( "columnSpans" ) == -1 );
+  }
+
+  @Test
+  public void testRenderColumnSpans() throws IOException {
+    createGridColumns( grid, 3, SWT.NONE );
+
+    item.setColumnSpan( 1, 1 );
+    lca.renderChanges( item );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    JsonArray expected = JsonArray.readFrom( "[0, 1, 0]" );
+    assertEquals( expected, message.findSetProperty( item, "columnSpans" ) );
+  }
+
+  @Test
+  public void testRenderColumnSpansUnchanged() throws IOException {
+    createGridColumns( grid, 3, SWT.NONE );
+    Fixture.markInitialized( display );
+    Fixture.markInitialized( item );
+
+    item.setColumnSpan( 1, 1 );
+    Fixture.preserveWidgets();
+    lca.renderChanges( item );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertNull( message.findSetOperation( item, "columnSpans" ) );
+  }
+
+  @Test
+  public void testRenderColumnSpansReset() throws IOException {
+    createGridColumns( grid, 3, SWT.NONE );
+    Fixture.markInitialized( display );
+    Fixture.markInitialized( item );
+    item.setColumnSpan( 1, 1 );
+
+    Fixture.preserveWidgets();
+    item.setColumnSpan( 1, 0 );
+    lca.renderChanges( item );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( JsonValue.NULL, message.findSetProperty( item, "columnSpans" ) );
   }
 
   @Test

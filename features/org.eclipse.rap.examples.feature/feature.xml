@@ -19,10 +19,6 @@
       %license
    </license>
 
-   <url>
-      <update label="RAP 3.0 Repository" url="http://download.eclipse.org/rt/rap/3.0/"/>
-   </url>
-
    <requires>
       <import feature="org.eclipse.rap.feature" version="3.1.0" match="compatible"/>
    </requires>
@@ -120,6 +116,20 @@
 
    <plugin
          id="org.eclipse.rap.nebula.widgets.grid.demo.examples.source"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.rap.nebula.widgets.richtext.demo.examples"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.rap.nebula.widgets.richtext.demo.examples.source"
          download-size="0"
          install-size="0"
          version="0.0.0"

@@ -28,7 +28,7 @@ import org.eclipse.swt.internal.graphics.GCOperation.DrawText;
 import org.eclipse.swt.internal.graphics.GCOperation.FillGradientRectangle;
 import org.eclipse.swt.internal.graphics.GCOperation.SetClipping;
 import org.eclipse.swt.internal.graphics.GCOperation.SetProperty;
-import org.eclipse.swt.internal.graphics.IGCAdapter;
+import org.eclipse.swt.internal.graphics.GCOperation.SetTransform;
 import org.eclipse.swt.widgets.Control;
 
 
@@ -42,6 +42,7 @@ class ControlGC extends GCDelegate {
   private int lineCap;
   private int lineJoin;
   private Rectangle clippingRect;
+  private float[] transform = { 1, 0, 0, 1, 0, 0 };
 
   ControlGC( Control control ) {
     this.control = control;
@@ -183,6 +184,17 @@ class ControlGC extends GCDelegate {
   }
 
   @Override
+  void setTransform( float[] elements ) {
+    addGCOperation( new SetTransform( elements ) );
+    transform = elements;
+  }
+
+  @Override
+  float[] getTransform() {
+    return transform;
+  }
+
+  @Override
   Point stringExtent( String string ) {
     return TextSizeUtil.stringExtent( font, string );
   }
@@ -254,7 +266,7 @@ class ControlGC extends GCDelegate {
   }
 
   GCAdapter getGCAdapter() {
-    return ( GCAdapter )control.getAdapter( IGCAdapter.class );
+    return control.getAdapter( GCAdapter.class );
   }
 
   private void addGCOperation( GCOperation operation ) {
