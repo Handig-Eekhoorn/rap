@@ -1,6 +1,7 @@
 package org.eclipse.nebula.widgets.grid.aggregator;
 
 import java.text.NumberFormat;
+import java.util.function.Function;
 
 /**
  * Simply counts any value supplied to {@link #update(Object)} (including null).
@@ -8,35 +9,50 @@ import java.text.NumberFormat;
  */
 public class CountAggregate extends AbstractFooterAggregateProvider {
 
-	private long state=0l;
-	private final NumberFormat format;
+    private long state=0l;
+    private final NumberFormat format;
+    private final Function<Object, Boolean> filterFunction;
 
-	/**
-	 * 
-	 * @param format
-	 */
-	public CountAggregate(final NumberFormat format) {
-		this.format = format;
-	}
+    /**
+     *
+     * @param format
+     */
+    public CountAggregate(final NumberFormat format) {
+        this.format = format;
+        this.filterFunction = null;
+    }
 
-	/**
-	 */
-	public void clear() {
-		this.state=0l;
-	}
+    /**
+     *
+     * @param format
+     * @param filterFunction
+     */
+    public CountAggregate(NumberFormat format, Function<Object, Boolean> filterFunction) {
+        super();
+        this.format = format;
+        this.filterFunction = filterFunction;
+    }
 
-	/**
-	 * @return .
-	 */
-	public String getResult() {
-		return this.format.format(this.state);
-	}
+    /**
+     */
+    public void clear() {
+        this.state=0l;
+    }
 
-	/**
-	 * @param val  
-	 */
-	public void update(Object val) {
-		this.state++;
-	}
+    /**
+     * @return .
+     */
+    public String getResult() {
+        return this.format.format(this.state);
+    }
+
+    /**
+     * @param val
+     */
+    public void update(Object val) {
+        if(this.filterFunction == null || (this.filterFunction != null && this.filterFunction.apply(val).booleanValue())) {
+            this.state++;
+        }
+    }
 
 }
