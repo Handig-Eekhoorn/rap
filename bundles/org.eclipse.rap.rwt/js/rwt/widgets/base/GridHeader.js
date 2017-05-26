@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2015 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2011, 2017 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -23,6 +23,7 @@ rwt.qx.Class.define( "rwt.widgets.base.GridHeader", {
     this._scrollLeft = 0;
     this._footer = argsMap.footer ? true : false;
     this._baseAppearance = argsMap.appearance;
+    this._config = argsMap.config;
     this._dummyColumn = this._createDummyColumn();
     this._currentDragColumn = null;
     this._feedbackLabel = null;
@@ -100,13 +101,13 @@ rwt.qx.Class.define( "rwt.widgets.base.GridHeader", {
 
     _renderLabel : function( label, column ) {
       this._renderLabelLeft( label, column );
+      label.setCustomVariant( column.getCustomVariant() );
       label.setVisibility( column.getVisibility() && column.getWidth() > 0 );
       if( this._footer ) {
         this._renderFooterLabel( label, column );
       } else {
         this._renderHeaderLabel( label, column );
       }
-      label.setCustomVariant( column.getCustomVariant() );
       label.setHorizontalChildrenAlign( this._getAlignment( column ) );
       label.setWordWrap( column.getHeaderWordWrap() );
     },
@@ -138,7 +139,7 @@ rwt.qx.Class.define( "rwt.widgets.base.GridHeader", {
       label.setImage( column.getImage() );
       label.setToolTipText( column.getToolTipText() );
       label.setSortIndicator( column.getSortDirection() );
-      if( column.isGroup() ) {
+      if( column.isGroup() && column.getShowChevron() ) {
         label.setChevron( column.isExpanded() ? "expanded" : "collapsed" );
       }
       this._renderLabelY( label, column );
@@ -183,6 +184,7 @@ rwt.qx.Class.define( "rwt.widgets.base.GridHeader", {
       var dummyWidth = Math.max( 0, totalWidth - dummyLeft );
       this._dummyColumn.setLeft( dummyLeft );
       this._dummyColumn.setWidth( dummyWidth );
+      this._dummyColumn.setCustomVariant( this._config.variant );
     },
 
     _getDummyColumnLeft : function() {

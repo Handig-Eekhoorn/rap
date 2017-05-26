@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2014 EclipseSource and others.
+ * Copyright (c) 2011, 2017 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -524,6 +524,29 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
       tree.destroy();
     },
 
+    testCustomVariant_isInheritFromGrid : function() {
+      var tree = this._createTreeByProtocol( "w3", "w2", [] );
+      var column = this._createColumnByProtocol( "w4", "w3", [] );
+
+      tree.setCustomVariant( "variant_blue" );
+
+      assertEquals( "variant_blue", column.getCustomVariant() );
+      column.dispose();
+      tree.destroy();
+    },
+
+    testCustomVariant_canBeOverridden : function() {
+      var tree = this._createTreeByProtocol( "w3", "w2", [] );
+      var column = this._createColumnByProtocol( "w4", "w3", [] );
+
+      tree.setCustomVariant( "variant_blue" );
+      column.setCustomVariant( "variant_red" );
+
+      assertEquals( "variant_red", column.getCustomVariant() );
+      column.dispose();
+      tree.destroy();
+    },
+
     testSetHtmlAttribute : function() {
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
       var column = this._createColumnByProtocol( "w4", "w3", [] );
@@ -578,6 +601,28 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
 
       var label = this._getColumnLabel( tree, column );
       assertEquals( "up.gif", label.getCellContent( 2 ) );
+      assertEquals( [ 10, 15 ], label.getCellDimension( 2 ) );
+      column.dispose();
+      tree.destroy();
+    },
+
+    testRenderSortIndicator_withCustomVariant : function() {
+      var tree = this._createTreeByProtocol( "w3", "w2", [] );
+      var column = this._createColumnByProtocol( "w4", "w3", [] );
+      TestUtil.fakeAppearance( "tree-column-sort-indicator", {
+        style : function( states ) {
+          return {
+            "backgroundImage" : [ states.variant_foo ? "foo.gif" : "bar.gif", 10, 15 ]
+          };
+        }
+      } );
+
+      tree.setCustomVariant( "variant_foo" );
+      TestUtil.protocolSet( "w3", { "sortColumn" : "w4", "sortDirection" : "up" } );
+      TestUtil.flush();
+
+      var label = this._getColumnLabel( tree, column );
+      assertEquals( "foo.gif", label.getCellContent( 2 ) );
       assertEquals( [ 10, 15 ], label.getCellDimension( 2 ) );
       column.dispose();
       tree.destroy();
@@ -1201,6 +1246,33 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
       var column = ObjectRegistry.getObject( "w4" );
       assertTrue( column instanceof rwt.widgets.GridColumn );
       assertTrue( column.isGroup() );
+      assertFalse( column.getShowChevron() );
+      var label = this._getColumnLabel( tree, column );
+      assertIdentical( tree._header, label.getParent() );
+      assertEquals( "tree-column", label.getAppearance() );
+      assertTrue( label.hasState( "group" ) );
+      column.dispose();
+      tree.destroy();
+    },
+
+    testCreateColumnGroupByProtocol_withStyle_TOGGLE : function() {
+      var tree = this._createTreeByProtocol( "w3", "w2", [] );
+
+      MessageProcessor.processOperation( {
+        "target" : "w4",
+        "action" : "create",
+        "type" : "rwt.widgets.GridColumnGroup",
+        "properties" : {
+          "style" : ["TOGGLE"],
+          "parent" : "w3"
+        }
+      } );
+      TestUtil.flush();
+
+      var column = ObjectRegistry.getObject( "w4" );
+      assertTrue( column instanceof rwt.widgets.GridColumn );
+      assertTrue( column.isGroup() );
+      assertTrue( column.getShowChevron() );
       var label = this._getColumnLabel( tree, column );
       assertIdentical( tree._header, label.getParent() );
       assertEquals( "tree-column", label.getAppearance() );
@@ -1405,11 +1477,27 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
       tree.destroy();
     },
 
-    testRenderGroupChevron : function() {
+    testRenderGroupChevron_disabled : function() {
       this._fakeChevronAppearance();
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
       tree.setHeaderHeight( 50 );
       var column = this._createColumnGroupByProtocol( "w4", "w3", [] );
+
+      TestUtil.protocolSet( "w4", { "left" : 10, "width": 40, "height" : 23 } );
+      TestUtil.flush();
+
+      var label = this._getColumnLabel( tree, column );
+      assertNull( label.getCellContent( 2 ) );
+      assertEquals( [ 0, 0 ], label.getCellDimension( 2 ) );
+      column.dispose();
+      tree.destroy();
+    },
+
+    testRenderGroupChevron : function() {
+      this._fakeChevronAppearance();
+      var tree = this._createTreeByProtocol( "w3", "w2", [] );
+      tree.setHeaderHeight( 50 );
+      var column = this._createColumnGroupByProtocol( "w4", "w3", ["TOGGLE"] );
 
       TestUtil.protocolSet( "w4", { "left" : 10, "width": 40, "height" : 23 } );
       TestUtil.flush();
@@ -1425,7 +1513,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
       this._fakeChevronAppearance();
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
       tree.setHeaderHeight( 50 );
-      var column = this._createColumnGroupByProtocol( "w4", "w3", [] );
+      var column = this._createColumnGroupByProtocol( "w4", "w3", ["TOGGLE"] );
       TestUtil.protocolSet( "w4", { "left" : 10, "width": 40, "height" : 23 } );
       TestUtil.flush();
 
@@ -1442,7 +1530,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
       this._fakeChevronAppearance();
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
       tree.setHeaderHeight( 50 );
-      var column = this._createColumnGroupByProtocol( "w4", "w3", [] );
+      var column = this._createColumnGroupByProtocol( "w4", "w3", ["TOGGLE"] );
       TestUtil.protocolSet( "w4", { "left" : 10, "width": 40, "height" : 23 } );
       TestUtil.flush();
 
@@ -1459,7 +1547,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
       this._fakeChevronAppearance();
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
       tree.setHeaderHeight( 50 );
-      var column = this._createColumnGroupByProtocol( "w4", "w3", [] );
+      var column = this._createColumnGroupByProtocol( "w4", "w3", ["TOGGLE"] );
       TestUtil.protocolSet( "w4", { "left" : 10, "width": 40, "height" : 23 } );
       TestUtil.flush();
 
@@ -1478,7 +1566,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
       this._fakeChevronAppearance();
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
       tree.setHeaderHeight( 50 );
-      var column = this._createColumnGroupByProtocol( "w4", "w3", [] );
+      var column = this._createColumnGroupByProtocol( "w4", "w3", ["TOGGLE"] );
 
       TestUtil.protocolSet( "w4", { "left" : 10, "width": 50, "height" : 23, "text" : "x" } );
       TestUtil.flush();
@@ -1493,7 +1581,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
       this._fakeChevronAppearance();
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
       tree.setHeaderHeight( 50 );
-      var column = this._createColumnGroupByProtocol( "w4", "w3", [] );
+      var column = this._createColumnGroupByProtocol( "w4", "w3", ["TOGGLE"] );
 
       TestUtil.protocolSet( "w4", {
          "left" : 10,
@@ -1513,7 +1601,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
       this._fakeChevronAppearance();
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
       tree.setHeaderHeight( 50 );
-      var column = this._createColumnGroupByProtocol( "w4", "w3", [] );
+      var column = this._createColumnGroupByProtocol( "w4", "w3", ["TOGGLE"] );
 
       TestUtil.protocolSet( "w4", {
         "left" : 10,
@@ -1534,7 +1622,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
       tree.setHeaderHeight( 50 );
       TestUtil.initRequestLog();
-      var column = this._createColumnGroupByProtocol( "w4", "w3", [] );
+      var column = this._createColumnGroupByProtocol( "w4", "w3", ["TOGGLE"] );
       TestUtil.protocolSet( "w4", { "left" : 10, "width": 40, "height" : 23 } );
       TestUtil.protocolListen( "w4", { "Collapse" : true } );
       TestUtil.flush();
@@ -1554,7 +1642,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
       tree.setHeaderHeight( 50 );
       TestUtil.initRequestLog();
-      var column = this._createColumnGroupByProtocol( "w4", "w3", [] );
+      var column = this._createColumnGroupByProtocol( "w4", "w3", ["TOGGLE"] );
       TestUtil.protocolSet( "w4", { "left" : 10, "width": 40, "height" : 23, "expanded" : false } );
       TestUtil.protocolListen( "w4", { "Expand" : true } );
       TestUtil.flush();
@@ -1575,7 +1663,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
       tree.setHeaderHeight( 50 );
       TestUtil.initRequestLog();
-      var column = this._createColumnGroupByProtocol( "w4", "w3", [] );
+      var column = this._createColumnGroupByProtocol( "w4", "w3", ["TOGGLE"] );
       TestUtil.protocolSet( "w4", { "left" : 10, "width": 40, "height" : 23 } );
       TestUtil.flush();
 
@@ -1595,7 +1683,7 @@ rwt.qx.Class.define( "org.eclipse.rwt.test.tests.GridColumnTest", {
       var tree = this._createTreeByProtocol( "w3", "w2", [] );
       tree.setHeaderHeight( 50 );
       TestUtil.initRequestLog();
-      var column = this._createColumnGroupByProtocol( "w4", "w3", [] );
+      var column = this._createColumnGroupByProtocol( "w4", "w3", ["TOGGLE"] );
       TestUtil.protocolSet( "w4", { "left" : 10, "width": 40, "height" : 23, "expanded" : false } );
       TestUtil.flush();
 
@@ -1864,6 +1952,7 @@ describe( "GridHeader", function() {
       columnOrder[ i ] = column;
     }
     grid.getColumnOrder.andReturn( columnOrder );
+    grid.getRenderConfig.andReturn( {} );
   } );
 
   afterEach( function(){
@@ -1877,7 +1966,8 @@ describe( "GridHeader", function() {
 
     beforeEach( function(){
       header = new GridHeader( {
-        "appearance" : "table"
+        "appearance" : "table",
+        "config" : {}
       } );
       label = header._getLabelByColumn( columns[ 0 ] );
     } );
@@ -1906,7 +1996,8 @@ describe( "GridHeader", function() {
     beforeEach( function(){
       footer = new GridHeader( {
         "appearance" : "table",
-        "footer" : true
+        "footer" : true,
+        "config" : {}
       } );
       label = footer._getLabelByColumn( columns[ 0 ] );
     } );
