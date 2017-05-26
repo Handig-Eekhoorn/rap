@@ -11,6 +11,7 @@
  *******************************************************************************/ 
 package org.eclipse.nebula.jface.gridviewer;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -65,6 +66,27 @@ public class GridTreeViewer extends AbstractTreeViewer {
 	private boolean autoPreferredHeight = false;
 	
 	private CellLabelProvider rowHeaderLabelProvider;
+
+	/**
+	 * The total number of rows in the viewer. Updated by {@link #updateFooterAggregates()}.
+	 */
+	private int rowCountRaw;
+
+	/**
+	 * The number of rows passing the filters in the viewer. Updated by {@link #updateFooterAggregates()}.
+	 */
+	private int rowCountFiltered;
+
+	/**
+	 * Controls whether {@link #updateFooterAggregates()} should also count
+	 * the rows. 
+	 */
+	private boolean rowCountEnabled;
+
+	/**
+	 * List of refresh listeners
+	 */
+	private ArrayList<Runnable> refreshListeners = new ArrayList<>(0);
 
 
 	/**
@@ -418,15 +440,30 @@ public class GridTreeViewer extends AbstractTreeViewer {
 	 * 
 	 */
 	public void refresh(final Object element) {
-		if (this.grid.hasFooterAggregate()){
+		if (this.grid.hasFooterAggregate() || this.rowCountEnabled){
 			updateFooterAggregates();
 		}
 		super.refresh(element);
+		
+		fireRefresh();
 	}
 	
-	private void updateFooterAggregates() {
-		final int colCount = doGetColumnCount();
+	private void fireRefresh() {
+		for(final Runnable r: this.refreshListeners) {
+			r.run();
+		}
+	}
 
+	private void updateFooterAggregates() {
+		this.rowCountRaw = 0;
+		this.rowCountFiltered = 0;
+		
+		if (this.rowCountEnabled){
+			final Object[] rows = this.getRawChildren(getRoot());
+			this.rowCountRaw += rows.length;
+		}
+
+		final int colCount = doGetColumnCount();
 		/*
 		 * Minimize the number of calls to the content provider
 		 * and the items/rows itself, since their behaviour
@@ -434,7 +471,10 @@ public class GridTreeViewer extends AbstractTreeViewer {
 		 * cheap.
 		 */
 		final Object[] rows = this.getFilteredChildren(getRoot());
+		if (this.rowCountEnabled) this.rowCountFiltered += rows.length;
 		final GridColumn[] cols = new GridColumn[colCount];
+
+		
 
 		boolean anyRecursive = false;
 		for(int c=0; c<colCount; c++){
@@ -450,7 +490,7 @@ public class GridTreeViewer extends AbstractTreeViewer {
 		}
 		for(int r=0; r<rows.length; r++){
 			final Object row = rows[r];
-			updateFooterAggregatesRecursion(row, cols, 0, anyRecursive);
+			updateFooterAggregatesRecursion(row, cols, 0, anyRecursive || this.rowCountEnabled);
 		}
 		for(int c=0; c<colCount; c++){
 			final GridColumn col = cols[c];
@@ -473,13 +513,20 @@ public class GridTreeViewer extends AbstractTreeViewer {
 	 */
 	private void updateFooterAggregatesRecursion(
 			final Object row, final GridColumn[] cols, final int level,
-			final boolean anyRecursive
-			) {
+			final boolean anyRecursiveOrRowCountEnabled
+	) {
+		if (this.rowCountEnabled){
+			final Object[] rows = this.getRawChildren(row);
+			this.rowCountRaw += rows==null  ? 0  : rows.length;
+		}
+		
+		
 		final Object[] children;
 		final boolean isLeaf;
-		if (anyRecursive){
+		if (anyRecursiveOrRowCountEnabled){
 			children = getFilteredChildren(row);
 			isLeaf = children==null || children.length==0;
+			if (this.rowCountEnabled) this.rowCountRaw+= children==null ? 0 : children.length;
 		}else{
 			children = null;
 			isLeaf = false;
@@ -502,10 +549,66 @@ public class GridTreeViewer extends AbstractTreeViewer {
 				}
 			}
 		}
-		if (anyRecursive && children!=null){
+		if (anyRecursiveOrRowCountEnabled && children!=null){
 			for(int r=0; r<children.length; r++)
-				updateFooterAggregatesRecursion(children[r], cols, level+1, anyRecursive);
+				updateFooterAggregatesRecursion(children[r], cols, level+1, anyRecursiveOrRowCountEnabled);
 		}
 	}
 
+	/**
+	 * Does this viewer report row counts?
+	 * @see #setRowCountEnabled(boolean)
+	 * @see #getRowCountFiltered()
+	 * @see #getRowCountRaw()
+	 * @return true, if {@link #setRowCountEnabled(boolean)} was set to true, or
+	 *  	any column in the viewer has a footer provider set.
+	 */
+	public boolean isRowCountEnabled() {
+		return this.rowCountEnabled || this.grid.hasFooterAggregate();
+	}
+
+	/**
+	 * Enables row-counting for this viewer.
+	 * @see #isRowCountEnabled()
+	 * @see #getRowCountFiltered()
+	 * @see #getRowCountRaw()
+	 * @param rowCountEnabled
+	 */
+	public void setRowCountEnabled(boolean rowCountEnabled) {
+		final boolean before = isRowCountEnabled();
+		this.rowCountEnabled = rowCountEnabled;
+		if (rowCountEnabled && ! before){
+			updateFooterAggregates();
+		}
+	}
+
+	/**
+	 * The number of all rows considered in the view.
+	 * @see #isRowCountEnabled()
+	 * @see #getRowCountFiltered()
+	 * @return number
+	 */
+	public int getRowCountRaw() {
+		if (! this.rowCountEnabled) throw new IllegalStateException("rowCount is not enabled.");
+		return this.rowCountRaw;
+	}
+
+	/**
+	 * The number of all rows passing the filters.
+	 * @see #isRowCountEnabled()
+	 * @see #getRowCountRaw()
+	 * @return
+	 */
+	public int getRowCountFiltered() {
+		if (! this.rowCountEnabled) throw new IllegalStateException("rowCount is not enabled.");
+		return this.rowCountFiltered;
+	}
+
+	/**
+	 * Adds a listener to be called when a refresh has been processed.
+	 * @param r
+	 */
+	public void addRefreshListener(Runnable r) {
+		this.refreshListeners.add(r);
+	}
 }
