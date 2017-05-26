@@ -488,7 +488,7 @@ public class GridTreeViewer extends AbstractTreeViewer {
 		}
 		for(int r=0; r<rows.length; r++){
 			final Object row = rows[r];
-			updateFooterAggregatesRecursion(row, cols, 0, anyRecursive || this.rowCountEnabled);
+			updateFooterAggregatesRecursion(row, cols, 0, anyRecursive);
 		}
 		for(int c=0; c<colCount; c++){
 			final GridColumn col = cols[c];
@@ -507,24 +507,17 @@ public class GridTreeViewer extends AbstractTreeViewer {
 	 * @param row Current item
 	 * @param cols All columns
 	 * @param level current depth
-	 * @param anyRecursiveOrRowCountEnabled Does any aggregate require to walk the tree down?
+	 * @param anyRecursive Does any aggregate require to walk the tree down?
 	 */
 	private void updateFooterAggregatesRecursion(
 			final Object row, final GridColumn[] cols, final int level,
-			final boolean anyRecursiveOrRowCountEnabled
+			final boolean anyRecursive
 	) {
-		if (this.rowCountEnabled){
-			final Object[] rows = this.getRawChildren(row);
-			this.rowCountRaw += rows==null  ? 0  : rows.length;
-		}
-		
-		
 		final Object[] children;
 		final boolean isLeaf;
-		if (anyRecursiveOrRowCountEnabled){
+		if (anyRecursive){
 			children = getFilteredChildren(row);
 			isLeaf = children==null || children.length==0;
-			if (this.rowCountEnabled) this.rowCountRaw+= children==null ? 0 : children.length;
 		}else{
 			children = null;
 			isLeaf = false;
@@ -547,9 +540,9 @@ public class GridTreeViewer extends AbstractTreeViewer {
 				}
 			}
 		}
-		if (anyRecursiveOrRowCountEnabled && children!=null){
+		if (anyRecursive && children!=null){
 			for(int r=0; r<children.length; r++)
-				updateFooterAggregatesRecursion(children[r], cols, level+1, anyRecursiveOrRowCountEnabled);
+				updateFooterAggregatesRecursion(children[r], cols, level+1, anyRecursive);
 		}
 	}
 
