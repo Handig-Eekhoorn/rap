@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2015 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2009, 2017 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -46,6 +46,8 @@ import org.eclipse.rap.rwt.theme.BoxDimensions;
 import org.eclipse.rap.rwt.theme.ControlThemeAdapter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
+import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.DragDetectListener;
 import org.eclipse.swt.events.FocusAdapter;
@@ -272,6 +274,46 @@ public class Control_Test {
     Control control = new Button( shell, SWT.PUSH );
 
     IControlAdapter adapter = ControlUtil.getControlAdapter( control );
+
+    assertEquals( -1, adapter.getTabIndex() );
+  }
+
+  @Test
+  public void testSetTabIndex_onControl() {
+    Control control = new Button( shell, SWT.PUSH );
+
+    IControlAdapter adapter = ControlUtil.getControlAdapter( control );
+    adapter.setTabIndex( 5 );
+
+    assertEquals( 5, adapter.getTabIndex() );
+  }
+
+  @Test
+  public void testSetTabIndex_onScrolledComposite() {
+    Control control = new ScrolledComposite( shell, SWT.NONE );
+
+    IControlAdapter adapter = ControlUtil.getControlAdapter( control );
+    adapter.setTabIndex( 5 );
+
+    assertEquals( -1, adapter.getTabIndex() );
+  }
+
+  @Test
+  public void testSetTabIndex_onComposite() {
+    Control control = new Composite( shell, SWT.NONE );
+
+    IControlAdapter adapter = ControlUtil.getControlAdapter( control );
+    adapter.setTabIndex( 5 );
+
+    assertEquals( -1, adapter.getTabIndex() );
+  }
+
+  @Test
+  public void testSetTabIndex_onSashForm() {
+    Control control = new SashForm( shell, SWT.NONE );
+
+    IControlAdapter adapter = ControlUtil.getControlAdapter( control );
+    adapter.setTabIndex( 5 );
 
     assertEquals( -1, adapter.getTabIndex() );
   }
@@ -1551,6 +1593,35 @@ public class Control_Test {
     shell.setData( RWT.TOOLTIP_MARKUP_ENABLED, Boolean.FALSE );
 
     assertEquals( Boolean.TRUE, shell.getData( RWT.TOOLTIP_MARKUP_ENABLED ) );
+  }
+
+  @Test
+  public void testPadding() throws IOException {
+    String css = "Composite { padding: 1px 2px 3px 4px }";
+    ThemeTestUtil.registerTheme( "custom", css, null );
+    ThemeTestUtil.setCurrentThemeId( "custom" );
+
+    Composite composite = new Composite( shell, SWT.NONE );
+
+    BoxDimensions expected = new BoxDimensions( 1, 2, 3, 4 );
+    assertEquals( expected, composite.getPadding() );
+  }
+
+  @Test
+  public void testPadding_afterSettingCustomVariant() throws IOException {
+    String css = "Composite { padding: 1px 2px 3px 4px } "
+               + "Composite.abc { padding: 5px 6px 7px 8px }";
+    ThemeTestUtil.registerTheme( "custom", css, null );
+    ThemeTestUtil.setCurrentThemeId( "custom" );
+
+    Composite composite = new Composite( shell, SWT.NONE );
+    // buffer the padding
+    composite.getPadding();
+    composite.setData( RWT.CUSTOM_VARIANT, "abc" );
+
+
+    BoxDimensions expected = new BoxDimensions( 5, 6, 7, 8 );
+    assertEquals( expected, composite.getPadding() );
   }
 
   @Test

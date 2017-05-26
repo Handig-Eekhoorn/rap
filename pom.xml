@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright (C) 2014, 2015 EclipseSource and others.
+  Copyright (C) 2014, 2016 EclipseSource and others.
   All rights reserved. This program and the accompanying materials
   are made available under the terms of the Eclipse Public License v1.0
   which accompanies this distribution, and is available at
@@ -19,7 +19,7 @@
   <groupId>org.eclipse.rap</groupId>
   <artifactId>org.eclipse.rap.runtime-build</artifactId>
   <packaging>pom</packaging>
-  <version>3.1.0-SNAPSHOT</version>
+  <version>3.2.0-SNAPSHOT</version>
 
   <modules>
     <!-- Runtime projects -->
@@ -37,6 +37,14 @@
     <module>bundles/org.eclipse.rap.ui</module>
     <module>bundles/org.eclipse.rap.ui.views</module>
     <module>bundles/org.eclipse.rap.ui.workbench</module>
+    <!-- e4 Runtime projects -->
+    <module>bundles/org.eclipse.e4.core.commands</module>
+    <module>bundles/org.eclipse.e4.ui.bindings</module>
+    <module>bundles/org.eclipse.e4.ui.workbench.addons.swt</module>
+    <module>bundles/org.eclipse.e4.ui.workbench.renderers.swt</module>
+    <module>bundles/org.eclipse.e4.ui.workbench.swt</module>
+    <module>bundles/org.eclipse.e4.ui.workbench</module>
+    <module>bundles/org.eclipse.rap.e4</module>
     <!-- Examples projects -->
     <module>examples/org.eclipse.rap.demo.controls</module>
     <module>examples/org.eclipse.rap.demo.databinding</module>
@@ -65,8 +73,11 @@
     <module>features/org.eclipse.rap.examples.feature</module>
     <module>features/org.eclipse.rap.feature</module>
     <module>features/org.eclipse.rap.sdk.feature</module>
+    <module>features/org.eclipse.rap.e4.base.feature</module>
+    <module>features/org.eclipse.rap.e4.target.feature</module>
     <!-- Repository projects -->
     <module>releng/org.eclipse.rap.build/repository</module>
+    <module>releng/org.eclipse.rap.build/repository.e4</module>
     <!-- Builder projects -->
     <module>releng/org.eclipse.rap.clientbuilder</module>
   </modules>
