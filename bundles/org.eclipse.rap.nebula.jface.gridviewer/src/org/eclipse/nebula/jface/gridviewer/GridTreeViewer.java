@@ -474,8 +474,6 @@ public class GridTreeViewer extends AbstractTreeViewer {
 		if (this.rowCountEnabled) this.rowCountFiltered += rows.length;
 		final GridColumn[] cols = new GridColumn[colCount];
 
-		
-
 		boolean anyRecursive = false;
 		for(int c=0; c<colCount; c++){
 			final GridColumn col = (GridColumn) getColumnViewerOwner(c);
@@ -509,7 +507,7 @@ public class GridTreeViewer extends AbstractTreeViewer {
 	 * @param row Current item
 	 * @param cols All columns
 	 * @param level current depth
-	 * @param anyRecursive Does any aggregate require to walk the tree down?
+	 * @param anyRecursiveOrRowCountEnabled Does any aggregate require to walk the tree down?
 	 */
 	private void updateFooterAggregatesRecursion(
 			final Object row, final GridColumn[] cols, final int level,
