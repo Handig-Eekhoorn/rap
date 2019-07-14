@@ -439,6 +439,7 @@ public class GridTreeViewer extends AbstractTreeViewer {
 	 * @param element 
 	 * 
 	 */
+	@Override
 	public void refresh(final Object element) {
 		if (this.grid.hasFooterAggregate() || this.rowCountEnabled){
 			updateFooterAggregates();
@@ -447,7 +448,20 @@ public class GridTreeViewer extends AbstractTreeViewer {
 		
 		fireRefresh();
 	}
-	
+
+	/**
+	 * @param updateLabels 
+	 */
+	@Override
+	public void refresh(boolean updateLabels
+		if (this.grid.hasFooterAggregate() || this.rowCountEnabled){
+			updateFooterAggregates();
+		}
+		super.refresh(updateLabels);
+		
+		fireRefresh();
+	}	
+			    
 	private void fireRefresh() {
 		for(final Runnable r: this.refreshListeners) {
 			r.run();
