@@ -371,6 +371,39 @@ public class GridTableViewer extends AbstractTableViewer {
 		}
 	}
 
+		/**
+	 * @param element 
+	 * 
+	 */
+	@Override
+	public void refresh(final Object element) {
+		if (this.grid.hasFooterAggregate() || this.rowCountEnabled){
+			updateFooterAggregates();
+		}
+		super.refresh(element);
+		
+		fireRefresh();
+	}
+
+	/**
+	 * @param updateLabels 
+	 */
+	@Override
+	public void refresh(boolean updateLabels
+		if (this.grid.hasFooterAggregate() || this.rowCountEnabled){
+			updateFooterAggregates();
+		}
+		super.refresh(updateLabels);
+		
+		fireRefresh();
+	}	
+			    
+	private void fireRefresh() {
+		for(final Runnable r: this.refreshListeners) {
+			r.run();
+		}
+	}
+	
 	/**
 	 * {@inheritDoc}
 	 */
@@ -497,7 +530,7 @@ public class GridTableViewer extends AbstractTableViewer {
 //		int curLine = -1;
 //
 //		for (int i = 0; i < ps.length; i++) {
-//			if (curLine != ps[i].y) {
+//			if (curLine != ps[i].y) {15.07.2019
 //				curLine = ps[i].y;
 //				indiceList = new ArrayList();
 //
