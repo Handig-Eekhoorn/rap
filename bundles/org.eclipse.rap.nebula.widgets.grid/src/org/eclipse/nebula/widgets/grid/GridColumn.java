@@ -13,6 +13,7 @@ package org.eclipse.nebula.widgets.grid;
 import static org.eclipse.swt.internal.widgets.MarkupUtil.isToolTipMarkupEnabledFor;
 import static org.eclipse.swt.internal.widgets.MarkupValidator.isValidationDisabledFor;
 
+import org.eclipse.nebula.widgets.grid.aggregator.IFooterAggregateProvider;
 import org.eclipse.nebula.widgets.grid.internal.gridcolumnkit.GridColumnLCA;
 import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
@@ -52,6 +53,22 @@ public class GridColumn extends Item {
   private static final int MARGIN_IMAGE = 3;
   private static final int DEFAULT_WIDTH = 10;
 
+  /**
+  * When aggregating for the footer, consider only the root elements.
+  */
+ public static final int FOOTERAGGREGATE_ROOT = 1;
+ /**
+  * When aggregating for the footer, recursive through the tree but only
+  * consider leaves.
+  */
+ public static final int FOOTERAGGREGATE_LEAVES = 2;
+ /**
+  * When aggregating for the footer, consider only elements that
+  * are neither root nor a leaf.
+  */
+ public static final int FOOTERAGGREGATE_MIDNODE = 4;
+
+
   private int width = DEFAULT_WIDTH;
   private int minimumWidth;
   private Grid parent;
@@ -77,6 +94,10 @@ public class GridColumn extends Item {
   private boolean headerWordWrap;
   int imageCount;
   int textCount;
+
+  private IFooterAggregateProvider footerAggregate;
+  private int footerAggregateRecursionStyle;
+
 
   /**
    * Constructs a new instance of this class given its parent (which must be a
@@ -1292,4 +1313,51 @@ public class GridColumn extends Item {
     notifyListeners( SWT.Move, event );
   }
 
+  /**
+   * Is there any aggregation wanted for this column?
+   * @return The current footer aggregator.
+   */
+  public IFooterAggregateProvider getFooterAggregate() {
+      checkWidget();
+      return this.footerAggregate;
+  }
+
+  /**
+   * Sets the aggregate to display in this column. If the argument is non-null,
+   * the parent Grid's footer is automatically enabled.
+   * <b>Attention:</b> if an aggregate provider is set, all footer style options
+   * ({@link #setFooterFont(Font)}, {@link #setFooterImage(Image)}
+   * {@link #setFooterText(String)}) will be fetched from that provider upon refresh and hence override
+   * any values that might have been previously set.
+   * @param footerAggregate The aggregate; null to disable.
+   */
+  public void setFooterAggregate(final IFooterAggregateProvider footerAggregate) {
+      checkWidget();
+      this.footerAggregate = footerAggregate;
+      if (footerAggregate!=null){
+          this.parent.setFooterVisible(true);
+          this.parent.setHasFooterAggregate(true);
+      }else{
+          this.parent.updateHasFooterAggregate();
+      }
+  }
+
+  /**
+   * Sets the recursion style for the footer aggregate (bitmask)
+   * @param footerRecursionStyle .
+   * @see #FOOTERAGGREGATE_MIDNODE
+   * @see #FOOTERAGGREGATE_LEAVES
+   * @see #FOOTERAGGREGATE_ROOT
+   */
+  public void setFooterAggregateRecursionStyle(final int footerRecursionStyle){
+      this.footerAggregateRecursionStyle = footerRecursionStyle;
+  }
+
+  /**
+   * The footer aggregator's recursion style.
+   * @return .
+   */
+  public int getFooterAggregateRecursionStyle() {
+      return this.footerAggregateRecursionStyle;
+  }
 }
