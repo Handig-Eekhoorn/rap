@@ -10,6 +10,7 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Import-Package: javax.servlet;version="[3.1.0,5.0.0)",
  javax.servlet.http;version="[3.1.0,5.0.0)"
 Export-Package: org.eclipse.nebula.widgets.grid,
+ org.eclipse.nebula.widgets.grid.aggregator,
  org.eclipse.nebula.widgets.grid.internal;x-friends:="org.eclipse.rap.nebula.widgets.grid.test",
  org.eclipse.nebula.widgets.grid.internal.gridcolumngroupkit;x-friends:="org.eclipse.rap.nebula.widgets.grid.test",
  org.eclipse.nebula.widgets.grid.internal.gridcolumnkit;x-friends:="org.eclipse.rap.nebula.widgets.grid.test",

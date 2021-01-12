@@ -109,6 +109,7 @@ public class Grid extends Composite {
   boolean hasDifferingHeights;
   private boolean hasSpanning;
   LayoutCache layoutCache;
+  private boolean hasFooterAggregate = false;
 
   /**
    * Constructs a new instance of this class given its parent and a style
@@ -4379,4 +4380,38 @@ public class Grid extends Composite {
 
   }
 
+  /**
+   * Does any column have an aggregating footer ?
+   * @return .
+   */
+  public boolean hasFooterAggregate() {
+      checkWidget();
+      return this.hasFooterAggregate;
+  }
+
+  /**
+   * MUST ONLY BE CALLED BY GridColumn#setFooterAggregate
+   * @param hasFooterAggregate
+   */
+  void setHasFooterAggregate(boolean hasFooterAggregate) {
+      checkWidget();
+      this.hasFooterAggregate = hasFooterAggregate;
+  }
+
+  /**
+   * MUST ONLY BE CALLED BY GridColumn#setFooterAggregate
+   * @param hasFooterAggregate
+   */
+  void updateHasFooterAggregate(){
+      checkWidget();
+      final int columnCount = getColumnCount();
+      for(int i=0; i<columnCount; i++){
+          final GridColumn col = getColumn(i);
+          if (col.getFooterAggregate()!=null){
+              this.hasFooterAggregate = true;
+              return ;
+          }
+      }
+      this.hasFooterAggregate = false;
+  }
 }
