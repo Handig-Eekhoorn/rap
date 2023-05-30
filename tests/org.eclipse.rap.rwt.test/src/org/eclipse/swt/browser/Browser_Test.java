@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2002, 2016 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2002, 2020 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -21,7 +21,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -330,6 +330,11 @@ public class Browser_Test {
   @Test
   public void testGetWebBrowser() {
     assertNull( browser.getWebBrowser() );
+  }
+
+  @Test
+  public void testGetBrowserType() {
+    assertEquals( "iframe", browser.getBrowserType() );
   }
 
   @Test

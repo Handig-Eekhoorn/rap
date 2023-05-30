@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2008, 2017 Innoopract Informationssysteme GmbH.
+ * Copyright (c) 2008, 2020 Innoopract Informationssysteme GmbH.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -613,7 +613,7 @@ rwt.qx.Class.define("rwt.widgets.base.Calendar", {
 
         var dayLabel = this._weekdayLabelArr[i];
 
-        helpDate.setDate(firstSundayInMonth + day);
+        helpDate = new Date(this.getShownYear(), this.getShownMonth(), firstSundayInMonth + day);
 
         var weekdayName = rwt.widgets.base.Calendar.WEEKDAY_NAMES[ helpDate.getDay() + 1 ];
 
@@ -881,8 +881,7 @@ rwt.qx.Class.define("rwt.widgets.base.Calendar", {
      * @return {String} territory
      */
     __getTerritory : function() {
-        var territory = rwt.client.Client.getTerritory() || rwt.client.Client.getLanguage();
-      return territory.toUpperCase();
+      return rwt.client.Client.getTerritory().toUpperCase();
     },
 
     _applyMinimum : function() {

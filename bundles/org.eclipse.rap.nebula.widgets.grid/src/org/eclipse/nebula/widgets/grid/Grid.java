@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2017 EclipseSource and others.
+ * Copyright (c) 2012, 2021 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,7 +10,9 @@
  ******************************************************************************/
 package org.eclipse.nebula.widgets.grid;
 
+import static org.eclipse.swt.internal.widgets.MarkupUtil.checkMarkupPrecondition;
 import static org.eclipse.swt.internal.widgets.MarkupUtil.isMarkupEnabledFor;
+import static org.eclipse.swt.internal.widgets.MarkupUtil.MarkupTarget.TEXT;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -27,6 +29,7 @@ import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCA;
 import org.eclipse.rap.rwt.internal.textsize.TextSizeUtil;
 import org.eclipse.rap.rwt.internal.theme.Size;
 import org.eclipse.rap.rwt.internal.theme.ThemeAdapter;
+import org.eclipse.rap.rwt.template.Template;
 import org.eclipse.rap.rwt.theme.BoxDimensions;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionListener;
@@ -48,10 +51,6 @@ import org.eclipse.swt.widgets.TypedListener;
 
 
 /**
- * <p>
- * NOTE:  THIS WIDGET AND ITS API ARE STILL UNDER DEVELOPMENT.  THIS IS A PRE-RELEASE ALPHA
- * VERSION.  USERS SHOULD EXPECT API CHANGES IN FUTURE VERSIONS.
- * </p>
  * Instances of this class implement a selectable user interface object that
  * displays a list of images and strings and issue notification when selected.
  * <p>
@@ -79,6 +78,10 @@ public class Grid extends Composite {
   private List<GridColumn> displayOrderedColumns = new ArrayList<GridColumn>();
   private List<GridColumnGroup> columnGroups = new ArrayList<GridColumnGroup>();
   private GridItem focusItem;
+  private GridColumn focusColumn;
+  private GridColumn treeColumn;
+  private GridColumn rowHeadersColumn;
+  private boolean isInternalColumn;
   private boolean isTree;
   private boolean disposing;
   private boolean columnHeadersVisible;
@@ -98,6 +101,7 @@ public class Grid extends Composite {
   private IScrollBarProxy vScroll;
   private IScrollBarProxy hScroll;
   private boolean scrollValuesObsolete;
+  private boolean defaultRowHeadersTextObsolete;
   private int topIndex = -1;
   private int bottomIndex = -1;
   private boolean bottomIndexShownCompletely;
@@ -147,6 +151,7 @@ public class Grid extends Composite {
     gridAdapter = new GridAdapter();
     layoutCache = new LayoutCache();
     initListeners();
+    createRowHeadersColumn();
   }
 
   /**
@@ -1131,6 +1136,67 @@ public class Grid extends Composite {
   }
 
   /**
+   * Returns true if the cells are selectable in the reciever.
+   *
+   * @return cell selection enablement status.
+   * @throws org.eclipse.swt.SWTException
+   *           <ul>
+   *           <li>ERROR_WIDGET_DISPOSED - if the receiver has been disposed</li>
+   *           <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread that created the
+   *           receiver</li>
+   *           </ul>
+   *
+   * @since 3.13
+   */
+  public boolean getCellSelectionEnabled() {
+    checkWidget();
+    return cellSelectionEnabled;
+  }
+
+  /**
+   * Sets whether cells are selectable in the receiver.
+   * <p>
+   * Note: Using markup in the cell text will require <em>data-cell-index</em> attribute to be added
+   * to the HTML element that points to the cell column index. Row header column (visible or not)
+   * always has index 0.
+   * </p>
+   *
+   * @param cellSelection the cellSelection to set
+   * @throws org.eclipse.swt.SWTException
+   *           <ul>
+   *           <li>ERROR_WIDGET_DISPOSED - if the receiver has been disposed</li>
+   *           <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread that created the
+   *           receiver</li>
+   *           </ul>
+   *
+   * @since 3.13
+   */
+  public void setCellSelectionEnabled( boolean cellSelection ) {
+    checkWidget();
+    if( cellSelection ) {
+      if( ( getStyle() & SWT.SINGLE ) == 0 ) {
+        // To keep compatibility, one can selected multiple cells
+        selectionType = SWT.MULTI;
+      }
+      selectedItems.clear();
+    } else {
+      selectedCells.clear();
+    }
+    cellSelectionEnabled = cellSelection;
+  }
+
+  /**
+   * Returns true if the cells are selectable in the reciever.
+   *
+   * @return cell selection enablement status.
+   *
+   * @since 3.13
+   */
+  public boolean isCellSelectionEnabled() {
+    return cellSelectionEnabled;
+  }
+
+  /**
    * Selects the item at the given zero-relative index in the receiver. If the
    * item at the index was already selected, it remains selected. Indices that
    * are out of range are ignored.
@@ -1248,13 +1314,159 @@ public class Grid extends Composite {
     checkWidget();
     if( selectionEnabled && selectionType != SWT.SINGLE ) {
       if( cellSelectionEnabled ) {
-// TODO: [if] Implement cell selection
-//        selectAllCells();
+        selectAllCells();
       } else {
         selectedItems.clear();
         selectedItems.addAll( items );
       }
     }
+  }
+
+  /**
+   * Selects the given cell. Invalid cells are ignored.
+   *
+   * @param cell
+   *            point whose x value is a column index and y value is an item
+   *            index
+   * @throws IllegalArgumentException
+   *             <ul>
+   *             <li>ERROR_NULL_ARGUMENT - if the item is null</li>
+   *             </ul>
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public void selectCell( Point cell ) {
+    checkWidget();
+    if( cellSelectionEnabled ) {
+      if( cell == null ) {
+        SWT.error( SWT.ERROR_NULL_ARGUMENT );
+      }
+      addToCellSelection( cell );
+    }
+  }
+
+  /**
+   * Selects the given cells. Invalid cells are ignored.
+   *
+   * @param cells
+   *            an arry of points whose x value is a column index and y value is
+   *            an item index
+   * @throws IllegalArgumentException
+   *             <ul>
+   *             <li>ERROR_NULL_ARGUMENT - if the set of cells or an individual
+   *             cell is null</li>
+   *             </ul>
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public void selectCells( Point[] cells ) {
+    checkWidget();
+    if( cellSelectionEnabled ) {
+      if( cells == null ) {
+        SWT.error( SWT.ERROR_NULL_ARGUMENT );
+      }
+      for( Point cell : cells ) {
+        if( cell == null ) {
+          SWT.error( SWT.ERROR_NULL_ARGUMENT );
+        }
+      }
+      for( Point cell : cells ) {
+        addToCellSelection( cell );
+      }
+    }
+  }
+
+  /**
+   * Selects all cells in the receiver.
+   *
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public void selectAllCells() {
+    checkWidget();
+    internalSelectAll();
+  }
+
+  /**
+   * Selects all cells in the given column in the receiver.
+   *
+   * @param col
+   *
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public void selectColumn( int col ) {
+    checkWidget();
+    selectCells( getCells( getColumn( col ) ) );
+  }
+
+  /**
+   * Selects all cells in the given column group in the receiver.
+   *
+   * @param colGroup
+   *            the column group
+   *
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public void selectColumnGroup( int colGroup ) {
+    selectColumnGroup( getColumnGroup( colGroup ) );
+  }
+
+  /**
+   * Selects all cells in the given column group in the receiver.
+   *
+   * @param colGroup
+   *            the column group
+   *
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public void selectColumnGroup( GridColumnGroup colGroup ) {
+    checkWidget();
+    selectCells( getCells( colGroup ) );
   }
 
   /**
@@ -1349,6 +1561,88 @@ public class Grid extends Composite {
   public void deselectAll() {
     checkWidget();
     internalDeselectAll();
+  }
+
+  /**
+   * Deselects the given cell in the receiver. If the given cell is already
+   * deselected it remains deselected. Invalid cells are ignored.
+   *
+   * @param cell
+   *            cell to deselect.
+   * @throws IllegalArgumentException
+   *             <ul>
+   *             <li>ERROR_NULL_ARGUMENT - if the cell is null</li>
+   *             </ul>
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public void deselectCell( Point cell ) {
+    checkWidget();
+    if( cell == null ) {
+      SWT.error( SWT.ERROR_NULL_ARGUMENT );
+    }
+    selectedCells.remove( cell );
+  }
+
+  /**
+   * Deselects the given cells. Invalid cells are ignored.
+   *
+   * @param cells
+   *            the cells to deselect.
+   *
+   * @throws IllegalArgumentException
+   *             <ul>
+   *             <li>ERROR_NULL_ARGUMENT - if the set of cells or any cell is
+   *             null</li>
+   *             </ul>
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public void deselectCells( Point[] cells ) {
+    checkWidget();
+    if( cells == null ) {
+      SWT.error( SWT.ERROR_NULL_ARGUMENT );
+    }
+    for( Point cell : cells ) {
+      if( cell == null ) {
+        SWT.error( SWT.ERROR_NULL_ARGUMENT );
+      }
+    }
+    for( Point cell : cells ) {
+      selectedCells.remove( cell );
+    }
+  }
+
+  /**
+   * Deselects all selected cells in the receiver.
+   *
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public void deselectAllCells() {
+    checkWidget();
+    selectedCells.clear();
   }
 
   /**
@@ -1507,25 +1801,20 @@ public class Grid extends Composite {
    */
   public GridItem[] getSelection() {
     checkWidget();
-    GridItem[] result = new GridItem[ 0 ];
     if( cellSelectionEnabled ) {
-// TODO: [if] Implement cell selection
-//      List<GridItem> items = new ArrayList<GridItem>();
-//      int itemCount = getItemCount();
-//      for( Iterator iterator = selectedCells.iterator(); iterator.hasNext(); ) {
-//        Point cell = ( Point )iterator.next();
-//        if( cell.y >= 0 && cell.y < itemCount ) {
-//          GridItem item = getItem( cell.y );
-//          if( !items.contains( item ) ) {
-//            items.add( item );
-//          }
-//        }
-//      }
-//      result = items.toArray( new GridItem[ 0 ] );
-    } else {
-      result = selectedItems.toArray( new GridItem[ selectedItems.size() ] );
+      List<GridItem> items = new ArrayList<>();
+      int itemCount = getItemCount();
+      for( Point cell : selectedCells ) {
+        if( cell.y >= 0 && cell.y < itemCount ) {
+          GridItem item = getItem( cell.y );
+          if( !items.contains( item ) ) {
+            items.add( item );
+          }
+        }
+      }
+      return items.toArray( new GridItem[] {} );
     }
-    return result;
+    return selectedItems.toArray( new GridItem[ selectedItems.size() ] );
   }
 
   /**
@@ -1542,22 +1831,139 @@ public class Grid extends Composite {
    */
   public int getSelectionCount() {
     checkWidget();
-    int result = 0;
     if( cellSelectionEnabled ) {
-// TODO: [if] Implement cell selection
-//      List<GridItem> items = new ArrayList<GridItem>();
-//      for( Iterator iterator = selectedCells.iterator(); iterator.hasNext(); ) {
-//        Point cell = ( Point )iterator.next();
-//        GridItem item = getItem( cell.y );
-//        if( !items.contains( item ) ) {
-//          items.add( item );
-//        }
-//      }
-//      result = items.size();
-    } else {
-      result = selectedItems.size();
+      List<GridItem> items = new ArrayList<>();
+      for( Point cell : selectedCells ) {
+        GridItem item = getItem( cell.y );
+        if( !items.contains( item ) ) {
+          items.add( item );
+        }
+      }
+      return items.size();
     }
-    return result;
+    return selectedItems.size();
+  }
+
+  /**
+   * Returns the number of selected cells contained in the receiver.
+   *
+   * @return the number of selected cells
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public int getCellSelectionCount() {
+    checkWidget();
+    return selectedCells.size();
+  }
+
+  /**
+   * Selects the selection to the given cell. The existing selection is cleared
+   * before selecting the given cell.
+   *
+   * @param cell
+   *            point whose x value is a column index and y value is an item
+   *            index
+   * @throws IllegalArgumentException
+   *             <ul>
+   *             <li>ERROR_NULL_ARGUMENT - if the item is null</li>
+   *             <li>ERROR_INVALID_ARGUMENT - if the cell is invalid</li>
+   *             </ul>
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public void setCellSelection( Point cell ) {
+    checkWidget();
+    if( cellSelectionEnabled ) {
+      if( cell == null ) {
+        SWT.error( SWT.ERROR_NULL_ARGUMENT );
+      }
+      if( !isValidCell( cell ) ) {
+        SWT.error( SWT.ERROR_INVALID_ARGUMENT );
+      }
+      selectedCells.clear();
+      addToCellSelection( cell );
+    }
+  }
+
+  /**
+   * Selects the selection to the given set of cell. The existing selection is
+   * cleared before selecting the given cells.
+   *
+   * @param cells
+   *            point array whose x values is a column index and y value is an
+   *            item index
+   * @throws IllegalArgumentException
+   *             <ul>
+   *             <li>ERROR_NULL_ARGUMENT - if the cell array or an individual cell
+   *             is null</li>
+   *             <li>ERROR_INVALID_ARGUMENT - if the a cell is invalid</li>
+   *             </ul>
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public void setCellSelection( Point[] cells ) {
+    checkWidget();
+    if( cellSelectionEnabled ) {
+      if( cells == null ) {
+        SWT.error( SWT.ERROR_NULL_ARGUMENT );
+      }
+      for( Point cell : cells ) {
+        if( cell == null ) {
+          SWT.error( SWT.ERROR_NULL_ARGUMENT );
+        }
+        if( !isValidCell( cell ) ) {
+          SWT.error( SWT.ERROR_INVALID_ARGUMENT );
+        }
+      }
+      selectedCells.clear();
+      for( Point cell : cells ) {
+        addToCellSelection( cell );
+      }
+    }
+  }
+
+  /**
+   * Returns an array of cells that are currently selected in the receiver. The order of the items
+   * is unspecified. An empty array indicates that no items are selected.
+   * <p>
+   * Note: This is not the actual structure used by the receiver to maintain its selection, so
+   * modifying the array will not affect the receiver.
+   * </p>
+   *
+   * @return an array representing the cell selection
+   * @throws org.eclipse.swt.SWTException
+   *           <ul>
+   *           <li>ERROR_WIDGET_DISPOSED - if the receiver has been disposed</li>
+   *           <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread that created the
+   *           receiver</li>
+   *           </ul>
+   *
+   * @since 3.13
+   */
+  public Point[] getCellSelection() {
+    checkWidget();
+    return selectedCells.toArray( new Point[ selectedCells.size() ] );
   }
 
   /**
@@ -1701,6 +2107,71 @@ public class Grid extends Composite {
       result = selectedItems.contains( item );
     }
     return result;
+  }
+
+  /**
+   * Returns true if the given cell is selected.
+   *
+   * @param cell
+   *            cell
+   * @return true if the cell is selected.
+   * @throws IllegalArgumentException
+   *             <ul>
+   *             <li>ERROR_NULL_ARGUMENT - if the cell is null</li>
+   *             </ul>
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public boolean isCellSelected( Point cell ) {
+    checkWidget();
+    if( cell == null ) {
+      SWT.error( SWT.ERROR_NULL_ARGUMENT );
+    }
+    return selectedCells.contains( cell );
+  }
+
+  /**
+   * Returns the cell at the given point in the receiver or null if no such cell
+   * exists. The point is in the coordinate system of the receiver.
+   *
+   * @param point
+   *            the point used to locate the cell
+   * @return the cell at the given point
+   * @throws IllegalArgumentException
+   *             <ul>
+   *             <li>ERROR_NULL_ARGUMENT - if the point is null</li>
+   *             </ul>
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public Point getCell( Point point ) {
+    checkWidget();
+    if( point == null ) {
+      SWT.error( SWT.ERROR_NULL_ARGUMENT );
+    }
+    if( point.x < 0 || point.x > getClientArea().width ) {
+      return null;
+    }
+    GridItem item = getItem( point );
+    GridColumn column = getColumn( point );
+    if( item != null && column != null ) {
+      return new Point( indexOf( column ), indexOf( item ) );
+    }
+    return null;
   }
 
   /**
@@ -2014,6 +2485,91 @@ public class Grid extends Composite {
   }
 
   /**
+   * Sets the focused column to the given column. Column focus is only applicable
+   * when cell selection is enabled.
+   *
+   * @param column
+   *            column to focus.
+   * @throws IllegalArgumentException
+   *             <ul>
+   *             <li>ERROR_INVALID_ARGUMENT - if item is disposed</li>
+   *             </ul>
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public void setFocusColumn( GridColumn column ) {
+    checkWidget();
+    if( column == null
+        || column.isDisposed()
+        || column.getParent() != this
+        || !column.isVisible() )
+    {
+      SWT.error( SWT.ERROR_INVALID_ARGUMENT );
+    }
+    if( isCellSelectionEnabled() ) {
+      focusColumn = column;
+    }
+  }
+
+  /**
+   * Returns the current column in focus.
+   * Column focus is only applicable when cell selection is enabled.
+   *
+   * @return column in focus or {@code null}.
+   * @throws org.eclipse.swt.SWTException
+   * <ul>
+   * <li>ERROR_WIDGET_DISPOSED - if the receiver has been disposed</li>
+   * <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread that
+   * created the receiver</li>
+   * </ul>
+   *
+   * @since 3.13
+   */
+  public GridColumn getFocusColumn() {
+    checkWidget();
+    return isCellSelectionEnabled() ? focusColumn : null;
+  }
+
+  /**
+   * Returns the current cell in focus. If cell selection is disabled, this method
+   * returns null.
+   *
+   * @return cell in focus or {@code null}. x represents the column and y the row
+   *         the cell is in
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public Point getFocusCell() {
+    checkWidget();
+    if( !cellSelectionEnabled ) {
+      return null;
+    }
+    int x = -1;
+    int y = -1;
+    if( focusColumn != null ) {
+      x = indexOf( focusColumn );
+    }
+    if( focusItem != null ) {
+      y = indexOf( focusItem );
+    }
+    return new Point( x, y );
+  }
+
+  /**
    * Sets the default height for this <code>Grid</code>'s items.  When
    * this method is called, all existing items are resized
    * to the specified height and items created afterwards will be
@@ -2314,6 +2870,144 @@ public class Grid extends Composite {
     }
   }
 
+  /**
+   * Marks the receiver's row header as visible if the argument is {@code true},
+   * and marks it invisible otherwise.
+   *
+   * @param show
+   *            the new visibility state
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.14
+   */
+  public void setRowHeaderVisible( boolean show ) {
+    setRowHeaderVisible( show, 10 );
+  }
+
+  /**
+   * Marks the receiver's row header as visible if the argument is {@code true},
+   * and marks it invisible otherwise.
+   *
+   * @param show
+   *            the new visibility state
+   * @param minWidth
+   *            the minimun width of the row column
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.14
+   */
+  public void setRowHeaderVisible( boolean show, int minWidth ) {
+    checkWidget();
+    if( rowHeadersColumn != null ) {
+      if( show ) {
+        rowHeadersColumn.setMinimumWidth( Math.max( 10, minWidth ) );
+      } else {
+        rowHeadersColumn.setMinimumWidth( 0 );
+        rowHeadersColumn.setWidth( 0 );
+      }
+    }
+  }
+
+  /**
+   * Sets the row header width to the specified value. This automatically disables
+   * the auto width feature of the grid.
+   *
+   * @param width
+   *            the width of the row header
+   * @see #getItemHeaderWidth()
+   *
+   * @since 3.14
+   */
+  public void setItemHeaderWidth( int width ) {
+    checkWidget();
+    if( rowHeadersColumn != null ) {
+      rowHeadersColumn.setWidth( width );
+    }
+  }
+
+  /**
+   * Returns the row header width or 0 if row headers are not visible.
+   *
+   * @return the width of the row headers
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.14
+   */
+  public int getItemHeaderWidth() {
+    checkWidget();
+    return rowHeadersColumn != null ? rowHeadersColumn.getWidth() : 0;
+  }
+
+  /**
+   * Returns {@code true} if the receiver's row header is visible, and
+   * {@code false} otherwise.
+   * <p>
+   *
+   * @return the receiver's row header's visibility state
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been
+   *             disposed</li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread
+   *             that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.14
+   */
+  public boolean isRowHeaderVisible() {
+    checkWidget();
+    return rowHeadersColumn != null && rowHeadersColumn.getWidth() > 0;
+  }
+
+  /**
+   * Sets the value of the word-wrap feature for row headers. When enabled, this
+   * feature will word-wrap the contents of row headers.
+   *
+   * @param enabled
+   *            Set to true to enable this feature, false (default) otherwise.
+   * @see #isWordWrapHeader()
+   *
+   * @since 3.14
+   */
+  public void setWordWrapHeader( boolean enabled ) {
+    checkWidget();
+    if( rowHeadersColumn != null ) {
+      rowHeadersColumn.setWordWrap( enabled );
+    }
+  }
+
+  /**
+   * Returns the value of the row header word-wrap feature, which word-wraps the
+   * content of row headers.
+   *
+   * @return Returns whether or not the row header word-wrap feature is enabled.
+   * @see #setWordWrapHeader(boolean)
+   *
+   * @since 3.14
+   */
+  public boolean isWordWrapHeader() {
+    checkWidget();
+    return rowHeadersColumn != null ? rowHeadersColumn.getWordWrap() : false;
+  }
+
   @Override
   @SuppressWarnings("unchecked")
   public <T> T getAdapter( Class<T> adapter ) {
@@ -2332,6 +3026,10 @@ public class Grid extends Composite {
   @Override
   public void setData( String key, Object value ) {
     if( !RWT.MARKUP_ENABLED.equals( key ) || !isMarkupEnabledFor( this ) ) {
+      checkMarkupPrecondition( key, TEXT, () -> items.size() == 0 );
+      if( RWT.ROW_TEMPLATE.equals( key ) && value instanceof Template ) {
+        rowHeadersColumn = null;
+      }
       super.setData( key, value );
     }
   }
@@ -2379,11 +3077,10 @@ public class Grid extends Composite {
     GridItem item = items.remove( index );
     if( !disposing ) {
       selectedItems.remove (item );
-// TODO: [if] Implement cell selection
-//      Point[] cells = getCells( item );
-//      for( int i = 0; i < cells.length; i++ ) {
-//        selectedCells.remove( cells[ i ] );
-//      }
+      Point[] cells = getCells( item );
+      for( int i = 0; i < cells.length; i++ ) {
+        selectedCells.remove( cells[ i ] );
+      }
       if( focusItem == item ) {
         focusItem = null;
       }
@@ -2416,31 +3113,51 @@ public class Grid extends Composite {
     }
   }
 
-  int newColumn( GridColumn column, int index ) {
-    if( index == -1 ) {
-      columns.add( column );
-      displayOrderedColumns.add( column );
-    } else {
-      columns.add( index, column );
-      displayOrderedColumns.add( index, column );
+  void newColumn( GridColumn column, int index ) {
+    if( !isInternalColumn ) {
+      if( index == -1 ) {
+        columns.add( column );
+        displayOrderedColumns.add( column );
+      } else {
+        columns.add( index, column );
+        displayOrderedColumns.add( index, column );
+      }
+      updatePrimaryCheckColumn();
+      for( GridItem item : items ) {
+        item.columnAdded( index );
+      }
+      if( column.isCheck() ) {
+        layoutCache.invalidateItemHeight();
+      }
+      layoutCache.invalidateHeaderHeight();
+      layoutCache.invalidateFooterHeight();
+      scheduleRedraw();
     }
-    updatePrimaryCheckColumn();
-    for( GridItem item : items ) {
-      item.columnAdded( index );
-    }
-    if( column.isCheck() ) {
-      layoutCache.invalidateItemHeight();
-    }
-    layoutCache.invalidateHeaderHeight();
-    layoutCache.invalidateFooterHeight();
-    scheduleRedraw();
-    return columns.size() - 1;
   }
 
   void removeColumn( GridColumn column ) {
     int index = columns.indexOf( column );
+    if( cellSelectionEnabled ) {
+      List<Point> removeSelectedCells = new ArrayList<>();
+      for( Point cell : selectedCells ) {
+        if( cell.x == index ) {
+          removeSelectedCells.add( cell );
+        }
+      }
+      if( removeSelectedCells.size() > 0 ) {
+        selectedCells.removeAll( removeSelectedCells );
+      }
+      for( Point cell : selectedCells ) {
+        if( cell.x >= index ) {
+          cell.x-- ;
+        }
+      }
+    }
     columns.remove( index );
     displayOrderedColumns.remove( column );
+    if( focusColumn == column ) {
+      focusColumn = null;
+    }
     updatePrimaryCheckColumn();
     for( GridItem item : items ) {
       item.columnRemoved( index );
@@ -2482,8 +3199,7 @@ public class Grid extends Composite {
     return displayOrderedColumns.toArray( new GridColumn[ columns.size() ] );
   }
 
-  void imageSetOnItem( int column, GridItem item ) {
-    Image image = item.getImage( column );
+  void imageSetOnItem( Image image ) {
     if( image != null && itemImageSize == null ) {
       Rectangle imageBounds = image.getBounds();
       itemImageSize = new Point( imageBounds.width, imageBounds.height );
@@ -2572,6 +3288,7 @@ public class Grid extends Composite {
         }
       }
     }
+    updateDefaultRowHeadersText();
     updateScrollBars();
   }
 
@@ -2579,10 +3296,23 @@ public class Grid extends Composite {
     return ( getStyle() & SWT.VIRTUAL ) != 0;
   }
 
+  private void updateDefaultRowHeadersText() {
+    if( isRowHeaderVisible() && defaultRowHeadersTextObsolete ) {
+      int rowCounter = 1;
+      for( int index = 0; index < items.size(); index++ ) {
+        GridItem item = items.get( index );
+        if( item.isVisible() ) {
+          item.setDefaultHeaderText( Integer.toString( rowCounter++ ) );
+        }
+      }
+      defaultRowHeadersTextObsolete = false;
+    }
+  }
+
   void updateScrollBars() {
     if( scrollValuesObsolete ) {
       Point preferredSize = getTableSize();
-      Rectangle clientArea = getClientArea();
+      Rectangle clientArea = getScrollableArea();
       for( int doublePass = 1; doublePass <= 2; doublePass++ ) {
         if( preferredSize.y > clientArea.height ) {
           vScroll.setVisible( true );
@@ -2596,7 +3326,7 @@ public class Grid extends Composite {
           hScroll.setVisible( false );
           hScroll.setValues( 0, 0, 1, 1, 1, 1 );
         }
-        clientArea = getClientArea();
+        clientArea = getScrollableArea();
       }
       if( vScroll.getVisible() ) {
         int max = currentVisibleItems;
@@ -2618,6 +3348,12 @@ public class Grid extends Composite {
       }
       scrollValuesObsolete = false;
     }
+  }
+
+  private Rectangle getScrollableArea() {
+    Rectangle clientArea = getClientArea();
+    clientArea.width -= getItemHeaderWidth();
+    return clientArea;
   }
 
   protected IScrollBarProxy getHorizontalScrollBarProxy() {
@@ -2678,6 +3414,9 @@ public class Grid extends Composite {
     }
     for( GridColumnGroup group : columnGroups ) {
       group.dispose();
+    }
+    if( rowHeadersColumn != null ) {
+      rowHeadersColumn.dispose();
     }
   }
 
@@ -2741,19 +3480,27 @@ public class Grid extends Composite {
     if( isValidItemIndex( index ) ) {
       GridItem item = items.get( index );
       if( cellSelectionEnabled ) {
-// TODO: [if] Implement cell selection
-//        selectCells( getCells( item ) );
+        selectCells( getCells( item ) );
       } else if( !selectedItems.contains( item ) ) {
         selectedItems.add( item );
       }
     }
   }
+
+  private void internalSelectAll() {
+    for( int i = 0; i < items.size(); i++  ) {
+      GridItem item = items.get( i );
+      if( item.isVisible() ) {
+        internalSelect( i );
+      }
+    }
+  }
+
   private void internalDeselect( int index ) {
     if( isValidItemIndex( index ) ) {
       GridItem item = items.get( index );
       if( cellSelectionEnabled ) {
-// TODO: [if] Implement cell selection
-//        deselectCells( getCells( item ) );
+        deselectCells( getCells( item ) );
       } else if( selectedItems.contains( item ) ) {
         selectedItems.remove( item );
       }
@@ -2762,19 +3509,115 @@ public class Grid extends Composite {
 
   private void internalDeselectAll() {
     if( cellSelectionEnabled ) {
-// TODO: [if] Implement cell selection
-//      selectedCells.clear();
+      selectedCells.clear();
     } else {
       selectedItems.clear();
     }
   }
 
+  private Point[] getCells( GridItem item ) {
+    List<Point> cells = new ArrayList<>();
+    int itemIndex = items.indexOf( item );
+    int span = 0;
+    for( GridColumn nextCol : displayOrderedColumns ) {
+      if( span > 0 ) {
+        span-- ;
+        continue;
+      }
+      if( !nextCol.isVisible() ) {
+        continue;
+      }
+      span = item.getColumnSpan( indexOf( nextCol ) );
+      cells.add( new Point( indexOf( nextCol ), itemIndex ) );
+    }
+    return cells.toArray( new Point[ 0 ] );
+  }
+
+  private Point[] getCells( GridColumn col ) {
+    List<Point> cells = new ArrayList<>();
+    int colIndex = indexOf( col );
+    int columnAtPosition = 0;
+    for( GridColumn nextCol : displayOrderedColumns ) {
+      if( !nextCol.isVisible() ) {
+        continue;
+      }
+      if( nextCol == col ) {
+        break;
+      }
+      columnAtPosition++ ;
+    }
+    GridItem item = null;
+    if( getItemCount() > 0 ) {
+      item = getItem( 0 );
+    }
+    while( item != null ) {
+      // is cell spanned
+      int position = -1;
+      boolean spanned = false;
+      for( GridColumn nextCol : displayOrderedColumns ) {
+        if( !nextCol.isVisible() ) {
+          continue;
+        }
+        if( nextCol == col ) {
+          break;
+        }
+        int span = item.getColumnSpan( indexOf( nextCol ) );
+        if( position + span >= columnAtPosition ) {
+          spanned = true;
+          break;
+        }
+      }
+      if( !spanned && item.getColumnSpan( colIndex ) == 0 ) {
+        cells.add( new Point( colIndex, indexOf( item ) ) );
+      }
+      item = getNextVisibleItem( item );
+    }
+    return cells.toArray( new Point[ 0 ] );
+  }
+
+  private Point[] getCells( GridColumnGroup colGroup ) {
+    List<Point> cells = new ArrayList<>();
+    for( GridColumn col : colGroup.getColumns() ) {
+      for( Point cell : getCells( col ) ) {
+        cells.add( cell );
+      }
+    }
+    return cells.toArray( new Point[ 0 ] );
+  }
+
+  private void addToCellSelection( Point newCell ) {
+    if( newCell.x < 0 || newCell.x >= columns.size() ) {
+      return;
+    }
+    if( newCell.y < 0 || newCell.y >= items.size() ) {
+      return;
+    }
+    Iterator<Point> it = selectedCells.iterator();
+    boolean found = false;
+    while( it.hasNext() ) {
+      Point p = it.next();
+      if( newCell.equals( p ) ) {
+        found = true;
+        break;
+      }
+    }
+    if( !found ) {
+      if( selectionType == SWT.SINGLE && selectedCells.size() > 0 ) {
+        return;
+      }
+      selectedCells.add( newCell );
+    }
+  }
+
   private void updatePrimaryCheckColumn() {
     if( ( getStyle() & SWT.CHECK ) == SWT.CHECK ) {
-      boolean firstCol = true;
-      for( GridColumn column : displayOrderedColumns ) {
-        column.setTableCheck( firstCol );
-        firstCol = false;
+      for( GridColumn column : columns ) {
+        column.setTableCheck( false );
+      }
+      if( treeColumn != null ) {
+        treeColumn.setTableCheck( true );
+      } else if( displayOrderedColumns.size() > 0 ) {
+        displayOrderedColumns.get( 0 ).setTableCheck( true );
       }
     }
   }
@@ -2943,6 +3786,31 @@ public class Grid extends Composite {
     return Math.max( 0, getCellWidth( index ) - getTextOffset( index ) - getCellPadding().right );
   }
 
+  private int getRowHeaderImageOffset() {
+    return getCellPadding().left;
+  }
+
+  private int getRowHeaderImageWidth() {
+    if( hasColumnImages( Integer.MIN_VALUE ) ) {
+      int availableWidth = Math.max( 0, getItemHeaderWidth() - getCellPadding().left );
+      return Math.min( getItemImageSize().x, availableWidth );
+    }
+    return 0;
+  }
+
+  private int getRowHeaderTextOffset() {
+    int result = getRowHeaderImageOffset();
+    if( hasColumnImages( Integer.MIN_VALUE ) ) {
+      result += getItemImageSize().x;
+      result += getCellSpacing();
+    }
+    return result;
+  }
+
+  private int getRowHeaderTextWidth() {
+    return Math.max( 0, getItemHeaderWidth() - getRowHeaderTextOffset() - getCellPadding().right );
+  }
+
   Point getItemImageSize() {
     Point result = new Point( 0, 0 );
     if( itemImageSize != null ) {
@@ -2953,10 +3821,16 @@ public class Grid extends Composite {
   }
 
   boolean hasColumnImages( int index ) {
+    if( index == Integer.MIN_VALUE ) {
+      return rowHeadersColumn != null && rowHeadersColumn.imageCount > 0;
+    }
     return getColumn( index ).imageCount > 0;
   }
 
   boolean hasColumnTexts( int index ) {
+    if( index == Integer.MIN_VALUE ) {
+      return rowHeadersColumn != null && rowHeadersColumn.textCount > 0;
+    }
     return getColumn( index ).textCount > 0;
   }
 
@@ -2979,11 +3853,19 @@ public class Grid extends Composite {
     return new Size( width, height );
   }
 
+  void setTreeColumn( GridColumn column ) {
+    treeColumn = column;
+    updatePrimaryCheckColumn();
+  }
+
   boolean isTreeColumn( int index ) {
     boolean result = false;
-    if( isTree ) {
-      int columnCount = getColumnCount();
-      result = columnCount == 0 && index == 0 || columnCount > 0 && index == getColumnOrder()[ 0 ];
+    if( isTree && index < columns.size() ) {
+      if( treeColumn != null ) {
+        result = columns.get( index ) == treeColumn;
+      } else {
+        result = index == getColumnOrder()[ 0 ];
+      }
     }
     return result;
   }
@@ -3140,6 +4022,16 @@ public class Grid extends Composite {
     return index >= 0 && index < items.size();
   }
 
+  private boolean isValidCell( Point cell ) {
+    if( cell.x < 0 || cell.x >= columns.size() ) {
+      return false;
+    }
+    if( cell.y < 0 || cell.y >= items.size() ) {
+      return false;
+    }
+    return true;
+  }
+
   int internalIndexOf( GridItem item ) {
     return items.indexOf( item );
   }
@@ -3159,8 +4051,58 @@ public class Grid extends Composite {
     scrollValuesObsolete = true;
   }
 
+  void invalidateDefaultRowHeadersText() {
+    defaultRowHeadersTextObsolete = true;
+    redraw();
+  }
+
   void setHasSpanning( boolean hasSpanning ) {
     this.hasSpanning = hasSpanning;
+  }
+
+  boolean isRowHeadersColumn( GridColumn column ) {
+    return column != null && column == rowHeadersColumn;
+  }
+
+  GridColumn getRowHeadersColumn() {
+    return rowHeadersColumn;
+  }
+
+  private void createRowHeadersColumn() {
+    isInternalColumn = true;
+    rowHeadersColumn = new GridColumn( this, SWT.NONE );
+    rowHeadersColumn.setMoveable( false );
+    rowHeadersColumn.setMinimumWidth( 0 );
+    rowHeadersColumn.setWidth( 0 );
+    isInternalColumn = false;
+  }
+
+  private boolean isFixedColumn( GridColumn column ) {
+    int fixedColumns = getFixedColumns();
+    if( fixedColumns <= 0 ) {
+      return false;
+    } else if( isRowHeadersColumn( column ) ) {
+      return true;
+    }
+    int[] columnOrder = getColumnOrder();
+    int visualIndex = -1;
+    for( int i = 0; i < columnOrder.length && visualIndex == -1; i++ ) {
+      if( indexOf( column ) == columnOrder[ i ] ) {
+        visualIndex = i;
+      }
+    }
+    return visualIndex < fixedColumns - 1;
+  }
+
+  private int getFixedColumns() {
+    if( !( getData( RWT.ROW_TEMPLATE ) instanceof Template ) ) {
+      Object fixedColumns = getData( RWT.FIXED_COLUMNS );
+      if( fixedColumns instanceof Integer ) {
+        return ( ( Integer )fixedColumns ).intValue() + 1;
+      }
+      return 1;
+    }
+    return -1;
   }
 
   ////////////////
@@ -3235,6 +4177,26 @@ public class Grid extends Composite {
     }
 
     @Override
+    public int getRowHeaderImageOffset() {
+      return Grid.this.getRowHeaderImageOffset();
+    }
+
+    @Override
+    public int getRowHeaderImageWidth() {
+      return Grid.this.getRowHeaderImageWidth();
+    }
+
+    @Override
+    public int getRowHeaderTextOffset() {
+      return Grid.this.getRowHeaderTextOffset();
+    }
+
+    @Override
+    public int getRowHeaderTextWidth() {
+      return Grid.this.getRowHeaderTextWidth();
+    }
+
+    @Override
     public int getItemIndex( GridItem item ) {
       return item.index;
     }
@@ -3269,6 +4231,9 @@ public class Grid extends Composite {
       for( GridColumnGroup columnGroup : columnGroups ) {
         visitor.visit( columnGroup );
       }
+      if( rowHeadersColumn != null ) {
+        visitor.visit( rowHeadersColumn );
+      }
       for( GridColumn column : columns ) {
         visitor.visit( column );
       }
@@ -3284,6 +4249,38 @@ public class Grid extends Composite {
         }
       }
     }
+
+    @Override
+    public int getFixedColumns() {
+      return Grid.this.getFixedColumns();
+    }
+
+    @Override
+    public boolean isFixedColumn( GridColumn column ) {
+      return Grid.this.isFixedColumn( column );
+    }
+
+    @Override
+    public int getTreeColumn() {
+      int offset = rowHeadersColumn != null ? 1 : 0;
+      if( treeColumn != null ) {
+        return indexOf( treeColumn ) + offset;
+      } else if( getColumnCount() > 0 ) {
+        return getColumnOrder()[ 0 ] + offset;
+      }
+      return -1;
+    }
+
+    @Override
+    public int getSelectionType() {
+      return selectionType;
+    }
+
+    @Override
+    public GridColumn getRowHeadersColumn() {
+      return Grid.this.getRowHeadersColumn();
+    }
+
   }
 
   private final class CellToolTipProvider

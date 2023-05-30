@@ -8,7 +8,8 @@
       <entrypoint
             id="org.eclipse.rap.demo.workbench.default"
             path="/"
-            class="org.eclipse.rap.demo.DemoWorkbench">
+            class="org.eclipse.rap.demo.DemoWorkbench"
+            csp="script-src 'strict-dynamic' 'nonce-' http: https:; object-src 'none'; base-uri 'none';">
       </entrypoint>
       <entrypoint
             id="org.eclipse.rap.demo.workbench.business"
@@ -316,6 +317,15 @@
             class="org.eclipse.rap.demo.presentation.DemoPreferencePage">
          <keywordReference id="org.eclipse.ui.demo.preferenceKeywords"/>
       </page>
+   </extension>
+   <extension
+         point="org.eclipse.ui.bindings">
+      <key
+            commandId="org.eclipse.ui.window.quickAccess"
+            contextId="org.eclipse.ui.contexts.window"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+3">
+      </key>
    </extension>
 
 </plugin>

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 EclipseSource and others.
+ * Copyright (c) 2014, 2020 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -15,6 +15,7 @@ rwt.widgets.util.GridSynchronizer = function( grid ) {
   this._grid = grid;
   this._grid.addEventListener( "selectionChanged", this._onSelectionChanged, this );
   this._grid.addEventListener( "focusItemChanged", this._onFocusItemChanged, this );
+  this._grid.addEventListener( "focusCellChanged", this._onFocusCellChanged, this );
   this._grid.addEventListener( "topItemChanged", this._onTopItemChanged, this );
   this._grid.addEventListener( "scrollLeftChanged", this._onScrollLeftChanged, this );
   this._grid.getRootItem().addEventListener( "update", this._onItemUpdate, this );
@@ -29,6 +30,9 @@ rwt.widgets.util.GridSynchronizer.prototype = {
       var connection = rwt.remote.Connection.getInstance();
       if( type === "selection" ) {
         connection.getRemoteObject( this._grid ).set( "selection", this._getSelectionList() );
+        if( this._grid.getRenderConfig().cellSelection ) {
+          connection.getRemoteObject( this._grid ).set( "cellSelection", this._getCellSelectionList() );
+        }
       } else if( type === "check" ) {
         connection.getRemoteObject( item ).set( "checked", item.isChecked() );
       } else if( type === "cellCheck" ) {
@@ -66,6 +70,14 @@ rwt.widgets.util.GridSynchronizer.prototype = {
       var connection = rwt.remote.Connection.getInstance();
       var itemId = this._getItemId( this._grid.getFocusItem() );
       connection.getRemoteObject( this._grid ).set( "focusItem", itemId );
+    }
+  },
+
+  _onFocusCellChanged : function() {
+    if( !rwt.remote.EventUtil.getSuspended() ) {
+      var connection = rwt.remote.Connection.getInstance();
+      var focusCell = this._grid.getRenderConfig().cellOrder[ this._grid.getFocusCell() ];
+      connection.getRemoteObject( this._grid ).set( "focusCell", focusCell );
     }
   },
 
@@ -127,6 +139,19 @@ rwt.widgets.util.GridSynchronizer.prototype = {
     var selection = this._grid.getSelection();
     for( var i = 0; i < selection.length; i++ ) {
       result.push( this._getItemId( selection[ i ] ) );
+    }
+    return result;
+  },
+
+  _getCellSelectionList : function() {
+    var result = [];
+    var selection = this._grid.getSelection();
+    for( var i = 0; i < selection.length; i++ ) {
+      var itemId = this._getItemId( selection[ i ] );
+      var cellSelection = selection[ i ].getCellSelection();
+      for( var j = 0; j < cellSelection.length; j++ ) {
+        result.push( [ itemId, cellSelection[ j ] ] );
+      }
     }
     return result;
   },

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 EclipseSource and others.
+ * Copyright (c) 2012, 2020 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,7 +10,9 @@
  ******************************************************************************/
 package org.eclipse.nebula.widgets.grid;
 
+import static org.eclipse.swt.internal.widgets.MarkupUtil.checkMarkupPrecondition;
 import static org.eclipse.swt.internal.widgets.MarkupUtil.isToolTipMarkupEnabledFor;
+import static org.eclipse.swt.internal.widgets.MarkupUtil.MarkupTarget.TOOLTIP;
 import static org.eclipse.swt.internal.widgets.MarkupValidator.isValidationDisabledFor;
 
 import org.eclipse.nebula.widgets.grid.aggregator.IFooterAggregateProvider;
@@ -31,11 +33,6 @@ import org.eclipse.swt.widgets.TypedListener;
 
 
 /**
- * <p>
- * NOTE: THIS WIDGET AND ITS API ARE STILL UNDER DEVELOPMENT. THIS IS A
- * PRE-RELEASE ALPHA VERSION. USERS SHOULD EXPECT API CHANGES IN FUTURE
- * VERSIONS.
- * </p>
  * Instances of this class represent a column in a grid widget.
  * <p>
  * <dl>
@@ -748,6 +745,31 @@ public class GridColumn extends Item {
   }
 
   /**
+   * Makes this column the one with tree toggle.
+   *
+   * @param tree
+   *            true to add toggle.
+   * @throws org.eclipse.swt.SWTException
+   *             <ul>
+   *             <li>ERROR_WIDGET_DISPOSED - if the receiver has been disposed
+   *             </li>
+   *             <li>ERROR_THREAD_INVALID_ACCESS - if not called from the
+   *             thread that created the receiver</li>
+   *             </ul>
+   *
+   * @since 3.13
+   */
+  public void setTree( boolean tree ) {
+    checkWidget();
+    if( tree ) {
+      parent.setTreeColumn( this );
+    } else if( isTree() ) {
+      parent.setTreeColumn( null );
+    }
+    parent.redraw();
+  }
+
+  /**
    * Returns true if this column includes a tree toggle.
    *
    * @return true if the column includes the tree toggle.
@@ -1122,6 +1144,7 @@ public class GridColumn extends Item {
   public void setData( String key, Object value ) {
     handleFooterSpan( key, value );
     if( !RWT.TOOLTIP_MARKUP_ENABLED.equals( key ) || !isToolTipMarkupEnabledFor( this ) ) {
+      checkMarkupPrecondition( key, TOOLTIP, () -> headerTooltip == null );
       super.setData( key, value );
     }
   }
@@ -1155,15 +1178,18 @@ public class GridColumn extends Item {
   }
 
   int getLeft() {
-    int result = 0;
-    boolean found = false;
-    int[] columnOrder = parent.getColumnOrder();
-    for( int i = 0; i < columnOrder.length && !found; i++ ) {
-      GridColumn currentColumn = parent.getColumn( columnOrder[ i ] );
-      if( currentColumn == this ) {
-        found = true;
-      } else if( currentColumn.isVisible() ) {
-        result += currentColumn.getWidth();
+    GridColumn rowHeaders = parent.getRowHeadersColumn();
+    int result = rowHeaders == null || rowHeaders == this ? 0 : rowHeaders.getWidth();
+    if( rowHeaders != this ) {
+      boolean found = false;
+      int[] columnOrder = parent.getColumnOrder();
+      for( int i = 0; i < columnOrder.length && !found; i++ ) {
+        GridColumn currentColumn = parent.getColumn( columnOrder[ i ] );
+        if( currentColumn == this ) {
+          found = true;
+        } else if( currentColumn.isVisible() ) {
+          result += currentColumn.getWidth();
+        }
       }
     }
     return result;

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 EclipseSource and others.
+ * Copyright (c) 2014, 2020 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -9,6 +9,8 @@
  *    EclipseSource - initial API and implementation
  ******************************************************************************/
 package org.eclipse.rap.demo.controls;
+
+import java.util.Arrays;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.nebula.widgets.grid.Grid;
@@ -24,6 +26,7 @@ import org.eclipse.swt.events.TreeEvent;
 import org.eclipse.swt.events.TreeListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -43,7 +46,8 @@ public class NebulaGridTab extends ExampleTab {
   private Image image;
   private boolean headerVisible = true;
   private boolean footerVisible = true;
-
+  private boolean rowHeadersVisible = true;
+  private boolean cellSelectionEnabled;
   public NebulaGridTab() {
     super( "Nebula Grid" );
     setDefaultStyle( SWT.CHECK | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL );
@@ -53,6 +57,7 @@ public class NebulaGridTab extends ExampleTab {
   protected void createStyleControls( Composite parent ) {
     createStyleButton( "BORDER", SWT.BORDER );
     createStyleButton( "CHECK", SWT.CHECK, true );
+    createStyleButton( "SINGLE", SWT.SINGLE, false );
     createStyleButton( "MULTI", SWT.MULTI, true );
     createStyleButton( "H_SCROLL", SWT.H_SCROLL, true );
     createStyleButton( "V_SCROLL", SWT.V_SCROLL, true );
@@ -66,14 +71,26 @@ public class NebulaGridTab extends ExampleTab {
     createTopIndexButton( parent );
     createShowItemGroup( parent );
     createShowColumnGroup( parent );
+    createTreeColumnButton( parent );
     createSetFooterSpanGroup( parent );
     createSetColumnSpanGroup( parent );
     createShowHeaderButton( parent );
     createShowFooterButton( parent );
+    createShowRowHeadersButton( parent );
     createAutoHeightButton( parent );
     createWordWrapButton( parent );
     createHeaderWordWrapButton( parent );
     createQueryFocusItem( parent );
+    createQueryFocusColumn( parent );
+    createEnableCellSelection( parent );
+    createSelectAll( parent );
+    createSetCellSelection( parent );
+    createAddCellsToSelection( parent );
+    createSelectCellsInColumn( parent );
+    createSelectCellsInColumnGroup( parent );
+    createDeselectAllCells( parent );
+    createGetCellsSelection( parent );
+    createSetColumnOrder( parent );
   }
 
   @Override
@@ -95,9 +112,12 @@ public class NebulaGridTab extends ExampleTab {
     grid.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true, 1, 20 ) );
     grid.setHeaderVisible( headerVisible );
     grid.setFooterVisible( footerVisible );
+    grid.setRowHeaderVisible( rowHeadersVisible, 50 );
+    grid.setCellSelectionEnabled( cellSelectionEnabled );
     addGridListeners();
     createGridColumns();
     createGridItems();
+    updateRowHeaders();
   }
 
   private void addGridListeners() {
@@ -105,10 +125,12 @@ public class NebulaGridTab extends ExampleTab {
       @Override
       public void treeExpanded( TreeEvent event ) {
         log( "grid treeExpanded: " + event );
+        updateRowHeaders();
       }
       @Override
       public void treeCollapsed( TreeEvent event ) {
         log( "grid treeExpanded: " + event );
+        updateRowHeaders();
       }
     } );
     grid.addSelectionListener( new SelectionListener() {
@@ -207,6 +229,18 @@ public class NebulaGridTab extends ExampleTab {
         }
       }
     }
+    grid.getItem( 0 ).setExpanded( true );
+  }
+
+  private void updateRowHeaders() {
+    for( GridItem item : grid.getItems() ) {
+      if( item != null && item.isVisible() ) {
+        if( item.getParentItem() != null ) {
+          item.setHeaderImage( image );
+        }
+      }
+    }
+    grid.getItem( 0 ).setHeaderText( "X" );
   }
 
   private void createAddRemoveItemButton( Composite parent ) {
@@ -331,6 +365,32 @@ public class NebulaGridTab extends ExampleTab {
     } );
   }
 
+  private void createTreeColumnButton( Composite parent ) {
+    Composite composite = new Composite( parent, SWT.NONE );
+    composite.setLayout( new GridLayout( 3, false ) );
+    Label treeColumnIndexLabel = new Label( composite, SWT.NONE );
+    treeColumnIndexLabel.setLayoutData( new GridData( 100, SWT.DEFAULT ) );
+    treeColumnIndexLabel.setText( "Tree column" );
+    final Text treeColumnIndexText = new Text( composite, SWT.BORDER );
+    treeColumnIndexText.setLayoutData( new GridData( 50, SWT.DEFAULT ) );
+    Button button = new Button( composite, SWT.PUSH );
+    button.setLayoutData( new GridData( 100, SWT.DEFAULT ) );
+    button.setText( "Change" );
+    button.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent event ) {
+        int treeColumnIndex = -1;
+        try {
+          treeColumnIndex = Integer.parseInt( treeColumnIndexText.getText() );
+        } catch( NumberFormatException e ) {
+        }
+        if( treeColumnIndex >= 0 && treeColumnIndex < grid.getColumnCount() ) {
+          grid.getColumn( treeColumnIndex ).setTree( true );
+        }
+      }
+    } );
+  }
+
   private void createSetFooterSpanGroup( Composite parent ) {
     Composite composite = new Composite( parent, SWT.NONE );
     composite.setLayout( new GridLayout( 3, false ) );
@@ -396,7 +456,7 @@ public class NebulaGridTab extends ExampleTab {
   private void createShowHeaderButton( Composite parent ) {
     final Button button = new Button( parent, SWT.CHECK );
     button.setText( "Show header" );
-    button.setSelection( true );
+    button.setSelection( headerVisible );
     button.addSelectionListener( new SelectionAdapter() {
       @Override
       public void widgetSelected( SelectionEvent event ) {
@@ -409,12 +469,25 @@ public class NebulaGridTab extends ExampleTab {
   private void createShowFooterButton( Composite parent ) {
     final Button button = new Button( parent, SWT.CHECK );
     button.setText( "Show footer" );
-    button.setSelection( true );
+    button.setSelection( footerVisible );
     button.addSelectionListener( new SelectionAdapter() {
       @Override
       public void widgetSelected( SelectionEvent event ) {
         footerVisible = button.getSelection();
         grid.setFooterVisible( footerVisible );
+      }
+    } );
+  }
+
+  private void createShowRowHeadersButton( Composite parent ) {
+    final Button button = new Button( parent, SWT.CHECK );
+    button.setText( "Show row headers" );
+    button.setSelection( rowHeadersVisible );
+    button.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent event ) {
+        rowHeadersVisible = button.getSelection();
+        grid.setRowHeaderVisible( rowHeadersVisible, 50 );
       }
     } );
   }
@@ -471,6 +544,120 @@ public class NebulaGridTab extends ExampleTab {
         Shell shell = grid.getShell();
         String msg = "Current focusItem: " + grid.getFocusItem();
         MessageDialog.openInformation( shell, "Information", msg );
+      }
+    } );
+  }
+
+  private void createQueryFocusColumn( Composite parent ) {
+    Button button = new Button( parent, SWT.PUSH );
+    button.setText( "Query focusColumn" );
+    button.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent e ) {
+        Shell shell = grid.getShell();
+        String msg = "Current focusColumn: " + grid.getFocusColumn();
+        MessageDialog.openInformation( shell, "Information", msg );
+      }
+    } );
+  }
+
+  private void createEnableCellSelection( Composite parent ) {
+    final Button button = new Button( parent, SWT.CHECK );
+    button.setText( "Enable cell selection" );
+    button.setSelection( cellSelectionEnabled );
+    button.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent event ) {
+        cellSelectionEnabled = button.getSelection();
+        grid.setCellSelectionEnabled( cellSelectionEnabled );
+      }
+    } );
+  }
+
+  private void createSelectAll( Composite parent ) {
+    Button button = new Button( parent, SWT.PUSH );
+    button.setText( "Select all" );
+    button.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent e ) {
+        grid.selectAll();
+      }
+    } );
+  }
+
+  private void createSetCellSelection( Composite parent ) {
+    Button button = new Button( parent, SWT.PUSH );
+    button.setText( "Set cell selection" );
+    button.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent e ) {
+        grid.setCellSelection( new Point[] { new Point( 0, 3 ), new Point( 1, 5 ), new Point( 4, 0 ) } );
+      }
+    } );
+  }
+
+  private void createAddCellsToSelection( Composite parent ) {
+    Button button = new Button( parent, SWT.PUSH );
+    button.setText( "Add to cell selection" );
+    button.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent e ) {
+        grid.selectCells( new Point[] { new Point( 0, 5 ), new Point( 2, 7 ) } );
+      }
+    } );
+  }
+
+  private void createSelectCellsInColumn( Composite parent ) {
+    Button button = new Button( parent, SWT.PUSH );
+    button.setText( "Select all cells in column 4" );
+    button.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent e ) {
+        grid.selectColumn( 4 );
+      }
+    } );
+  }
+
+  private void createSelectCellsInColumnGroup( Composite parent ) {
+    Button button = new Button( parent, SWT.PUSH );
+    button.setText( "Select all cells in column group" );
+    button.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent e ) {
+        grid.selectColumnGroup( 0 );
+      }
+    } );
+  }
+
+  private void createDeselectAllCells( Composite parent ) {
+    Button button = new Button( parent, SWT.PUSH );
+    button.setText( "Deselect all cells" );
+    button.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent e ) {
+        grid.deselectAllCells();
+      }
+    } );
+  }
+
+  private void createGetCellsSelection( Composite parent ) {
+    Button button = new Button( parent, SWT.PUSH );
+    button.setText( "Get cell selection" );
+    button.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent e ) {
+        log( "Selected cells: " + Arrays.toString( grid.getCellSelection() ) );
+      }
+    } );
+  }
+
+  private void createSetColumnOrder( Composite parent ) {
+    Button button = new Button( parent, SWT.PUSH );
+    button.setText( "Change column order" );
+    button.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent e ) {
+        grid.setColumnOrder( new int[] { 4, 2, 1, 3, 0 } );
       }
     } );
   }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 EclipseSource and others.
+ * Copyright (c) 2013, 2021 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -18,7 +18,11 @@ import static org.eclipse.rap.rwt.internal.protocol.ClientMessageConst.EVENT_PAR
 import static org.eclipse.rap.rwt.internal.protocol.ClientMessageConst.EVENT_SELECTION;
 import static org.eclipse.rap.rwt.internal.protocol.ClientMessageConst.EVENT_SET_DATA;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.nebula.widgets.grid.Grid;
+import org.eclipse.nebula.widgets.grid.GridColumn;
 import org.eclipse.nebula.widgets.grid.GridItem;
 import org.eclipse.nebula.widgets.grid.internal.IGridAdapter;
 import org.eclipse.rap.json.JsonArray;
@@ -27,6 +31,7 @@ import org.eclipse.rap.json.JsonValue;
 import org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil;
 import org.eclipse.rap.rwt.internal.protocol.ControlOperationHandler;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.internal.widgets.CellToolTipUtil;
 import org.eclipse.swt.internal.widgets.ICellToolTipAdapter;
 import org.eclipse.swt.internal.widgets.ICellToolTipProvider;
@@ -38,9 +43,11 @@ import org.eclipse.swt.widgets.ScrollBar;
 public class GridOperationHandler extends ControlOperationHandler<Grid> {
 
   private static final String PROP_SELECTION = "selection";
+  private static final String PROP_CELL_SELECTION = "cellSelection";
   private static final String PROP_SCROLL_LEFT = "scrollLeft";
   private static final String PROP_TOP_ITEM_INDEX = "topItemIndex";
   private static final String PROP_FOCUS_ITEM = "focusItem";
+  private static final String PROP_FOCUS_CELL = "focusCell";
   private static final String METHOD_RENDER_TOOLTIP_TEXT = "renderToolTipText";
 
   public GridOperationHandler( Grid grid ) {
@@ -51,9 +58,11 @@ public class GridOperationHandler extends ControlOperationHandler<Grid> {
   public void handleSet( Grid grid, JsonObject properties ) {
     super.handleSet( grid, properties );
     handleSetSelection( grid, properties );
+    handleSetCellSelection( grid, properties );
     handleSetScrollLeft( grid, properties );
     handleSetTopItemIndex( grid, properties );
     handleSetFocusItem( grid, properties );
+    handleSetFocusCell( grid, properties );
   }
 
   @Override
@@ -105,6 +114,28 @@ public class GridOperationHandler extends ControlOperationHandler<Grid> {
   }
 
   /*
+   * PROTOCOL SET cellSelection
+   *
+   * @param cellSelection ([[string, int]]) array with item/cell ids of selected cells
+   */
+  public void handleSetCellSelection( Grid grid, JsonObject properties ) {
+    JsonValue values = properties.get( PROP_CELL_SELECTION );
+    if( values != null ) {
+      JsonArray cells = values.asArray();
+      List<Point> selectedCells = new ArrayList<>();
+      for( int i = 0; i < cells.size(); i++ ) {
+        JsonArray currentCell = cells.get( i ).asArray();
+        GridItem item = getItem( grid, currentCell.get( 0 ).asString() );
+        if( item != null ) {
+          int x = currentCell.get( 1 ).asInt() - getColumnOffset( grid );
+          selectedCells.add( new Point( x, grid.indexOf( item ) ) );
+        }
+      }
+      grid.setCellSelection( selectedCells.toArray( new Point[ 0 ] ) );
+    }
+  }
+
+  /*
    * PROTOCOL SET scrollLeft
    *
    * @param scrollLeft (int) left scroll offset in pixels
@@ -145,6 +176,21 @@ public class GridOperationHandler extends ControlOperationHandler<Grid> {
   }
 
   /*
+   * PROTOCOL SET focusCell
+   *
+   * @param focusCell (int) index of focus column
+   */
+  public void handleSetFocusCell( Grid grid, JsonObject properties ) {
+    JsonValue value = properties.get( PROP_FOCUS_CELL );
+    if( value != null ) {
+      GridColumn column = grid.getColumn( value.asInt() - getColumnOffset( grid ) );
+      if( column != null ) {
+        grid.setFocusColumn( column );
+      }
+    }
+  }
+
+  /*
    * PROTOCOL CALL renderToolTipText
    *
    * @param item (string) id of the hovered item
@@ -155,8 +201,8 @@ public class GridOperationHandler extends ControlOperationHandler<Grid> {
     ICellToolTipProvider provider = adapter.getCellToolTipProvider();
     if( provider != null ) {
       GridItem item = getItem( grid, properties.get( "item" ).asString() );
-      int columnIndex = properties.get( "column" ).asInt();
-      if( item != null && ( columnIndex == 0 || columnIndex < grid.getColumnCount() ) ) {
+      int columnIndex = properties.get( "column" ).asInt() - getColumnOffset( grid );
+      if( item != null && ( columnIndex >= 0 && columnIndex < grid.getColumnCount() ) ) {
         provider.getToolTipText( item, columnIndex );
       }
     }
@@ -251,6 +297,10 @@ public class GridOperationHandler extends ControlOperationHandler<Grid> {
   private static int readIndex( JsonObject properties ) {
     JsonValue value = properties.get( EVENT_PARAM_INDEX );
     return value == null ? 0 : value.asInt();
+  }
+
+  private static int getColumnOffset( Grid grid ) {
+    return getGridAdapter( grid ).getRowHeadersColumn() != null ? 1 : 0;
   }
 
   private static IGridAdapter getGridAdapter( Grid grid ) {

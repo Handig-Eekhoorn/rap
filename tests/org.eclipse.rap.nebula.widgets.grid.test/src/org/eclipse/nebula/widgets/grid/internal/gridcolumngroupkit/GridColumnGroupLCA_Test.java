@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 EclipseSource and others.
+ * Copyright (c) 2012, 2020 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -16,6 +16,7 @@ import static org.eclipse.rap.rwt.internal.lifecycle.WidgetUtil.getId;
 import static org.eclipse.rap.rwt.testfixture.internal.TestMessage.getParent;
 import static org.eclipse.rap.rwt.testfixture.internal.TestMessage.getStyles;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -288,6 +289,20 @@ public class GridColumnGroupLCA_Test {
   }
 
   @Test
+  public void testRenderLeftWithRowHeader() throws IOException {
+    createGridColumns( grid, 3, SWT.NONE );
+    grid.setRowHeaderVisible( true, 10 );
+    grid.getColumn( 1 ).setVisible( false );
+    createGridColumns( group, 3, SWT.NONE );
+
+    grid.getColumn( 0 ).setWidth( 30 );
+    lca.renderChanges( group );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( 100, message.findSetProperty( group, "left" ).asInt() );
+  }
+
+  @Test
   public void testRenderLeftUnchanged() throws IOException {
     createGridColumns( grid, 3, SWT.NONE );
     grid.getColumn( 1 ).setVisible( false );
@@ -443,6 +458,40 @@ public class GridColumnGroupLCA_Test {
 
     TestMessage message = Fixture.getProtocolMessage();
     assertNull( message.findSetOperation( group, "headerWordWrap" ) );
+  }
+
+  @Test
+  public void testRenderInitialFixed() throws IOException {
+    createGridColumns( group, 1, SWT.NONE );
+    lca.render( group );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    CreateOperation operation = message.findCreateOperation( group );
+    assertFalse( operation.getProperties().names().contains( "fixed" ) );
+  }
+
+  @Test
+  public void testRenderFixed() throws IOException {
+    createGridColumns( group, 1, SWT.NONE );
+    grid.setData( RWT.FIXED_COLUMNS, Integer.valueOf( 1 ) );
+    lca.renderChanges( group );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertEquals( JsonValue.TRUE, message.findSetProperty( group, "fixed" ) );
+  }
+
+  @Test
+  public void testRenderFixedUnchanged() throws IOException {
+    createGridColumns( group, 1, SWT.NONE );
+    Fixture.markInitialized( display );
+    Fixture.markInitialized( group );
+
+    grid.setData( RWT.FIXED_COLUMNS, Integer.valueOf( 1 ) );
+    Fixture.preserveWidgets();
+    lca.renderChanges( group );
+
+    TestMessage message = Fixture.getProtocolMessage();
+    assertNull( message.findSetOperation( group, "fixed" ) );
   }
 
 }

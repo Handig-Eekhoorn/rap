@@ -51,6 +51,16 @@
         display: none;
       }
     </style>
+    <!-- Hide native scrollbars -->
+    <style type="text/css">
+      div::-webkit-scrollbar {
+        width: 0px;
+        height: 0px;
+      }
+      div {
+        scrollbar-width: none;
+      }
+    </style>
   </head>
 
   <body style="background: url( '${backgroundImage}' );">
@@ -66,7 +76,7 @@ ${body}
 
 ${libraries}
 
-    <script type="text/javascript">
+    <script type="text/javascript" nonce="${nonceValue}">
       if( rwt.runtime.System.getInstance().isSupported() ) {
         ${appScript}
       } else {

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2012, 2016 EclipseSource and others.
+ * Copyright (c) 2012, 2020 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -34,6 +34,7 @@ import org.eclipse.rap.rwt.internal.lifecycle.WidgetLCAUtil;
 import org.eclipse.rap.rwt.internal.template.TemplateLCAUtil;
 import org.eclipse.rap.rwt.remote.RemoteObject;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.internal.widgets.CellToolTipUtil;
 import org.eclipse.swt.internal.widgets.ICellToolTipAdapter;
 import org.eclipse.swt.widgets.Control;
@@ -60,6 +61,7 @@ public class GridLCA extends WidgetLCA<Grid> {
   private static final String PROP_ITEM_METRICS = "itemMetrics";
   private static final String PROP_COLUMN_COUNT = "columnCount";
   private static final String PROP_COLUMN_ORDER = "columnOrder";
+  private static final String PROP_FIXED_COLUMNS = "fixedColumns";
   private static final String PROP_TREE_COLUMN = "treeColumn";
   private static final String PROP_HEADER_HEIGHT = "headerHeight";
   private static final String PROP_HEADER_VISIBLE = "headerVisible";
@@ -68,8 +70,12 @@ public class GridLCA extends WidgetLCA<Grid> {
   private static final String PROP_LINES_VISIBLE = "linesVisible";
   private static final String PROP_TOP_ITEM_INDEX = "topItemIndex";
   private static final String PROP_FOCUS_ITEM = "focusItem";
+  private static final String PROP_FOCUS_CELL = "focusCell";
   private static final String PROP_SCROLL_LEFT = "scrollLeft";
   private static final String PROP_SELECTION = "selection";
+  private static final String PROP_CELL_SELECTION = "cellSelection";
+  private static final String PROP_CELL_SELECTION_ENABLED = "cellSelectionEnabled";
+  private static final String PROP_SELECTION_TYPE = "selectionType";
   private static final String PROP_AUTO_HEIGHT = "autoHeight";
   private static final String PROP_INDENTION_WIDTH = "indentionWidth";
   // TODO: [if] Sync sortDirection and sortColumn in GridColumnLCA when multiple sort columns are
@@ -96,6 +102,9 @@ public class GridLCA extends WidgetLCA<Grid> {
     remoteObject.set( "parent", getId( grid.getParent() ) );
     remoteObject.set( "style", createJsonArray( getStyles( grid, ALLOWED_STYLES ) ) );
     remoteObject.set( "appearance", "grid" );
+    if( getFixedColumns( grid ) >= 0 ) {
+      remoteObject.set( "splitContainer", true );
+    }
     remoteObject.set( PROP_MARKUP_ENABLED, isMarkupEnabledFor( grid ) );
     TemplateLCAUtil.renderRowTemplate( grid );
     remoteObject.listen( PROP_SETDATA_LISTENER, isVirtual( grid ) );
@@ -110,8 +119,9 @@ public class GridLCA extends WidgetLCA<Grid> {
     preserveProperty( grid, PROP_ITEM_COUNT, grid.getRootItemCount() );
     preserveProperty( grid, PROP_ITEM_HEIGHT, grid.getItemHeight() );
     preserveProperty( grid, PROP_ITEM_METRICS, getItemMetrics( grid ) );
-    preserveProperty( grid, PROP_COLUMN_COUNT, grid.getColumnCount() );
+    preserveProperty( grid, PROP_COLUMN_COUNT, getColumnCount( grid ) );
     preserveProperty( grid, PROP_COLUMN_ORDER, getColumnOrder( grid ) );
+    preserveProperty( grid, PROP_FIXED_COLUMNS, getFixedColumns( grid ) );
     preserveProperty( grid, PROP_TREE_COLUMN, getTreeColumn( grid ) );
     preserveProperty( grid, PROP_HEADER_HEIGHT, grid.getHeaderHeight() );
     preserveProperty( grid, PROP_HEADER_VISIBLE, grid.getHeaderVisible() );
@@ -120,7 +130,9 @@ public class GridLCA extends WidgetLCA<Grid> {
     preserveProperty( grid, PROP_LINES_VISIBLE, grid.getLinesVisible() );
     preserveProperty( grid, PROP_TOP_ITEM_INDEX, getTopItemIndex( grid ) );
     preserveProperty( grid, PROP_FOCUS_ITEM, grid.getFocusItem() );
+    preserveProperty( grid, PROP_FOCUS_CELL, getFocusCell( grid ) );
     preserveProperty( grid, PROP_SCROLL_LEFT, getScrollLeft( grid ) );
+    preserveProperty( grid, PROP_SELECTION_TYPE, getSelectionType( grid ) );
     preserveProperty( grid, PROP_SELECTION, getSelection( grid ) );
     preserveProperty( grid, PROP_AUTO_HEIGHT, grid.isAutoHeight() );
     preserveProperty( grid, PROP_INDENTION_WIDTH, getIndentationWidth( grid ) );
@@ -128,6 +140,8 @@ public class GridLCA extends WidgetLCA<Grid> {
     preserveProperty( grid, PROP_SORT_COLUMN, getSortColumn( grid ) );
     preserveProperty( grid, PROP_ENABLE_CELL_TOOLTIP, CellToolTipUtil.isEnabledFor( grid ) );
     preserveProperty( grid, PROP_CELL_TOOLTIP_TEXT, null );
+    preserveProperty( grid, PROP_CELL_SELECTION_ENABLED, grid.isCellSelectionEnabled() );
+    preserveProperty( grid, PROP_CELL_SELECTION, getCellSelection( grid ) );
   }
 
   @Override
@@ -137,8 +151,9 @@ public class GridLCA extends WidgetLCA<Grid> {
     renderProperty( grid, PROP_ITEM_COUNT, grid.getRootItemCount(), ZERO );
     renderProperty( grid, PROP_ITEM_HEIGHT, grid.getItemHeight(), ZERO );
     renderItemMetrics( grid );
-    renderProperty( grid, PROP_COLUMN_COUNT, grid.getColumnCount(), ZERO );
+    renderProperty( grid, PROP_COLUMN_COUNT, getColumnCount( grid ), ZERO );
     renderProperty( grid, PROP_COLUMN_ORDER, getColumnOrder( grid ), DEFAULT_COLUMN_ORDER );
+    renderProperty( grid, PROP_FIXED_COLUMNS, getFixedColumns( grid ), -1 );
     renderProperty( grid, PROP_TREE_COLUMN, getTreeColumn( grid ), ZERO );
     renderProperty( grid, PROP_HEADER_HEIGHT, grid.getHeaderHeight(), ZERO );
     renderProperty( grid, PROP_HEADER_VISIBLE, grid.getHeaderVisible(), false );
@@ -147,7 +162,9 @@ public class GridLCA extends WidgetLCA<Grid> {
     renderProperty( grid, PROP_LINES_VISIBLE, grid.getLinesVisible(), false );
     renderProperty( grid, PROP_TOP_ITEM_INDEX, getTopItemIndex( grid ), ZERO );
     renderProperty( grid, PROP_FOCUS_ITEM, grid.getFocusItem(), null );
+    renderProperty( grid, PROP_FOCUS_CELL, getFocusCell( grid ), -1 );
     renderProperty( grid, PROP_SCROLL_LEFT, getScrollLeft( grid ), ZERO );
+    renderProperty( grid, PROP_SELECTION_TYPE, getSelectionType( grid ), "SINGLE" );
     renderProperty( grid, PROP_SELECTION, getSelection( grid ), DEFAULT_SELECTION );
     renderProperty( grid, PROP_AUTO_HEIGHT, grid.isAutoHeight(), false );
     renderProperty( grid, PROP_INDENTION_WIDTH, getIndentationWidth( grid ), ZERO );
@@ -157,6 +174,8 @@ public class GridLCA extends WidgetLCA<Grid> {
     renderListenDefaultSelection( grid );
     renderProperty( grid, PROP_ENABLE_CELL_TOOLTIP, CellToolTipUtil.isEnabledFor( grid ), false );
     renderProperty( grid, PROP_CELL_TOOLTIP_TEXT, getAndResetCellToolTipText( grid ), null );
+    renderProperty( grid, PROP_CELL_SELECTION_ENABLED, grid.isCellSelectionEnabled(), false );
+    renderProperty( grid, PROP_CELL_SELECTION, getCellSelection( grid ), DEFAULT_SELECTION );
   }
 
   @Override
@@ -179,8 +198,7 @@ public class GridLCA extends WidgetLCA<Grid> {
   }
 
   private static int getTreeColumn( Grid grid ) {
-    int[] order = grid.getColumnOrder();
-    return order.length > 0 ? order[ 0 ] : 0;
+    return getGridAdapter( grid ).getTreeColumn();
   }
 
   private static int getTopItemIndex( Grid grid ) {
@@ -201,11 +219,25 @@ public class GridLCA extends WidgetLCA<Grid> {
     return result;
   }
 
+  private static String getSelectionType( Grid grid ) {
+    return getGridAdapter( grid ).getSelectionType() == SWT.MULTI ? "MULTI" : "SINGLE";
+  }
+
   private static String[] getSelection( Grid grid ) {
     GridItem[] selection = grid.getSelection();
     String[] result = new String[ selection.length ];
     for( int i = 0; i < result.length; i++ ) {
       result[ i ] = getId( selection[ i ] );
+    }
+    return result;
+  }
+
+  private static String[] getCellSelection( Grid grid ) {
+    Point[] selection = grid.getCellSelection();
+    int offset = getColumnOffset( grid );
+    String[] result = new String[ selection.length ];
+    for( int i = 0; i < result.length; i++ ) {
+      result[ i ] = getId( grid.getItem( selection[ i ].y ) ) + "#" + ( selection[ i ].x + offset );
     }
     return result;
   }
@@ -238,13 +270,31 @@ public class GridLCA extends WidgetLCA<Grid> {
     return result;
   }
 
+  private static int getColumnCount( Grid grid ) {
+    int columnCount = grid.getColumnCount();
+    return getRowHeadersColumn( grid ) == null ? columnCount : columnCount + 1;
+  }
+
   private static String[] getColumnOrder( Grid grid ) {
     int[] order = grid.getColumnOrder();
-    String[] result = new String[ order.length ];
-    for( int i = 0; i < result.length; i++ ) {
-      result[ i ] = getId( grid.getColumn( order[ i ] ) );
+    int offset = getColumnOffset( grid );
+    String[] result = new String[ order.length + offset ];
+    for( int i = offset; i < result.length; i++ ) {
+      result[ i ] = getId( grid.getColumn( order[ i - offset ] ) );
+    }
+    if( offset == 1 ) {
+      result[ 0 ] = getId( getRowHeadersColumn( grid ) );
     }
     return result;
+  }
+
+  private static int getFixedColumns( Grid grid ) {
+    return getGridAdapter( grid ).getFixedColumns();
+  }
+
+  private static int getFocusCell( Grid grid ) {
+    GridColumn focusColumn = grid.getFocusColumn();
+    return focusColumn == null ? -1 : grid.indexOf( focusColumn ) + getColumnOffset( grid );
   }
 
   ///////////////
@@ -271,20 +321,43 @@ public class GridLCA extends WidgetLCA<Grid> {
 
   static ItemMetrics[] getItemMetrics( Grid grid ) {
     int columnCount = grid.getColumnCount();
-    ItemMetrics[] result = new ItemMetrics[ columnCount ];
+    int offset = getColumnOffset( grid );
+    ItemMetrics[] result = new ItemMetrics[ columnCount + offset ];
     IGridAdapter adapter = getGridAdapter( grid );
-    for( int i = 0; i < columnCount; i++ ) {
+    for( int i = offset; i < columnCount + offset; i++ ) {
       result[ i ] = new ItemMetrics();
-      result[ i ].left = adapter.getCellLeft( i );
-      result[ i ].width = adapter.getCellWidth( i );
-      result[ i ].checkLeft = result[ i ].left + adapter.getCheckBoxOffset( i );
-      result[ i ].checkWidth = adapter.getCheckBoxWidth( i );
-      result[ i ].imageLeft = result[ i ].left + adapter.getImageOffset( i );
-      result[ i ].imageWidth = adapter.getImageWidth( i );
-      result[ i ].textLeft = result[ i ].left + adapter.getTextOffset( i );
-      result[ i ].textWidth = adapter.getTextWidth( i );
+      result[ i ].left = adapter.getCellLeft( i - offset );
+      result[ i ].width = adapter.getCellWidth( i - offset );
+      result[ i ].checkLeft = result[ i ].left + adapter.getCheckBoxOffset( i - offset );
+      result[ i ].checkWidth = adapter.getCheckBoxWidth( i - offset );
+      result[ i ].imageLeft = result[ i ].left + adapter.getImageOffset( i - offset );
+      result[ i ].imageWidth = adapter.getImageWidth( i - offset );
+      result[ i ].textLeft = result[ i ].left + adapter.getTextOffset( i - offset );
+      result[ i ].textWidth = adapter.getTextWidth( i - offset );
+    }
+    if( offset == 1 ) {
+      result[ 0 ] = getRowHeaderItemMetrics( grid );
     }
     return result;
+  }
+
+  private static ItemMetrics getRowHeaderItemMetrics( Grid grid ) {
+    IGridAdapter adapter = getGridAdapter( grid );
+    ItemMetrics result = new ItemMetrics();
+    result.width = grid.getItemHeaderWidth();
+    result.imageLeft = adapter.getRowHeaderImageOffset();
+    result.imageWidth = adapter.getRowHeaderImageWidth();
+    result.textLeft = adapter.getRowHeaderTextOffset();
+    result.textWidth = adapter.getRowHeaderTextWidth();
+    return result;
+  }
+
+  private static int getColumnOffset( Grid grid ) {
+    return getRowHeadersColumn( grid ) != null ? 1 : 0;
+  }
+
+  private static GridColumn getRowHeadersColumn( Grid grid ) {
+    return getGridAdapter( grid ).getRowHeadersColumn();
   }
 
   private static IGridAdapter getGridAdapter( Grid grid ) {

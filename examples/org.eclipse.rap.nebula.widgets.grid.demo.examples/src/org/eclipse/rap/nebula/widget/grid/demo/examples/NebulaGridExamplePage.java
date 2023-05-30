@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013 EclipseSource and others.
+ * Copyright (c) 2013, 2020 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -32,11 +32,12 @@ public class NebulaGridExamplePage implements IExamplePage {
   private static final int NO_DATA = Integer.MIN_VALUE;
   private static final String EURO = "€ ";
   private static final String[] YEARS = new String[] {
-    "2005", "2006", "2007", "2008", "2009"
+    "2016", "2017", "2018", "2019", "2020"
   };
 
   private List<CompanyData> data;
 
+  @Override
   public void createControl( Composite parent ) {
     initData();
     parent.setLayout( ExampleUtil.createGridLayout( 1, true, true, true ) );
@@ -45,6 +46,7 @@ public class NebulaGridExamplePage implements IExamplePage {
     Grid grid = createGrid( parent );
     GridColumn category = createColumn( grid, null, "", 235, SWT.CENTER );
     category.setFooterText( "Net income" );
+    category.setResizeable( false );
     GridColumnGroup group
       = createGridColumnGroup( grid, "Period ( Year Ended December 31 )", SWT.CENTER );
     for( int i = 0; i < YEARS.length; i++ ) {
@@ -88,14 +90,16 @@ public class NebulaGridExamplePage implements IExamplePage {
   }
 
   private Grid createGrid( Composite parent ) {
-    Grid grid = new Grid( parent, SWT.V_SCROLL | SWT.BORDER );
+    Grid grid = new Grid( parent, SWT.V_SCROLL | SWT.H_SCROLL | SWT.BORDER | SWT.MULTI );
     grid.setData( RWT.MARKUP_ENABLED, Boolean.TRUE );
+    grid.setData( RWT.FIXED_COLUMNS, Integer.valueOf( 1 ) );
     GridData tableLayoutData = ExampleUtil.createFillData();
     tableLayoutData.verticalIndent = 10;
     grid.setLayoutData( tableLayoutData );
     grid.setHeaderVisible( true );
     grid.setFooterVisible( true );
     grid.setLinesVisible( true );
+    grid.setCellSelectionEnabled( true );
     return grid;
   }
 

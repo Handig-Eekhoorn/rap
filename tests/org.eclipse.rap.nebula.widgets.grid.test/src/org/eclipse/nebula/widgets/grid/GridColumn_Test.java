@@ -32,6 +32,7 @@ import org.eclipse.rap.rwt.internal.service.ServiceStore;
 import org.eclipse.rap.rwt.testfixture.TestContext;
 import org.eclipse.rap.rwt.testfixture.internal.Fixture;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTException;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.DisposeEvent;
@@ -366,6 +367,41 @@ public class GridColumn_Test {
     column.dispose();
 
     assertTrue( column1.isTree() );
+  }
+
+  @Test
+  public void testSetTree() {
+    GridColumn column1 = new GridColumn( grid, SWT.NONE );
+    createGridItems( grid, 3, 1 );
+
+    column1.setTree( true );
+
+    assertTrue( column1.isTree() );
+  }
+
+  @Test
+  public void testSetTree_resetsOtherThreeColumn() {
+    GridColumn column1 = new GridColumn( grid, SWT.NONE );
+    createGridItems( grid, 3, 1 );
+
+    assertTrue( column.isTree() );
+
+    column1.setTree( true );
+
+    assertFalse( column.isTree() );
+  }
+
+  @Test
+  public void testSetTree_removesTreeColumn() {
+    GridColumn column1 = new GridColumn( grid, SWT.NONE );
+    createGridItems( grid, 3, 1 );
+    column1.setTree( true );
+    assertTrue( column1.isTree() );
+
+    column1.setTree( false );
+
+    assertTrue( column.isTree() );
+    assertFalse( column1.isTree() );
   }
 
   @Test
@@ -846,6 +882,26 @@ public class GridColumn_Test {
     } catch( IllegalArgumentException notExpected ) {
       fail();
     }
+  }
+
+  @Test
+  public void testSetToolTipMarkupEnabled_onDirtyWidget() {
+    column.setHeaderTooltip( "something" );
+
+    try {
+      column.setData( RWT.TOOLTIP_MARKUP_ENABLED, Boolean.TRUE );
+      fail();
+    } catch( SWTException expected ) {
+      assertTrue( expected.throwable instanceof IllegalStateException );
+    }
+  }
+
+  @Test
+  public void testSetToolTipMarkupEnabled_onDirtyWidget_onceEnabledBefore() {
+    column.setData( RWT.TOOLTIP_MARKUP_ENABLED, Boolean.TRUE );
+    column.setHeaderTooltip( "something" );
+
+    column.setData( RWT.TOOLTIP_MARKUP_ENABLED, Boolean.TRUE );
   }
 
   @Test

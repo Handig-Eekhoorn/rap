@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2017 Innoopract Informationssysteme GmbH and others.
+ * Copyright (c) 2011, 2020 Innoopract Informationssysteme GmbH and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -22,6 +22,7 @@ rwt.widgets.util.GridRowContainerWrapper = function() {
   this._splitOffset = 0;
   this._rowWidth = 0;
   this.addEventListener( "hoverItem", this._onHoverItem, this );
+  this._container[ 1 ].addEventListener( "rowRendered", this._onRowRendered, this );
 };
 
 rwt.widgets.util.GridRowContainerWrapper.createInstance = function() {
@@ -63,6 +64,7 @@ rwt.widgets.util.GridRowContainerWrapper._CONTAINER_DELEGATES = [
   "setRowHeight",
   "setTopItem",
   "renderItem",
+  "renderRowHeight",
   "setToolTip",
   "renderItemQueue",
   "setBaseAppearance",
@@ -141,7 +143,7 @@ rwt.widgets.util.GridRowContainerWrapper.prototype = {
   findRowByElement : function( el ) {
     var result = this._container[ 0 ].findRowByElement( el );
     if( result == null ) {
-      result = this._container[ 0 ].findRowByElement( el );
+      result = this._container[ 1 ].findRowByElement( el );
     }
     return result;
   },
@@ -191,6 +193,7 @@ rwt.widgets.util.GridRowContainerWrapper.prototype = {
         configRight.itemLeft[ column ] -= rightColumnsOffset;
         configRight.itemImageLeft[ column ] -= rightColumnsOffset;
         configRight.itemTextLeft[ column ] -= rightColumnsOffset;
+        configRight.itemCellCheckLeft[ column ] -= rightColumnsOffset;
       }
     }
     if( this._splitOffset !== rightColumnsOffset ) {
@@ -233,6 +236,31 @@ rwt.widgets.util.GridRowContainerWrapper.prototype = {
   _onHoverItem : function( item ) {
     for( var i = 0; i < this._container.length; i++ ) {
       this._container[ i ]._setHoverItem( item );
+    }
+  },
+
+  _onRowRendered : function( rightRow ) {
+    if( this._config.autoHeight ) {
+      var item = rightRow.getItem();
+      if( item ) {
+        var leftRow = this._container[ 0 ].findRowByItem( item );
+        if( leftRow ) {
+          var leftRowHeight = leftRow.computeAutoHeight();
+          var rightRowHeight = rightRow.computeAutoHeight();
+          var computedHeight = Math.max( leftRowHeight, rightRowHeight );
+          if( item.getDefaultHeight() >= computedHeight - 1 ) {
+            computedHeight = null; // ignore rounding error for network optimization
+          }
+          item.setHeight( computedHeight, true );
+          var itemHeight = item.getOwnHeight();
+          if( itemHeight !== leftRow.getHeight() ) {
+            leftRow.setHeight( itemHeight );
+          }
+          if( itemHeight !== rightRow.getHeight() ) {
+            rightRow.setHeight( itemHeight );
+          }
+        }
+      }
     }
   },
 

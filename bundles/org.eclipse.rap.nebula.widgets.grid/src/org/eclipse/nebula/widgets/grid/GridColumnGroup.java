@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 EclipseSource and others.
+ * Copyright (c) 2012, 2020 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -20,15 +20,12 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.TreeListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Item;
 import org.eclipse.swt.widgets.TypedListener;
 
 
 /**
- * <p>
- * NOTE:  THIS WIDGET AND ITS API ARE STILL UNDER DEVELOPMENT.  THIS IS A PRE-RELEASE ALPHA
- * VERSION.  USERS SHOULD EXPECT API CHANGES IN FUTURE VERSIONS.
- * </p>
  * Instances of this class represent a column group in a grid widget.  A column group header is
  * displayed above grouped columns.  The column group can optionally be configured to expand and
  * collapse.  A column group in the expanded state shows {@code GridColumn}s whose detail property
@@ -194,6 +191,24 @@ public class GridColumnGroup extends Item {
     checkWidget();
     if( this.expanded != expanded ) {
       this.expanded = expanded;
+      if( parent.getCellSelectionEnabled() ) {
+        List<Integer> collapsedCols = new ArrayList<>();
+        for( int j = 0; j < columns.size(); j++ ) {
+          GridColumn column = columns.get( j );
+          if( expanded && column.isSummary() ) {
+            collapsedCols.add( Integer.valueOf( parent.indexOf( column ) ) );
+          }
+          if( !expanded && !column.isSummary() ) {
+            collapsedCols.add( Integer.valueOf( parent.indexOf( column ) ) );
+          }
+        }
+        Point[] selection = parent.getCellSelection();
+        for( int i = 0; i < selection.length; i++ ) {
+          if( collapsedCols.contains( Integer.valueOf( selection[ i ].x ) ) ) {
+            parent.deselectCell( selection[ i ] );
+          }
+        }
+      }
       parent.invalidateScrollBars();
       parent.redraw();
     }

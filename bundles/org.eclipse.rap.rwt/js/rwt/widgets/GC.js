@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2018 EclipseSource and others.
+ * Copyright (c) 2010, 2021 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -91,6 +91,9 @@ rwt.qx.Class.define( "rwt.widgets.GC", {
             case "font":
               this._setProperty( operations[ offset ] );
             break;
+            case "lineDash":
+              this._context.setLineDash( operations[ offset ][ 1 ] );
+            break;
             case "createLinearGradient":
             case "addColorStop":
             case "fillText":
@@ -150,6 +153,7 @@ rwt.qx.Class.define( "rwt.widgets.GC", {
 
     _createCanvas : function() {
       this._canvas = document.createElement( "canvas" );
+      this._canvas.style.display = 'block';
       this._context = this._canvas.getContext( "2d" );
     },
 

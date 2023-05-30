@@ -1,9 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2009 Matthew Hall and others.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
+ * Copyright (c) 2009, 2015 Matthew Hall and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
  *     Matthew Hall - initial API and implementation (bug 234496)
@@ -11,6 +14,7 @@
 
 package org.eclipse.jface.internal.databinding.viewers;
 
+import org.eclipse.core.databinding.observable.value.ValueDiff;
 import org.eclipse.core.databinding.property.INativePropertyListener;
 import org.eclipse.core.databinding.property.ISimplePropertyListener;
 import org.eclipse.core.databinding.property.value.SimpleValueProperty;
@@ -19,26 +23,31 @@ import org.eclipse.swt.widgets.Control;
 
 /**
  * @since 3.3
- * 
+ *
  */
-public class CellEditorControlProperty extends SimpleValueProperty {
+public class CellEditorControlProperty extends SimpleValueProperty<CellEditor, Control> {
+	@Override
 	public Object getValueType() {
 		return Control.class;
 	}
 
-	protected Object doGetValue(Object source) {
-		return ((CellEditor) source).getControl();
+	@Override
+	protected Control doGetValue(CellEditor source) {
+		return source.getControl();
 	}
 
-	protected void doSetValue(Object source, Object value) {
+	@Override
+	protected void doSetValue(CellEditor source, Control value) {
 		throw new UnsupportedOperationException();
 	}
 
-	public INativePropertyListener adaptListener(
-			ISimplePropertyListener listener) {
+	@Override
+	public INativePropertyListener<CellEditor> adaptListener(
+			ISimplePropertyListener<CellEditor, ValueDiff<? extends Control>> listener) {
 		return null;
 	}
 
+	@Override
 	public String toString() {
 		return super.toString();
 	}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2018 EclipseSource and others.
+ * Copyright (c) 2011, 2020 EclipseSource and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -71,8 +71,12 @@ rwt.remote.HandlerRegistry.add( "rwt.widgets.Grid", {
     "linesVisible",
     "topItemIndex",
     "scrollLeft",
+    "selectionType",
     "selection",
+    "cellSelectionEnabled",
+    "cellSelection",
     "focusItem",
+    "focusCell",
     "sortDirection",
     "sortColumn",
     "alwaysHideSelection",
@@ -105,6 +109,18 @@ rwt.remote.HandlerRegistry.add( "rwt.widgets.Grid", {
       for( var i = 0; i < value.length; i++ ) {
         rwt.remote.HandlerUtil.callWithTarget( value[ i ], applySelection );
       }
+    },
+    "cellSelectionEnabled" : function( widget, value ) {
+      rwt.widgets.util.GridUtil.setCellSelectionEnabled( widget, value );
+    },
+    "cellSelection" : function( widget, value ) {
+      widget.deselectAllCells();
+      value.forEach( function( arr ) {
+        var cell = arr.split( "#" );
+        rwt.remote.HandlerUtil.callWithTarget( cell[ 0 ], function( item ) {
+          widget.selectItemCell( item, parseInt( cell[ 1 ], 10 ) );
+        } );
+      } );
     },
     "columnOrder" : function( widget, value ) {
       rwt.remote.HandlerUtil.callWithTargets( value, function( order ) {
